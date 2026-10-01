@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
-    DATABASE_URL: str = ""
+    DATABASE_URL: str = "sqlite:///./medishield.db"
 
     # ML Model (Phase 6)
     ML_MODEL_PATH: str = "ml/artifacts/iomt_rf_model.joblib"

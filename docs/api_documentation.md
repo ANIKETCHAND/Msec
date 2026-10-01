@@ -1,233 +1,184 @@
-# MediShield — Proposed REST API Documentation
+# MediShield — Complete REST API Documentation
 
-## 1. Overview & Conventions
-
-The MediShield API provides RESTful endpoints for IoMT device telemetry ingestion, deterministic intrusion detection, machine learning classification, cryptographic verification, and security incident management.
+This document describes all RESTful endpoints implemented in the MediShield FastAPI backend.
 
 - **Base URL**: `http://127.0.0.1:8000/api`
-- **Content Type**: `application/json` (UTF-8)
-- **Error Standard**: RFC 7807 problem details or standard Pydantic JSON structure:
-  ```json
-  {
-    "detail": "Description of the error or validation failure",
-    "code": "ERROR_CODE_STRING",
-    "timestamp": "2026-10-01T12:00:00Z"
-  }
-  ```
+- **Interactive OpenAPI Documentation**: `http://127.0.0.1:8000/docs`
+- **Authentication**: Bearer Token in `Authorization: Bearer <token>` header.
 
 ---
 
-## 2. Authentication & RBAC Hierarchy
+## 1. Authentication & Session
 
-| Role | Access Level | Description |
-|---|---|---|
-| **Administrator** | Full / R-W-D | System configuration, device registration, audit inspection, role assignment |
-| **Security Analyst** | Security / R-W | Incident triage, rule adjustments, ML evaluation, CSV reporting |
-| **Doctor Demo** | Clinical / Read-Only | Permitted synthetic patient device telemetry; blocked from security admin routes |
-
----
-
-## 3. Endpoints Specification
-
-### 3.1 Health & Diagnostics
-
-#### `GET /`
-- **Description**: Root status probe.
-- **Access**: Public.
-- **Response**: `200 OK`
-  ```json
-  {
-    "project": "MediShield IoMT Security & Privacy Platform",
-    "version": "0.1.0",
-    "status": "online",
-    "documentation": "/docs",
-    "health": "/api/health"
-  }
-  ```
-
-#### `GET /api/health`
-- **Description**: Detailed subsystem health status (API, Database, ML model).
-- **Access**: Public.
-- **Response**: `200 OK`
-  ```json
-  {
-    "status": "healthy",
-    "project": "MediShield IoMT Security & Privacy Platform",
-    "version": "0.1.0",
-    "environment": "development",
-    "timestamp": "2026-10-01T12:00:00Z",
-    "services": {
-      "api": "operational",
-      "database": "configured",
-      "ml_inference": "pending_model_training (phase 6)"
-    }
-  }
-  ```
-
----
-
-### 3.2 Authentication & User Profiles (Phase 4)
-
-#### `POST /api/auth/login`
-- **Description**: Authenticate with credentials and receive a session token.
-- **Access**: Public.
+### `POST /api/auth/login`
+Authenticates a user and returns an HMAC-signed Bearer Token.
 - **Request Body**:
   ```json
   {
     "email": "analyst@medishield.local",
-    "password": "secure_password"
+    "password": "analystpassword123"
   }
   ```
-- **Response**: `200 OK` with token and user profile object.
-
-#### `GET /api/auth/me`
-- **Description**: Returns the active authenticated user profile and assigned role.
-- **Access**: Authenticated.
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `200 OK`
+- **Response (200 OK)**:
   ```json
   {
-    "id": "usr_99812",
-    "email": "analyst@medishield.local",
+    "access_token": "eyJhbGciOiJIUzI1NiJ9...signature",
+    "token_type": "bearer",
     "role": "Security Analyst",
-    "name": "IoMT Analyst 1",
-    "last_login": "2026-10-01T11:45:00Z"
+    "email": "analyst@medishield.local",
+    "name": "Sarah Chen"
   }
   ```
 
----
+### `GET /api/auth/me`
+Retrieves current user identity and claims.
+- **Response (200 OK)**: User profile model.
 
-### 3.3 Device Inventory (Phase 3)
-
-#### `GET /api/devices`
-- **Description**: Retrieve simulated medical devices with pagination and filters.
-- **Access**: Authenticated (All Roles).
-- **Query Parameters**: `status`, `device_type`, `risk_level`, `limit`, `offset`.
-- **Response**: `200 OK`
-  ```json
-  {
-    "total": 12,
-    "items": [
-      {
-        "id": "DEV-ECG-001",
-        "name": "Bedside ECG Monitor A-1",
-        "device_type": "ECG Monitor",
-        "ip_address": "192.168.10.24",
-        "mac_address": "00:1B:44:11:3A:B7",
-        "firmware_version": "v2.4.1",
-        "network_segment": "ICU_VLAN_10",
-        "status": "online",
-        "risk_level": "low",
-        "last_seen": "2026-10-01T11:59:10Z"
-      }
-    ]
-  }
-  ```
-
-#### `POST /api/devices`
-- **Description**: Register a new simulated device.
-- **Access**: Administrator only.
+### `POST /api/auth/logout`
+Records sign-out event in immutable audit trail.
 
 ---
 
-### 3.4 Telemetry Streams (Phase 3)
+## 2. IoMT Device Inventory
 
-#### `GET /api/telemetry`
-- **Description**: Fetch synthetic IoMT metrics stream.
-- **Query Parameters**: `device_id`, `start_time`, `end_time`, `limit`.
+### `GET /api/devices`
+Lists devices with optional filtering and pagination.
+- **Query Parameters**:
+  - `search`: string filter on name, ID, or IP.
+  - `status`: `online`, `offline`, `suspicious`, `isolated`.
+  - `risk_level`: `low`, `medium`, `high`, `critical`.
+  - `segment`: e.g. `ICU_VLAN_10`.
+  - `skip`: pagination offset (default `0`).
+  - `limit`: page size (default `50`).
+- **Response (200 OK)**: Array of `DeviceResponse` objects.
 
-#### `POST /api/telemetry`
-- **Description**: Ingest synthetic telemetry packet and trigger detection rules.
+### `POST /api/devices` (Administrator Only)
+Registers a new medical device. Returns HTTP 403 Forbidden for non-administrators.
+
+### `GET /api/devices/{device_id}`
+Retrieves device details and current operating telemetry.
+
+### `PATCH /api/devices/{device_id}` (Administrator Only)
+Updates device status (e.g. quarantining an infected device to `isolated`).
+
+---
+
+## 3. Telemetry Stream
+
+### `GET /api/telemetry`
+Fetches recent telemetry packets. Query parameter `device_id` can filter by device.
+
+### `POST /api/telemetry`
+Ingests telemetry, evaluates against detection rules, and automatically creates a `SecurityEvent` if thresholds are exceeded.
 - **Request Body**:
   ```json
   {
-    "device_id": "DEV-ECG-001",
-    "metrics": {
-      "heart_rate": 78,
-      "spo2": 98,
-      "systolic_bp": 120,
-      "diastolic_bp": 80
-    },
-    "network_stats": {
-      "packet_count": 145,
-      "byte_rate": 2048,
-      "failed_auth_count": 0
-    },
-    "timestamp": "2026-10-01T12:00:00Z"
+    "device_id": "DEV-VENT-502",
+    "metrics": {"heart_rate": 78, "spo2": 99},
+    "network_stats": {"failed_auth_count": 8, "packet_rate": 50, "source_ip": "192.168.10.198"},
+    "is_anomaly": false
   }
   ```
+- **Response (201 Created)**: Saved telemetry record with `is_anomaly: true`.
 
 ---
 
-### 3.5 Security Events & Detection (Phase 5 & 6)
+## 4. Security Events
 
-#### `GET /api/security-events`
-- **Description**: List detected security alerts generated by rules or ML.
-- **Access**: Security Analyst, Administrator.
-- **Query Parameters**: `severity` (low, medium, high, critical), `status` (open, investigating, resolved), `rule_id`.
+### `GET /api/security-events`
+Lists security alerts. Filterable by `severity`, `status`, `device_id`.
 
-#### `POST /api/detection/evaluate`
-- **Description**: Run ML inference model on provided network flow features.
-- **Access**: Security Analyst, Administrator.
-- **Response**: `200 OK`
+### `GET /api/security-events/{event_id}`
+Returns event evidence payload, triggered rule details, and suggested actions.
+
+### `PATCH /api/security-events/{event_id}` (Security Analyst or Admin)
+Updates triage status (`open`, `investigating`, `resolved`, `false_positive`).
+
+---
+
+## 5. Incident Management
+
+### `GET /api/incidents`
+Lists security investigation tickets.
+
+### `POST /api/incidents` (Security Analyst or Admin)
+Opens a new investigation ticket linked to a security event.
+
+### `PATCH /api/incidents/{incident_id}` (Security Analyst or Admin)
+Transitions status (`new` $\to$ `investigating` $\to$ `resolved` $\to$ `closed`), assigns analysts, and appends timestamped notes.
+
+---
+
+## 6. Detection Engine & ML Inference
+
+### `GET /api/detection/status`
+Returns status of active rule heuristics and loaded CICIoMT2024 model metadata.
+
+### `POST /api/detection/evaluate`
+Evaluates flow characteristics against both rule engine and trained ML classifier.
+- **Request Body**:
   ```json
   {
-    "classification": "DoS_Syn_Flood",
-    "confidence": 0.942,
-    "model_version": "rf_ciciomt2024_v1",
+    "device_id": "DEV-VENT-502",
+    "packet_rate": 1400.0,
+    "packet_size": 64.0,
+    "syn_ratio": 0.85,
+    "port_entropy": 1.2,
+    "failed_auth_count": 0
+  }
+  ```
+- **Response (200 OK)**:
+  ```json
+  {
     "is_anomaly": true,
-    "timestamp": "2026-10-01T12:00:00Z"
+    "detection_type": "Rule-Based Security Violation",
+    "rule_triggered": "RULE-NET-003: Unusual Simulated Traffic Volume Spike (Potential DoS)",
+    "predicted_class": "DoS_SYN_Flood",
+    "confidence": 0.942,
+    "model_version": "1.0.0",
+    "severity": "high",
+    "suggested_action": "Throttle switch port on ICU VLAN 10.",
+    "evaluated_at": "2026-10-01T18:50:00Z"
   }
   ```
 
 ---
 
-### 3.6 Data Integrity & Privacy (Phase 7)
+## 7. Cryptographic Privacy & Data Integrity
 
-#### `POST /api/integrity/verify`
-- **Description**: Validate SHA-256 integrity hash of a specific synthetic record.
-- **Request Body**:
-  ```json
-  {
-    "record_id": "REC-SYNTH-84920",
-    "record_type": "telemetry"
-  }
-  ```
-- **Response**: `200 OK`
-  ```json
-  {
-    "record_id": "REC-SYNTH-84920",
-    "stored_hash": "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",
-    "computed_hash": "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e",
-    "status": "VERIFIED",
-    "verified_at": "2026-10-01T12:00:00Z"
-  }
-  ```
+### `GET /api/integrity/results`
+Returns synthetic patient records, their AES-256-GCM encrypted payload, and stored SHA-256 digests.
+
+### `POST /api/integrity/verify`
+Computes SHA-256 digest of record payload and compares against stored digest in constant time.
+- **Request Body**: `{"record_id": "REC-ICU-001"}`
+- **Response (200 OK)**: Status `VERIFIED` or `TAMPERED`.
+
+### `POST /api/integrity/tamper-demo` (Security Analyst or Admin)
+Deliberately corrupts 1 byte of the synthetic payload to test tamper detection.
 
 ---
 
-### 3.7 Incident Management & Audit Trail (Phase 8)
+## 8. Audit Logs & Reports
 
-#### `GET /api/incidents` & `PATCH /api/incidents/{incident_id}`
-- **Description**: Triage and update incident status (`new`, `investigating`, `resolved`, `closed`) and assign analyst notes.
-- **Access**: Security Analyst, Administrator.
+### `GET /api/audit-logs` (Security Analyst or Admin)
+Returns append-only audit trail entries with filters on `action` and `actor`.
 
-#### `GET /api/audit-logs`
-- **Description**: Append-only log of security changes and simulations.
-- **Access**: Administrator only.
+### `GET /api/reports/summary` (Security Analyst or Admin)
+Aggregated statistics for SOC dashboards.
+
+### `GET /api/reports/security-events.csv` (Security Analyst or Admin)
+Streams real-time CSV generated from actual stored database security events.
+
+### `GET /api/reports/incidents.csv` (Security Analyst or Admin)
+Streams real-time CSV generated from actual stored database incident records.
 
 ---
 
-### 3.8 Simulation Triggers (Phase 5)
+## 9. Simulation Controls
 
-#### `POST /api/simulation/scenarios/{scenario_name}`
-- **Description**: Trigger synthetic anomaly in a safe, controlled memory state.
-- **Allowed Scenarios**:
-  - `normal_traffic`
-  - `unknown_device`
-  - `auth_failure_spike`
-  - `traffic_volume_spike`
-  - `device_offline`
-  - `integrity_mismatch`
-  - `rbac_escalation_attempt`
-- **Response**: `200 OK` with generated synthetic event summary.
+### `POST /api/simulation/scenarios/{scenario_name}`
+Triggers safe synthetic anomalies: `auth_spike`, `traffic_spike`, `device_offline`, `unknown_device`, `normal`.
+
+### `POST /api/simulation/reset`
+Restores clean baseline state.

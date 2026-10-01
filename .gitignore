@@ -61,6 +61,11 @@ frontend/.vite/
 *.pfx
 *.keystore
 
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
 # Datasets and Heavy ML Artifacts (never commit raw PCAPs or multi-GB CSVs)
 ml/data/*
 !ml/data/.gitkeep
@@ -68,6 +73,7 @@ ml/data/*
 ml/artifacts/*.joblib
 ml/artifacts/*.pkl
 ml/artifacts/*.onnx
+ml/artifacts/*.npy
 !ml/artifacts/.gitkeep
 
 # IDEs & Operating System

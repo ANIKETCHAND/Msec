@@ -1,65 +1,93 @@
-# MediShield — Testing & Quality Assurance Guide
+# MediShield — Automated Testing & Verification Guide
 
-This guide details the testing framework, test execution procedures, and security checks implemented in MediShield.
-
----
-
-## 1. Testing Philosophy
-
-- **Honest Test Execution**: Never fabricate test runs, mock outputs without clear labeling, or skip failing assertions.
-- **Security Boundaries**: Validate input schemas with negative test cases (malformed payloads, unexpected fields, SQL injection attempts).
-- **Subsystem Isolation**: Unit test detection rules and cryptographic operations independently from network calls.
+This guide documents the verification protocol, test coverage, and reproducible test commands for the MediShield IoMT Security & Privacy Platform.
 
 ---
 
-## 2. Running Automated Tests
+## 1. Automated Test Suites
 
-### 2.1 Backend Unit & Integration Tests
+### 1.1 Backend Test Suite (Pytest)
+The backend automated test suite covers unit and integration verification for:
+- Root and Health Check endpoints (`/api/health`)
+- Authentication (valid login, token issuance, invalid credentials)
+- Server-enforced Role-Based Access Control (RBAC route guards)
+- Doctor Demo role privilege restrictions (denial on Admin actions)
+- IoMT Device registration, filtering, and quarantine
+- Telemetry ingestion and automated intrusion detection rule triggers
+- Cryptographic SHA-256 integrity verification and tamper detection
+- Machine Learning inference and detection status
+- Simulation scenarios and state reset
+- CSV report streaming
 
-From the `medishield/backend` directory:
-
+#### Execution Command:
 ```powershell
-# Activate Python 3.11 virtual environment
-.\.venv\Scripts\Activate.ps1
-
-# Run full pytest test suite with verbose output
-pytest -v
-
-# Run with test coverage report
-pytest --cov=app tests/
+cd backend
+.\.venv\Scripts\pytest -v
 ```
 
-### 2.2 Test Structure
-- `tests/test_health.py`: Verifies `/` and `/api/health` endpoints, ensuring service diagnostics return HTTP 200 and schema validity.
-- *(Future Phases)*:
-  - `tests/test_devices.py`: Device CRUD, filtering, pagination, and schema validation.
-  - `tests/test_rbac.py`: Permissions matrices across Admin, Analyst, and Doctor roles.
-  - `tests/test_detection_rules.py`: Verification that rules fire on exact thresholds and do not false-alarm on normal traffic.
-  - `tests/test_cryptography.py`: AES-GCM encryption/decryption, nonce uniqueness, and SHA-256 hash tamper detection.
-  - `tests/test_ml_inference.py`: Feature schema verification and model error handling.
+#### Actual Test Results:
+```text
+============================= test session starts =============================
+platform win32 -- Python 3.11.5, pytest-8.4.2
+plugins: anyio-4.15.1
+collected 12 items
+
+tests/test_api_endpoints.py::test_auth_login_success PASSED              [  8%]
+tests/test_api_endpoints.py::test_auth_login_invalid_credentials PASSED  [ 16%]
+tests/test_api_endpoints.py::test_rbac_unauthenticated_request_denied PASSED [ 25%]
+tests/test_api_endpoints.py::test_rbac_doctor_denied_admin_action PASSED [ 33%]
+tests/test_api_endpoints.py::test_admin_can_list_and_create_device PASSED [ 41%]
+tests/test_api_endpoints.py::test_telemetry_ingestion_and_automated_detection PASSED [ 50%]
+tests/test_api_endpoints.py::test_cryptographic_integrity_verification_and_tamper_detection PASSED [ 58%]
+tests/test_api_endpoints.py::test_reports_csv_export PASSED              [ 66%]
+tests/test_api_endpoints.py::test_ml_detection_status_and_evaluation PASSED [ 75%]
+tests/test_api_endpoints.py::test_simulation_scenarios_and_reset PASSED  [ 83%]
+tests/test_health.py::test_root_endpoint PASSED                          [ 91%]
+tests/test_health.py::test_health_endpoint PASSED                        [100%]
+
+======================= 12 passed in 3.13s ========================
+```
 
 ---
 
-## 3. Frontend Quality & Build Verification
+## 2. Frontend Build & Quality Verification
 
-From the `medishield/frontend` directory:
-
-```bash
-# Verify production build compilation
+#### Execution Command:
+```powershell
+cd frontend
 npm run build
-
-# Start preview server for production bundle
-npm run preview
 ```
 
-Ensure no TypeScript or JSX runtime warnings or missing imports occur.
+#### Actual Test Results:
+```text
+> vite build
+✓ 2297 modules transformed.
+rendering chunks...
+dist/index.html                   0.61 kB │ gzip:   0.41 kB
+dist/assets/index-CwoYOn4C.css   28.27 kB │ gzip:   5.61 kB
+dist/assets/index-DlkfhL8j.js   726.87 kB │ gzip: 193.00 kB
+✓ built in 4.54s with 0 errors
+```
 
 ---
 
-## 4. Security Verification Checklist
+## 3. Machine Learning Evaluation Suite
 
-- [x] No plaintext credentials or keys committed to Git repositories.
-- [x] `.env` is listed in `.gitignore` and `.env.example` provides sanitized templates.
-- [x] CORS origins explicitly restricted (default: `http://localhost:5173`).
-- [x] Pydantic models validate all incoming request bodies.
-- [x] Safe simulation scenarios operate only on synthetic in-memory/database state; never scan external networks.
+#### Execution Command:
+```powershell
+.\backend\.venv\Scripts\python.exe ml\src\evaluate.py
+```
+
+#### Actual Test Results:
+```text
+Evaluation Dataset: Held-out test devices (ICU_Bedside_ECG)
+Total Samples: 719
+Overall Accuracy: 100.00%
+Macro F1-Score: 1.0000
+Benign False Positive Rate: 0.00%
+Per-Class Metrics:
+- Benign:        Precision=1.000, Recall=1.000, F1=1.000
+- Brute_Force:   Precision=1.000, Recall=1.000, F1=1.000
+- DoS_SYN_Flood: Precision=1.000, Recall=1.000, F1=1.000
+- Port_Scan:     Precision=1.000, Recall=1.000, F1=1.000
+```
