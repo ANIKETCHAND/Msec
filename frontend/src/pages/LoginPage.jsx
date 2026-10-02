@@ -1,32 +1,60 @@
 import React, { useState } from 'react';
 import { useApp, DEMO_USERS } from '../context/AppContext';
-import { ShieldCheck, Lock, Mail, ArrowRight, UserCheck, ShieldAlert, AlertCircle, Info } from 'lucide-react';
+import { api } from '../services/api';
+import { ShieldCheck, Lock, Mail, ArrowRight, UserCheck, ShieldAlert, AlertCircle, Info, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const { setCurrentUser, setCurrentPage, logAudit } = useApp();
   const [selectedRole, setSelectedRole] = useState('analyst');
   const [email, setEmail] = useState(DEMO_USERS.analyst.email);
-  const [password, setPassword] = useState('demo12345');
+  const [password, setPassword] = useState(DEMO_USERS.analyst.password || 'analystpassword123');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleRoleSelect = (roleKey) => {
     setSelectedRole(roleKey);
     setEmail(DEMO_USERS[roleKey].email);
-    setPassword('demo12345');
+    setPassword(DEMO_USERS[roleKey].password || 'analystpassword123');
     setError('');
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please provide both email and password.');
       return;
     }
+    setError('');
+    setSubmitting(true);
 
-    const user = DEMO_USERS[selectedRole];
-    setCurrentUser(user);
-    logAudit('USER_LOGIN', 'AuthSession', user.email, `User logged in with role ${user.role}.`);
-    setCurrentPage('dashboard');
+    try {
+      // 1. Authenticate against FastAPI backend endpoint
+      await api.login(email, password);
+
+      // 2. Retrieve authenticated session profile
+      const userProfile = await api.getMe();
+
+      const matchedRoleKey = Object.keys(DEMO_USERS).find(k => DEMO_USERS[k].email === email) || selectedRole;
+      const meta = DEMO_USERS[matchedRoleKey] || {};
+
+      const activeUser = {
+        ...meta,
+        id: userProfile.id,
+        email: userProfile.email,
+        name: userProfile.full_name || meta.name || email,
+        role: userProfile.role,
+        password: password
+      };
+
+      setCurrentUser(activeUser);
+      logAudit('USER_LOGIN', 'AuthSession', activeUser.email, `User logged in with role ${activeUser.role}.`);
+      setCurrentPage('dashboard');
+    } catch (err) {
+      console.warn("[Login] Authentication error:", err.message);
+      setError(err.message || 'Authentication failed. Please verify credentials.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -122,10 +150,20 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-mediblue-600/20"
+              disabled={submitting}
+              className="w-full py-2.5 px-4 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-mediblue-600/20 disabled:opacity-50"
             >
-              <span>Authenticate Session</span>
-              <ArrowRight className="w-4 h-4" />
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Verifying Credentials...</span>
+                </>
+              ) : (
+                <>
+                  <span>Authenticate Session</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 

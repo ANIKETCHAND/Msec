@@ -137,8 +137,12 @@ export function AppProvider({ children }) {
         setIntegrityRecords(backendIntegrity.map(r => ({
           recordId: r.record_id,
           entityType: r.entity_type,
+          recordType: r.entity_type,
+          deviceId: r.record_id.split('-').slice(0, 3).join('-'),
           rawPayload: r.raw_payload,
+          payloadJson: r.raw_payload,
           encryptedPayload: r.encrypted_payload,
+          encryptedDataHex: r.encrypted_payload,
           sha256Hash: r.sha256_hash,
           status: r.status,
           lastVerified: new Date(r.last_verified).toLocaleTimeString()

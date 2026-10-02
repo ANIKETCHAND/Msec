@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
 import {
   Brain,
   Cpu,
@@ -29,37 +30,61 @@ export default function MLDetectionPage() {
   const [predictionResult, setPredictionResult] = useState(null);
   const [evaluating, setEvaluating] = useState(false);
 
-  const handleRunInference = () => {
+  const handleRunInference = async () => {
     setEvaluating(true);
-    setTimeout(() => {
-      let classification = "Normal Clinical Traffic";
-      let confidence = 0.96;
+    try {
+      const res = await api.evaluateDetection({
+        device_id: "DEV-SIM-FLOW",
+        packet_rate: Number(packetRate),
+        packet_size: Number(packetSize),
+        syn_ratio: Number(synRatio),
+        port_entropy: Number(portEntropy),
+        failed_auth_count: 0
+      });
+
+      setPredictionResult({
+        classification: res.predicted_class,
+        confidence: res.confidence,
+        isAnomaly: res.is_anomaly,
+        detectionType: res.detection_type,
+        ruleTriggered: res.rule_triggered,
+        modelVersion: res.model_version,
+        suggestedAction: res.suggested_action,
+        timestamp: new Date().toLocaleTimeString()
+      });
+
+      logAudit(
+        'ML_INFERENCE_RUN',
+        'MLPipeline',
+        res.model_version || mlMetrics.modelName,
+        `Evaluated flow sample via API. Prediction: ${res.predicted_class} (${(res.confidence * 100).toFixed(1)}%). Detection Type: ${res.detection_type}.`
+      );
+    } catch (err) {
+      console.warn("Live API inference failed, using offline fallback:", err.message);
+      let classification = "Benign";
       let isAnomaly = false;
 
-      // Deterministic synthetic logic mirroring CICIoMT2024 trained thresholds
       if (synRatio > 0.6 || packetRate > 800) {
-        classification = "DoS / SYN Flood Attack";
-        confidence = 0.94;
+        classification = "DoS_SYN_Flood";
         isAnomaly = true;
       } else if (portEntropy > 3.0) {
-        classification = "Network Recon / Port Scan";
-        confidence = 0.91;
+        classification = "Port_Scan";
         isAnomaly = true;
       } else if (packetRate > 400 && packetSize < 200) {
-        classification = "Authentication Brute-Force Flow";
-        confidence = 0.88;
+        classification = "Brute_Force";
         isAnomaly = true;
       }
 
       setPredictionResult({
-        classification,
-        confidence,
+        classification: `${classification} (Offline Fallback)`,
+        confidence: 0.0,
         isAnomaly,
+        detectionType: "Client Heuristic Fallback",
         timestamp: new Date().toLocaleTimeString()
       });
+    } finally {
       setEvaluating(false);
-      logAudit('ML_INFERENCE_RUN', 'MLPipeline', mlMetrics.modelName, `Evaluated flow sample. Prediction: ${classification} (${(confidence*100).toFixed(1)}%).`);
-    }, 400);
+    }
   };
 
   return (
@@ -321,7 +346,9 @@ export default function MLDetectionPage() {
                   Predicted Class: <span className={predictionResult.isAnomaly ? 'text-red-400' : 'text-emerald-400'}>{predictionResult.classification}</span>
                 </div>
                 <div className="text-[11px] text-slate-300">
-                  Model Confidence: <strong>{(predictionResult.confidence * 100).toFixed(1)}%</strong> • Version: {mlMetrics.version}
+                  Model Confidence: <strong>{(predictionResult.confidence * 100).toFixed(1)}%</strong> • Version: {predictionResult.modelVersion || mlMetrics.version}
+                  {predictionResult.detectionType && <span className="ml-1">• Engine: <span className="text-mediblue-400 font-semibold">{predictionResult.detectionType}</span></span>}
+                  {predictionResult.ruleTriggered && <span className="text-amber-400 block text-[10px] mt-0.5">Rule: {predictionResult.ruleTriggered}</span>}
                 </div>
               </div>
             </div>

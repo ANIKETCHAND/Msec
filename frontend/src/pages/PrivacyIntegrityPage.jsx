@@ -163,7 +163,7 @@ export default function PrivacyIntegrityPage() {
                       </button>
                     </span>
                     <div className="p-2 bg-navy-900 border border-navy-800 rounded-lg font-mono text-[11px] text-slate-400 truncate">
-                      {rec.encryptedDataHex}
+                      {rec.encryptedDataHex || rec.encryptedPayload || "Not Encrypted"}
                     </div>
                   </div>
                 </div>
@@ -175,7 +175,7 @@ export default function PrivacyIntegrityPage() {
                       <Code2 className="w-3.5 h-3.5" /> Authenticated Plaintext Payload:
                     </span>
                     <pre className="font-mono text-xs text-emerald-400 overflow-x-auto">
-                      {rec.payloadJson}
+                      {rec.payloadJson || rec.rawPayload}
                     </pre>
                   </div>
                 )}

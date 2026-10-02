@@ -110,8 +110,9 @@ class MLInferenceService:
 
                     vector.append(float(val))
 
-                X = np.array([vector])
-                X_scaled = scaler.transform(X)
+                import pandas as pd
+                X_df = pd.DataFrame([vector], columns=feature_names)
+                X_scaled = scaler.transform(X_df)
                 pred_idx = self.rf_classifier.predict(X_scaled)[0]
                 probas = self.rf_classifier.predict_proba(X_scaled)[0]
 
@@ -123,20 +124,20 @@ class MLInferenceService:
             except Exception as e:
                 print(f"[ML Service] Inference fallback due to error: {e}")
 
-        # Fallback to decision boundary if model file is missing
+        # Deterministic heuristic fallback if model artifact is unavailable
         syn = float(features.get("syn_ratio", 0.0))
         rate = float(features.get("packet_rate", 0.0))
         entropy = float(features.get("port_entropy", 0.0))
         size = float(features.get("packet_size", 500.0))
 
         if syn > 0.6 or rate > 800:
-            return "DoS_SYN_Flood", 0.942, True
+            return "DoS_SYN_Flood", 0.0, True
         elif entropy > 3.0:
-            return "Port_Scan", 0.915, True
+            return "Port_Scan", 0.0, True
         elif rate > 400 and size < 200:
-            return "Brute_Force", 0.887, True
+            return "Brute_Force", 0.0, True
         else:
-            return "Benign", 0.965, False
+            return "Benign", 0.0, False
 
 
 ml_service = MLInferenceService()
