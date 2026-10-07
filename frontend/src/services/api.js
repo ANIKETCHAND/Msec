@@ -192,6 +192,18 @@ class ApiService {
       method: 'POST'
     });
   }
+
+  // Settings & Policies
+  async getPolicies() {
+    return await this.request('/settings/policies');
+  }
+
+  async updatePolicies(policies) {
+    return await this.request('/settings/policies', {
+      method: 'PUT',
+      body: JSON.stringify(policies)
+    });
+  }
 }
 
 export const api = new ApiService();

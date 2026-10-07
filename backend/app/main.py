@@ -18,6 +18,7 @@ from app.api.integrity import router as integrity_router
 from app.api.audit_logs import router as audit_logs_router
 from app.api.reports import router as reports_router
 from app.api.simulation import router as simulation_router
+from app.api.settings import router as settings_router
 
 
 @asynccontextmanager
@@ -67,6 +68,7 @@ app.include_router(integrity_router, prefix=settings.API_V1_STR)
 app.include_router(audit_logs_router, prefix=settings.API_V1_STR)
 app.include_router(reports_router, prefix=settings.API_V1_STR)
 app.include_router(simulation_router, prefix=settings.API_V1_STR)
+app.include_router(settings_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/", tags=["Root"])

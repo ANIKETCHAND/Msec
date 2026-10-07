@@ -14,7 +14,12 @@ import {
   AlertTriangle,
   Radio,
   SlidersHorizontal,
-  X
+  X,
+  Building2,
+  Cpu,
+  CheckCircle2,
+  HelpCircle,
+  Clock
 } from 'lucide-react';
 
 export default function DeviceInventoryPage() {
@@ -24,46 +29,57 @@ export default function DeviceInventoryPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [riskFilter, setRiskFilter] = useState('ALL');
   const [segmentFilter, setSegmentFilter] = useState('ALL');
+  const [departmentFilter, setDepartmentFilter] = useState('ALL');
+  const [assessmentFilter, setAssessmentFilter] = useState('ALL');
   const [sortField, setSortField] = useState('name');
   const [sortAsc, setSortAsc] = useState(true);
   const [currentPageNum, setCurrentPageNum] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 8;
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceType, setNewDeviceType] = useState('Infusion Pump');
+  const [newDeviceManufacturer, setNewDeviceManufacturer] = useState('Baxter International');
+  const [newDeviceModel, setNewDeviceModel] = useState('Spectrum V8');
+  const [newDeviceDepartment, setNewDeviceDepartment] = useState('Intensive Care Unit');
   const [newDeviceSegment, setNewDeviceSegment] = useState('ICU_VLAN_10');
 
   // Filtered & sorted list
   const filteredDevices = useMemo(() => {
     return devices.filter(dev => {
+      const q = searchQuery.toLowerCase();
       const matchSearch =
-        dev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        dev.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        dev.ipAddress.includes(searchQuery) ||
-        dev.deviceType.toLowerCase().includes(searchQuery.toLowerCase());
+        dev.name?.toLowerCase().includes(q) ||
+        dev.id?.toLowerCase().includes(q) ||
+        dev.ipAddress?.includes(q) ||
+        dev.deviceType?.toLowerCase().includes(q) ||
+        (dev.manufacturer && dev.manufacturer.toLowerCase().includes(q)) ||
+        (dev.model && dev.model.toLowerCase().includes(q)) ||
+        (dev.department && dev.department.toLowerCase().includes(q));
 
-      const matchStatus = statusFilter === 'ALL' || dev.status.toUpperCase() === statusFilter;
-      const matchRisk = riskFilter === 'ALL' || dev.riskLevel.toUpperCase() === riskFilter;
+      const matchStatus = statusFilter === 'ALL' || dev.status?.toUpperCase() === statusFilter;
+      const matchRisk = riskFilter === 'ALL' || dev.riskLevel?.toUpperCase() === riskFilter;
       const matchSegment = segmentFilter === 'ALL' || dev.networkSegment === segmentFilter;
+      const matchDepartment = departmentFilter === 'ALL' || dev.department === departmentFilter;
+      const matchAssessment = assessmentFilter === 'ALL' || (dev.assessmentStatus || 'NOT_ASSESSED') === assessmentFilter;
 
-      return matchSearch && matchStatus && matchRisk && matchSegment;
+      return matchSearch && matchStatus && matchRisk && matchSegment && matchDepartment && matchAssessment;
     }).sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
+      let valA = a[sortField] ?? '';
+      let valB = b[sortField] ?? '';
       if (typeof valA === 'string') {
         return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
       }
       return sortAsc ? valA - valB : valB - valA;
     });
-  }, [devices, searchQuery, statusFilter, riskFilter, segmentFilter, sortField, sortAsc]);
+  }, [devices, searchQuery, statusFilter, riskFilter, segmentFilter, departmentFilter, assessmentFilter, sortField, sortAsc]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredDevices.length / itemsPerPage) || 1;
   const paginatedDevices = filteredDevices.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
   const getRiskBadge = (risk) => {
-    switch (risk.toLowerCase()) {
+    switch (risk?.toLowerCase()) {
       case 'critical':
         return 'bg-red-500/20 text-red-400 border-red-500/30';
       case 'high':
@@ -75,8 +91,36 @@ export default function DeviceInventoryPage() {
     }
   };
 
+  const getAssessmentBadge = (status) => {
+    switch (status) {
+      case 'ASSESSED':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-max"><CheckCircle2 className="w-3 h-3" /> Assessed</span>;
+      case 'IN_PROGRESS':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1 w-max"><Activity className="w-3 h-3 animate-pulse" /> Scanning</span>;
+      case 'REMEDIATION_REQUIRED':
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center gap-1 w-max"><AlertTriangle className="w-3 h-3" /> Action Needed</span>;
+      default:
+        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-700/40 text-slate-400 border border-slate-700/50 flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> Not Assessed</span>;
+    }
+  };
+
+  const getSecurityScoreBadge = (score) => {
+    const s = typeof score === 'number' ? score : 85;
+    let colorClass = 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+    if (s < 60) {
+      colorClass = 'text-red-400 border-red-500/30 bg-red-500/10';
+    } else if (s < 80) {
+      colorClass = 'text-amber-400 border-amber-500/30 bg-amber-500/10';
+    }
+    return (
+      <span className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold border ${colorClass}`}>
+        {Math.round(s)}/100
+      </span>
+    );
+  };
+
   const getStatusBadge = (status) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'online':
         return (
           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
@@ -118,12 +162,17 @@ export default function DeviceInventoryPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Server className="w-5 h-5 text-mediblue-400" />
-            IoMT Device Inventory
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white flex items-center gap-2">
+              <Server className="w-5 h-5 text-mediblue-400" />
+              IoMT Device Inventory & Asset Posture
+            </h1>
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-mediblue-500/10 text-mediblue-400 border border-mediblue-500/30">
+              Defensive Asset Registry
+            </span>
+          </div>
           <p className="text-xs text-slate-400">
-            Registered medical equipment, network segmentation, and real-time security posture.
+            Registered medical equipment, hardware specifications, network segmentation, and real-time security posture.
           </p>
         </div>
 
@@ -139,19 +188,63 @@ export default function DeviceInventoryPage() {
         )}
       </div>
 
+      {/* Safety Notice Banner */}
+      <div className="p-3 bg-navy-900/80 border border-navy-700/60 rounded-xl flex items-center justify-between text-xs text-slate-300">
+        <div className="flex items-center gap-2">
+          <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span>
+            <strong className="text-emerald-400">DEFENSIVE SECURITY SCOPE:</strong> Only explicitly inventoried and authorized IoMT assets are monitored and scoped for defensive diagnostics.
+          </span>
+        </div>
+        <span className="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded bg-navy-950 border border-navy-800 hidden md:inline">
+          SIMULATION — NO REAL DEVICE CONTROL
+        </span>
+      </div>
+
       {/* Search & Filters Bar */}
       <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Search Box */}
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by ID, name, or IP..."
+              placeholder="Search ID, model, IP, dept..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPageNum(1); }}
               className="w-full bg-navy-950 border border-navy-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-mediblue-500"
             />
+          </div>
+
+          {/* Department Filter */}
+          <div>
+            <select
+              value={departmentFilter}
+              onChange={(e) => { setDepartmentFilter(e.target.value); setCurrentPageNum(1); }}
+              className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
+            >
+              <option value="ALL">All Departments</option>
+              <option value="Intensive Care Unit">Intensive Care Unit</option>
+              <option value="General Medicine Ward">General Medicine Ward</option>
+              <option value="Emergency Department">Emergency Department</option>
+              <option value="Ambulatory & Cardiology">Ambulatory & Cardiology</option>
+            </select>
+          </div>
+
+          {/* Network Segment Filter */}
+          <div>
+            <select
+              value={segmentFilter}
+              onChange={(e) => { setSegmentFilter(e.target.value); setCurrentPageNum(1); }}
+              className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
+            >
+              <option value="ALL">All Segments (VLAN)</option>
+              <option value="ICU_VLAN_10">ICU_VLAN_10</option>
+              <option value="WARD_VLAN_20">WARD_VLAN_20</option>
+              <option value="ER_VLAN_30">ER_VLAN_30</option>
+              <option value="AMBULATORY_VLAN_40">AMBULATORY_VLAN_40</option>
+              <option value="CORE_VLAN_1">CORE_VLAN_1</option>
+            </select>
           </div>
 
           {/* Status Filter */}
@@ -169,47 +262,38 @@ export default function DeviceInventoryPage() {
             </select>
           </div>
 
-          {/* Risk Filter */}
+          {/* Assessment Filter */}
           <div>
             <select
-              value={riskFilter}
-              onChange={(e) => { setRiskFilter(e.target.value); setCurrentPageNum(1); }}
+              value={assessmentFilter}
+              onChange={(e) => { setAssessmentFilter(e.target.value); setCurrentPageNum(1); }}
               className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
             >
-              <option value="ALL">All Risk Levels</option>
-              <option value="LOW">Low Risk</option>
-              <option value="MEDIUM">Medium Risk</option>
-              <option value="HIGH">High Risk</option>
-              <option value="CRITICAL">Critical Risk</option>
-            </select>
-          </div>
-
-          {/* Network Segment Filter */}
-          <div>
-            <select
-              value={segmentFilter}
-              onChange={(e) => { setSegmentFilter(e.target.value); setCurrentPageNum(1); }}
-              className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
-            >
-              <option value="ALL">All Network Segments</option>
-              <option value="ICU_VLAN_10">ICU_VLAN_10</option>
-              <option value="WARD_VLAN_20">WARD_VLAN_20</option>
-              <option value="ER_VLAN_30">ER_VLAN_30</option>
-              <option value="AMBULATORY_VLAN_40">AMBULATORY_VLAN_40</option>
-              <option value="CORE_VLAN_1">CORE_VLAN_1</option>
+              <option value="ALL">All Assessment States</option>
+              <option value="NOT_ASSESSED">Not Assessed</option>
+              <option value="ASSESSED">Assessed</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="REMEDIATION_REQUIRED">Remediation Req.</option>
             </select>
           </div>
         </div>
 
         {/* Sorting options */}
         <div className="flex items-center justify-between pt-2 border-t border-navy-800 text-[11px] text-slate-400">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span>Sort By:</span>
             <button
               onClick={() => { setSortField('name'); setSortAsc(!sortAsc); }}
               className={`hover:text-white flex items-center gap-1 ${sortField === 'name' ? 'text-mediblue-400 font-semibold' : ''}`}
             >
               Name <ArrowUpDown className="w-3 h-3" />
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => { setSortField('securityScore'); setSortAsc(!sortAsc); }}
+              className={`hover:text-white flex items-center gap-1 ${sortField === 'securityScore' ? 'text-mediblue-400 font-semibold' : ''}`}
+            >
+              Score <ArrowUpDown className="w-3 h-3" />
             </button>
             <span>•</span>
             <button
@@ -220,7 +304,7 @@ export default function DeviceInventoryPage() {
             </button>
           </div>
           <div>
-            Showing {filteredDevices.length} matching devices
+            Showing {filteredDevices.length} matching medical assets
           </div>
         </div>
       </div>
@@ -232,19 +316,20 @@ export default function DeviceInventoryPage() {
             <thead className="bg-navy-950/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
               <tr>
                 <th className="py-3 px-4">Device ID</th>
-                <th className="py-3 px-4">Device Name & Type</th>
-                <th className="py-3 px-4">Network Segment</th>
-                <th className="py-3 px-4">IP / MAC Address</th>
+                <th className="py-3 px-4">Asset & Manufacturer</th>
+                <th className="py-3 px-4">Department & Room</th>
+                <th className="py-3 px-4">Network / IP</th>
                 <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Security Score</th>
                 <th className="py-3 px-4">Risk Level</th>
-                <th className="py-3 px-4">Last Seen</th>
+                <th className="py-3 px-4">Assessment</th>
                 <th className="py-3 px-4 text-right">Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-navy-800 text-slate-300">
               {paginatedDevices.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="py-8 text-center text-slate-400">
+                  <td colSpan="9" className="py-8 text-center text-slate-400">
                     No devices match the specified query and filters.
                   </td>
                 </tr>
@@ -255,32 +340,37 @@ export default function DeviceInventoryPage() {
                     onClick={() => handleRowClick(dev.id)}
                     className="hover:bg-navy-800/40 cursor-pointer transition"
                   >
-                    <td className="py-3.5 px-4 font-mono text-mediblue-400 font-medium">
+                    <td className="py-3.5 px-4 font-mono text-mediblue-400 font-semibold">
                       {dev.id}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-white">{dev.name}</div>
-                      <div className="text-[11px] text-slate-400">{dev.deviceType}</div>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <Cpu className="w-3 h-3 text-slate-500" />
+                        {dev.manufacturer || 'Generic'} • {dev.model || dev.deviceType}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-navy-950 text-slate-300 border border-navy-800">
-                        {dev.networkSegment}
-                      </span>
+                      <div className="text-slate-200 font-medium">{dev.department || 'General Ward'}</div>
+                      <div className="text-[10px] text-slate-400">{dev.location || dev.patientRoom || 'Station 1'}</div>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-[11px] text-slate-300">
                       <div>{dev.ipAddress}</div>
-                      <div className="text-slate-400 text-[10px]">{dev.macAddress}</div>
+                      <div className="text-slate-400 text-[10px]">{dev.networkSegment}</div>
                     </td>
                     <td className="py-3.5 px-4">
                       {getStatusBadge(dev.status)}
                     </td>
                     <td className="py-3.5 px-4">
+                      {getSecurityScoreBadge(dev.securityScore)}
+                    </td>
+                    <td className="py-3.5 px-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${getRiskBadge(dev.riskLevel)}`}>
-                        {dev.riskLevel.toUpperCase()}
+                        {dev.riskLevel?.toUpperCase()}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-slate-400">
-                      {dev.lastSeen}
+                    <td className="py-3.5 px-4">
+                      {getAssessmentBadge(dev.assessmentStatus)}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <ChevronRight className="w-4 h-4 text-slate-400 inline" />
@@ -299,16 +389,16 @@ export default function DeviceInventoryPage() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              disabled={currentPageNum === 1}
               onClick={() => setCurrentPageNum(p => Math.max(1, p - 1))}
-              className="px-3 py-1 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 disabled:hover:bg-navy-800 rounded-lg text-slate-200 transition"
+              disabled={currentPageNum === 1}
+              className="px-3 py-1 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-lg"
             >
               Previous
             </button>
             <button
-              disabled={currentPageNum === totalPages}
               onClick={() => setCurrentPageNum(p => Math.min(totalPages, p + 1))}
-              className="px-3 py-1 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 disabled:hover:bg-navy-800 rounded-lg text-slate-200 transition"
+              disabled={currentPageNum === totalPages}
+              className="px-3 py-1 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-lg"
             >
               Next
             </button>
@@ -316,16 +406,19 @@ export default function DeviceInventoryPage() {
         </div>
       </div>
 
-      {/* Register Device Modal (Admin Only) */}
+      {/* Add Device Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-navy-900 border border-navy-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-navy-900 border border-navy-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-navy-800 pb-3">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-mediblue-400" />
-                Register New Synthetic Device
+                <Server className="w-4 h-4 text-mediblue-400" />
+                Register Simulated IoMT Asset
               </h2>
-              <button onClick={() => setAddModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button
+                onClick={() => setAddModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -333,7 +426,7 @@ export default function DeviceInventoryPage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                logAudit('DEVICE_REGISTERED', 'Device', `DEV-${Math.floor(1000 + Math.random()*9000)}`, `Registered ${newDeviceName}.`);
+                logAudit('DEVICE_REGISTERED', 'Device', `DEV-${Math.floor(1000 + Math.random()*9000)}`, `Registered ${newDeviceName} (${newDeviceManufacturer}).`);
                 setAddModalOpen(false);
               }}
               className="space-y-3 text-xs"
@@ -350,6 +443,29 @@ export default function DeviceInventoryPage() {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-medium">Manufacturer</label>
+                  <input
+                    type="text"
+                    value={newDeviceManufacturer}
+                    onChange={(e) => setNewDeviceManufacturer(e.target.value)}
+                    className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-slate-300 font-medium">Model</label>
+                  <input
+                    type="text"
+                    value={newDeviceModel}
+                    onChange={(e) => setNewDeviceModel(e.target.value)}
+                    className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-slate-300 font-medium">Device Type</label>
                 <select
@@ -362,7 +478,22 @@ export default function DeviceInventoryPage() {
                   <option value="Ventilator">Ventilator</option>
                   <option value="Glucose Monitor">Glucose Monitor</option>
                   <option value="Bedside Monitor">Bedside Monitor</option>
-                  <option value="Wearable Sensor">Wearable Sensor</option>
+                  <option value="Wearable Health Patch">Wearable Health Patch</option>
+                  <option value="Defibrillator">Defibrillator</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 font-medium">Department</label>
+                <select
+                  value={newDeviceDepartment}
+                  onChange={(e) => setNewDeviceDepartment(e.target.value)}
+                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
+                >
+                  <option value="Intensive Care Unit">Intensive Care Unit</option>
+                  <option value="General Medicine Ward">General Medicine Ward</option>
+                  <option value="Emergency Department">Emergency Department</option>
+                  <option value="Ambulatory & Cardiology">Ambulatory & Cardiology</option>
                 </select>
               </div>
 

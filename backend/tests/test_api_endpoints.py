@@ -238,3 +238,54 @@ def test_simulation_scenarios_and_reset():
     assert reset_resp.status_code == 200
     assert "reset successfully" in reset_resp.json()["message"]
 
+
+def test_settings_policies_get_and_update():
+    """Verify viewing and updating detection policies with RBAC validation."""
+    admin_login = client.post("/api/auth/login", json={
+        "email": "admin@medishield.local",
+        "password": "adminpassword123"
+    })
+    token = admin_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Get policies
+    get_resp = client.get("/api/settings/policies", headers=headers)
+    assert get_resp.status_code == 200
+    data = get_resp.json()
+    assert "auth_failure_threshold" in data
+
+    # 2. Update policies
+    put_resp = client.put("/api/settings/policies", json={
+        "auth_failure_threshold": 7.0,
+        "packet_rate_dos_threshold": 750.0
+    }, headers=headers)
+    assert put_resp.status_code == 200
+    assert put_resp.json()["auth_failure_threshold"] == 7.0
+    assert put_resp.json()["packet_rate_dos_threshold"] == 750.0
+
+
+def test_analyst_can_quarantine_device():
+    """Verify Security Analyst can update device quarantine status."""
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    token = analyst_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    patch_resp = client.patch("/api/devices/DEV-ECG-001", json={
+        "status": "isolated",
+        "risk_level": "critical"
+    }, headers=headers)
+    assert patch_resp.status_code == 200
+    assert patch_resp.json()["status"] == "isolated"
+
+    # Restore to online
+    patch_resp2 = client.patch("/api/devices/DEV-ECG-001", json={
+        "status": "online",
+        "risk_level": "low"
+    }, headers=headers)
+    assert patch_resp2.status_code == 200
+    assert patch_resp2.json()["status"] == "online"
+
+

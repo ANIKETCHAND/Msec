@@ -81,8 +81,16 @@ export function AppProvider({ children }) {
           networkSegment: d.network_segment,
           status: d.status,
           riskLevel: d.risk_level,
+          manufacturer: d.manufacturer || "Generic Medical",
+          model: d.model || "Standard Series",
+          location: d.location || d.meta_info?.room || "Main Facility",
+          department: d.department || "Clinical",
+          owner: d.owner || "Clinical Engineering",
+          assessmentStatus: d.assessment_status || "NOT_ASSESSED",
+          securityScore: d.security_score ?? 85.0,
           lastSeen: d.last_seen ? new Date(d.last_seen).toLocaleTimeString() : "Just now",
-          patientRoom: d.meta_info?.room || "Ward 10",
+          lastAssessment: d.last_assessment ? new Date(d.last_assessment).toLocaleDateString() : "Never",
+          patientRoom: d.location || d.meta_info?.room || "Ward 10",
           batteryLevel: d.meta_info?.battery || 95,
           telemetry: d.meta_info || {}
         })));

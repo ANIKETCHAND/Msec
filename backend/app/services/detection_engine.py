@@ -12,6 +12,24 @@ class RuleBasedDetectionEngine:
         self.packet_rate_dos_threshold = 600.0  # packets/sec
         self.syn_ratio_threshold = 0.50         # SYN / Total
         self.port_entropy_threshold = 2.8       # Shannon entropy of destination ports
+        self.heartbeat_timeout_sec = 180.0
+
+    def get_thresholds(self) -> Dict[str, Any]:
+        """Returns the active detection thresholds."""
+        return {
+            "auth_failure_threshold": self.auth_failure_threshold,
+            "packet_rate_dos_threshold": self.packet_rate_dos_threshold,
+            "syn_ratio_threshold": self.syn_ratio_threshold,
+            "port_entropy_threshold": self.port_entropy_threshold,
+            "heartbeat_timeout_sec": self.heartbeat_timeout_sec,
+        }
+
+    def update_thresholds(self, **kwargs):
+        """Dynamically updates rule detection thresholds."""
+        for key, val in kwargs.items():
+            if hasattr(self, key) and val is not None:
+                setattr(self, key, float(val))
+
 
     def evaluate_telemetry(
         self,

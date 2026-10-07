@@ -14,6 +14,14 @@ class DeviceBase(BaseModel):
     network_segment: str = Field(..., min_length=2, max_length=100)
     status: str = Field(default="online", pattern="^(online|offline|suspicious|isolated)$")
     risk_level: str = Field(default="low", pattern="^(low|medium|high|critical)$")
+    manufacturer: Optional[str] = "Generic Medical"
+    model: Optional[str] = "Standard Series"
+    location: Optional[str] = "Main Hospital Facility"
+    department: Optional[str] = "Clinical"
+    owner: Optional[str] = "Clinical Engineering"
+    last_assessment: Optional[datetime] = None
+    assessment_status: Optional[str] = "NOT_ASSESSED"
+    security_score: Optional[float] = 85.0
     meta_info: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 
@@ -30,6 +38,14 @@ class DeviceUpdate(BaseModel):
     network_segment: Optional[str] = None
     status: Optional[str] = Field(None, pattern="^(online|offline|suspicious|isolated)$")
     risk_level: Optional[str] = Field(None, pattern="^(low|medium|high|critical)$")
+    manufacturer: Optional[str] = None
+    model: Optional[str] = None
+    location: Optional[str] = None
+    department: Optional[str] = None
+    owner: Optional[str] = None
+    last_assessment: Optional[datetime] = None
+    assessment_status: Optional[str] = None
+    security_score: Optional[float] = None
     meta_info: Optional[Dict[str, Any]] = None
 
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
 import {
   Settings as SettingsIcon,
   Sliders,
@@ -19,12 +20,48 @@ export default function SettingsPage() {
   const [trafficThresholdMb, setTrafficThresholdMb] = useState(5.0);
   const [heartbeatTimeoutSec, setHeartbeatTimeoutSec] = useState(180);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSavePolicies = (e) => {
+  useEffect(() => {
+    async function loadPolicies() {
+      try {
+        const res = await api.getPolicies();
+        if (res) {
+          if (res.auth_failure_threshold) setAuthThreshold(res.auth_failure_threshold);
+          if (res.packet_rate_dos_threshold) setTrafficThresholdMb(Math.round(res.packet_rate_dos_threshold / 120 * 10) / 10 || 5.0);
+          if (res.heartbeat_timeout_sec) setHeartbeatTimeoutSec(res.heartbeat_timeout_sec);
+        }
+      } catch (e) {
+        console.warn("Failed to load backend policies, using defaults:", e.message);
+      }
+    }
+    loadPolicies();
+  }, []);
+
+  const handleSavePolicies = async (e) => {
     e.preventDefault();
-    logAudit('DETECTION_POLICY_UPDATE', 'DetectionEngine', 'POLICIES', `Updated thresholds: AuthFailures=${authThreshold}, TrafficSpike=${trafficThresholdMb}MB/s, HeartbeatTimeout=${heartbeatTimeoutSec}s.`);
-    setSavedNotice(true);
-    setTimeout(() => setSavedNotice(false), 3000);
+    setLoading(true);
+    setErrorMessage('');
+    try {
+      await api.updatePolicies({
+        auth_failure_threshold: Number(authThreshold),
+        packet_rate_dos_threshold: Number(trafficThresholdMb * 120),
+        heartbeat_timeout_sec: Number(heartbeatTimeoutSec)
+      });
+      logAudit(
+        'DETECTION_POLICY_UPDATE',
+        'DetectionEngine',
+        'POLICIES',
+        `Updated backend thresholds: AuthFailures=${authThreshold}, TrafficSpike=${trafficThresholdMb}MB/s, HeartbeatTimeout=${heartbeatTimeoutSec}s.`
+      );
+      setSavedNotice(true);
+      setTimeout(() => setSavedNotice(false), 3500);
+    } catch (err) {
+      setErrorMessage(err.message || 'Failed to update policies on server.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,6 +91,13 @@ export default function SettingsPage() {
             <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-xs text-emerald-400 animate-in fade-in">
               <CheckCircle2 className="w-4 h-4" />
               <span>Detection thresholds successfully updated and logged to audit trail.</span>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-xs text-red-400 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 

@@ -16,7 +16,11 @@ import {
   History,
   FileCheck2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  Clock,
+  UserCheck,
+  Zap
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -50,6 +54,7 @@ export default function DeviceDetailPage() {
   ];
 
   const isIsolated = device.status === 'isolated';
+  const score = typeof device.securityScore === 'number' ? Math.round(device.securityScore) : 85;
 
   return (
     <div className="space-y-6">
@@ -70,7 +75,7 @@ export default function DeviceDetailPage() {
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              {device.deviceType} • {device.patientRoom} • {device.networkSegment}
+              {device.manufacturer || 'IoMT Hardware'} {device.model ? `• ${device.model}` : ''} • {device.department || 'General Ward'} • {device.location || device.patientRoom || 'Bed 01'}
             </p>
           </div>
         </div>
@@ -91,12 +96,12 @@ export default function DeviceDetailPage() {
               {isIsolated ? (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  Restore to VLAN
+                  Restore to VLAN (Simulated)
                 </>
               ) : (
                 <>
                   <ShieldAlert className="w-4 h-4" />
-                  Quarantine / Isolate Port
+                  Quarantine / Isolate Port (Simulated)
                 </>
               )}
             </button>
@@ -104,8 +109,39 @@ export default function DeviceDetailPage() {
         )}
       </div>
 
-      {/* Device Hardware & Network Status Card */}
+      {/* Safety Notice Banner */}
+      <div className="p-3 bg-navy-900/90 border border-navy-700/80 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2 text-slate-300">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span>
+            <strong className="text-emerald-400">AUTHORIZED SECURITY ASSESSMENT ONLY:</strong> Real-time defensive monitoring and active profile assessments are restricted strictly to authorized IoMT scope.
+          </span>
+        </div>
+        <span className="text-[10px] font-mono text-amber-400/90 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 w-max">
+          SIMULATION — NO REAL DEVICE CONTROL
+        </span>
+      </div>
+
+      {/* Key Metric & Posture Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Security Posture Score */}
+        <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-1">
+          <span className="text-[11px] text-slate-400 flex items-center gap-1">
+            <Shield className="w-3.5 h-3.5 text-mediblue-400" />
+            Security Posture Score
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className={`text-2xl font-mono font-bold ${score >= 80 ? 'text-emerald-400' : score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
+              {score}
+            </span>
+            <span className="text-xs text-slate-500">/ 100</span>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Posture: <strong className={score >= 80 ? 'text-emerald-400' : score >= 60 ? 'text-amber-400' : 'text-red-400'}>{score >= 80 ? 'Robust' : score >= 60 ? 'Moderate Risk' : 'High Risk'}</strong>
+          </p>
+        </div>
+
+        {/* Operational Status */}
         <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-1">
           <span className="text-[11px] text-slate-400">Operational Posture</span>
           <div className="text-lg font-bold text-white capitalize flex items-center gap-2">
@@ -115,24 +151,60 @@ export default function DeviceDetailPage() {
           <p className="text-[10px] text-slate-400">Risk Assessment: <span className="uppercase font-bold text-mediblue-400">{device.riskLevel}</span></p>
         </div>
 
+        {/* IP & MAC */}
         <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[11px] text-slate-400">IP & MAC Addresses</span>
+          <span className="text-[11px] text-slate-400">Network Addressing</span>
           <div className="text-sm font-mono font-bold text-white">{device.ipAddress}</div>
           <div className="text-[10px] font-mono text-slate-400">{device.macAddress}</div>
         </div>
 
+        {/* Assessment Status */}
         <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[11px] text-slate-400">Firmware & Hardware</span>
-          <div className="text-sm font-bold text-white">{device.firmwareVersion}</div>
-          <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-            <Battery className="w-3 h-3" /> {device.batteryLevel}% Battery Level
+          <span className="text-[11px] text-slate-400 flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-slate-400" /> Assessment Status
+          </span>
+          <div className="text-sm font-semibold text-slate-200">
+            {device.assessmentStatus || 'NOT_ASSESSED'}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            Last: {device.lastAssessment ? new Date(device.lastAssessment).toLocaleDateString() : 'Never'}
           </div>
         </div>
+      </div>
 
-        <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[11px] text-slate-400">Network Segment (VLAN)</span>
-          <div className="text-sm font-bold text-white">{device.networkSegment}</div>
-          <div className="text-[10px] text-slate-400">Gateway: 192.168.10.1</div>
+      {/* Hardware & Organizational Metadata */}
+      <div className="bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-4 shadow-xl">
+        <h2 className="text-sm font-bold text-white flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-mediblue-400" />
+          Hardware & Institutional Ownership Details
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+          <div className="p-3 bg-navy-950/70 border border-navy-800/80 rounded-xl space-y-1">
+            <span className="text-slate-400 text-[11px]">Manufacturer & Model</span>
+            <div className="font-semibold text-white">{device.manufacturer || 'Philips Healthcare'}</div>
+            <div className="text-slate-400 text-[11px]">{device.model || device.deviceType}</div>
+          </div>
+
+          <div className="p-3 bg-navy-950/70 border border-navy-800/80 rounded-xl space-y-1">
+            <span className="text-slate-400 text-[11px]">Clinical Department</span>
+            <div className="font-semibold text-white">{device.department || 'Intensive Care Unit'}</div>
+            <div className="text-slate-400 text-[11px]">Assigned Room: {device.location || device.patientRoom || 'Bed 01'}</div>
+          </div>
+
+          <div className="p-3 bg-navy-950/70 border border-navy-800/80 rounded-xl space-y-1">
+            <span className="text-slate-400 text-[11px]">Asset Owner / Custodian</span>
+            <div className="font-semibold text-white">{device.owner || 'Biomedical Engineering'}</div>
+            <div className="text-slate-400 text-[11px]">Contact: ext 4402</div>
+          </div>
+
+          <div className="p-3 bg-navy-950/70 border border-navy-800/80 rounded-xl space-y-1">
+            <span className="text-slate-400 text-[11px]">Firmware & Power</span>
+            <div className="font-semibold text-white font-mono">{device.firmwareVersion || 'v2.4.1'}</div>
+            <div className="text-emerald-400 text-[11px] flex items-center gap-1">
+              <Battery className="w-3 h-3" /> {device.batteryLevel || 95}% Battery
+            </div>
+          </div>
         </div>
       </div>
 
@@ -160,8 +232,8 @@ export default function DeviceDetailPage() {
               <Tooltip
                 contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px' }}
               />
-              <Line type="monotone" dataKey="val1" stroke="#10b981" strokeWidth={2} name="Heart Rate / Rate" dot={false} />
-              <Line type="monotone" dataKey="val2" stroke="#0ea5e9" strokeWidth={2} name="SpO2 / Tidal" dot={false} />
+              <Line type="monotone" dataKey="val1" stroke="#10b981" strokeWidth={2} name="Heart Rate / Vital" dot={false} />
+              <Line type="monotone" dataKey="val2" stroke="#0ea5e9" strokeWidth={2} name="SpO2 / Sensor" dot={false} />
               <Line type="monotone" dataKey="flow" stroke="#f59e0b" strokeWidth={1.5} name="Packet Flow (pkts/s)" dot={false} strokeDasharray="4 4" />
             </LineChart>
           </ResponsiveContainer>
@@ -221,7 +293,7 @@ export default function DeviceDetailPage() {
                     <td className="py-3 px-4 font-medium text-white">{evt.ruleName}</td>
                     <td className="py-3 px-4">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
-                        {evt.severity.toUpperCase()}
+                        {evt.severity?.toUpperCase()}
                       </span>
                     </td>
                     <td className="py-3 px-4 font-mono text-[11px] text-slate-400">

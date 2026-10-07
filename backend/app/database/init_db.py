@@ -13,13 +13,37 @@ from app.models.db_models import (
     IntegrityRecordModel,
     ModelMetadataModel
 )
+from sqlalchemy import inspect, text
 from app.services.auth_service import auth_service
 from app.services.crypto_service import crypto_service
+
+
+def _auto_migrate_columns():
+    """Dynamically adds missing model columns to existing database tables."""
+    try:
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        with engine.connect() as conn:
+            for table_name, table in Base.metadata.tables.items():
+                if table_name in existing_tables:
+                    existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
+                    for col in table.columns:
+                        if col.name not in existing_cols:
+                            col_type = col.type.compile(engine.dialect)
+                            alter_query = f"ALTER TABLE {table_name} ADD COLUMN {col.name} {col_type}"
+                            try:
+                                conn.execute(text(alter_query))
+                                conn.commit()
+                            except Exception as ex:
+                                print(f"[AutoMigrate] Column {table_name}.{col.name} notice: {ex}")
+    except Exception as e:
+        print(f"[AutoMigrate] Migration inspection error: {e}")
 
 
 def seed_database():
     """Initializes tables and seeds initial synthetic demo records if not present."""
     Base.metadata.create_all(bind=engine)
+    _auto_migrate_columns()
     db = SessionLocal()
 
     try:
@@ -67,6 +91,13 @@ def seed_database():
                     network_segment="ICU_VLAN_10",
                     status="online",
                     risk_level="low",
+                    manufacturer="Philips Healthcare",
+                    model="IntelliVue MX800",
+                    location="ICU Bed 04",
+                    department="Intensive Care Unit",
+                    owner="Biomedical Engineering",
+                    assessment_status="NOT_ASSESSED",
+                    security_score=88.0,
                     meta_info={"room": "ICU Bed 04", "battery": 98, "assigned_doctor": "Dr. Elena Rostova"}
                 ),
                 DeviceModel(
@@ -79,6 +110,13 @@ def seed_database():
                     network_segment="ICU_VLAN_10",
                     status="suspicious",
                     risk_level="high",
+                    manufacturer="Medtronic",
+                    model="Puritan Bennett 980",
+                    location="ICU Bed 08",
+                    department="Intensive Care Unit",
+                    owner="Respiratory Care Dept",
+                    assessment_status="PENDING",
+                    security_score=52.0,
                     meta_info={"room": "ICU Bed 08", "battery": 100, "assigned_doctor": "Dr. Elena Rostova"}
                 ),
                 DeviceModel(
@@ -91,6 +129,13 @@ def seed_database():
                     network_segment="ICU_VLAN_10",
                     status="online",
                     risk_level="medium",
+                    manufacturer="Baxter International",
+                    model="Spectrum V8",
+                    location="ICU Bed 02",
+                    department="Intensive Care Unit",
+                    owner="Pharmacy & Infusion",
+                    assessment_status="NOT_ASSESSED",
+                    security_score=74.0,
                     meta_info={"room": "ICU Bed 02", "battery": 85, "flow_rate_ml_hr": 25.0}
                 ),
                 DeviceModel(
@@ -103,6 +148,13 @@ def seed_database():
                     network_segment="WARD_VLAN_20",
                     status="online",
                     risk_level="low",
+                    manufacturer="Dexcom Clinical",
+                    model="G7 Medical Pro",
+                    location="Ward Bed 214",
+                    department="General Medicine Ward",
+                    owner="Endocrinology",
+                    assessment_status="NOT_ASSESSED",
+                    security_score=92.0,
                     meta_info={"room": "Ward 214", "battery": 62, "glucose_mg_dl": 110}
                 ),
                 DeviceModel(
@@ -115,6 +167,13 @@ def seed_database():
                     network_segment="AMBULATORY_VLAN_40",
                     status="online",
                     risk_level="low",
+                    manufacturer="BioTelemetry Care",
+                    model="CardioNet BioPatch",
+                    location="Outpatient Wing Room 12",
+                    department="Cardiology Outpatient",
+                    owner="Ambulatory Services",
+                    assessment_status="NOT_ASSESSED",
+                    security_score=95.0,
                     meta_info={"room": "Outpatient Wing", "battery": 74}
                 ),
                 DeviceModel(
@@ -127,6 +186,13 @@ def seed_database():
                     network_segment="ER_VLAN_30",
                     status="offline",
                     risk_level="medium",
+                    manufacturer="Zoll Medical",
+                    model="R Series Plus",
+                    location="ER Trauma Bay 3",
+                    department="Emergency Medicine",
+                    owner="Emergency Services",
+                    assessment_status="NOT_ASSESSED",
+                    security_score=68.0,
                     meta_info={"room": "ER Bay 3", "battery": 45}
                 )
             ]

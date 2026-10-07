@@ -45,6 +45,14 @@ class DeviceModel(Base):
     network_segment = Column(String(100), nullable=False)
     status = Column(String(50), default="online", nullable=False, index=True)  # online, offline, suspicious, isolated
     risk_level = Column(String(50), default="low", nullable=False, index=True)  # low, medium, high, critical
+    manufacturer = Column(String(100), default="Generic Medical", nullable=True)
+    model = Column(String(100), default="Standard Series", nullable=True)
+    location = Column(String(100), default="Main Hospital Facility", nullable=True)
+    department = Column(String(100), default="Clinical", nullable=True)
+    owner = Column(String(100), default="Clinical Engineering", nullable=True)
+    last_assessment = Column(DateTime(timezone=True), nullable=True)
+    assessment_status = Column(String(50), default="NOT_ASSESSED", nullable=False)
+    security_score = Column(Float, default=85.0, nullable=False)
     last_seen = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     meta_info = Column(JSON, default=dict)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
@@ -143,3 +151,17 @@ class ModelMetadataModel(Base):
     confusion_matrix = Column(JSON, default=dict)
     trained_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     status = Column(String(50), default="active", nullable=False)
+
+
+class DetectionPolicyModel(Base):
+    __tablename__ = "detection_policies"
+
+    id = Column(String(50), primary_key=True, default="default")
+    auth_failure_threshold = Column(Float, default=5.0, nullable=False)
+    packet_rate_dos_threshold = Column(Float, default=600.0, nullable=False)
+    syn_ratio_threshold = Column(Float, default=0.50, nullable=False)
+    port_entropy_threshold = Column(Float, default=2.8, nullable=False)
+    heartbeat_timeout_sec = Column(Float, default=180.0, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+    updated_by = Column(String(255), default="system", nullable=False)
+

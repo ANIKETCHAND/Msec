@@ -8,7 +8,7 @@ from sqlalchemy import or_
 from app.database.session import get_db
 from app.models.db_models import DeviceModel, AuditLogModel, UserModel
 from app.schemas.device import DeviceCreate, DeviceUpdate, DeviceResponse
-from app.middleware.rbac import get_current_user, require_admin
+from app.middleware.rbac import get_current_user, require_admin, require_analyst
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
 
@@ -101,9 +101,9 @@ def update_device(
     device_id: str,
     payload: DeviceUpdate,
     db: Session = Depends(get_db),
-    admin_user: UserModel = Depends(require_admin)
+    user: UserModel = Depends(require_analyst)
 ):
-    """Update device properties or quarantine/isolate network status (Administrator only)."""
+    """Update device properties or quarantine/isolate network status (Security Analyst or Administrator)."""
     device = db.query(DeviceModel).filter(DeviceModel.id == device_id).first()
     if not device:
         raise HTTPException(
@@ -118,8 +118,8 @@ def update_device(
     device.updated_at = datetime.now(timezone.utc)
 
     audit = AuditLogModel(
-        actor=admin_user.email,
-        role=admin_user.role,
+        actor=user.email,
+        role=user.role,
         action="DEVICE_UPDATED",
         entity_type="Device",
         entity_id=device.id,
