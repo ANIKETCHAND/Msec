@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
 import {
   ClipboardList,
   Search,
@@ -9,13 +10,21 @@ import {
   UserCheck,
   FileSpreadsheet,
   Download,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck,
+  RefreshCw,
+  CheckCircle2,
+  Hash
 } from 'lucide-react';
 
 export default function AuditLogsPage() {
   const { auditLogs, currentUser } = useApp();
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('ALL');
+
+  // Chain verification state
+  const [verifying, setVerifying] = useState(false);
+  const [chainResult, setChainResult] = useState(null);
 
   // RBAC check: Doctor Demo cannot view system audit logs
   if (currentUser.role === 'Doctor Demo') {
@@ -33,12 +42,24 @@ export default function AuditLogsPage() {
     );
   }
 
+  const handleVerifyChain = async () => {
+    setVerifying(true);
+    try {
+      const res = await api.verifyAuditChain();
+      setChainResult(res);
+    } catch (err) {
+      setChainResult({ chain_valid: false, error: err.message || 'Chain verification failed.' });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const filteredLogs = auditLogs.filter(log => {
     const matchSearch =
       log.id.toLowerCase().includes(search.toLowerCase()) ||
       log.actor.toLowerCase().includes(search.toLowerCase()) ||
       log.action.toLowerCase().includes(search.toLowerCase()) ||
-      log.details.toLowerCase().includes(search.toLowerCase());
+      (log.details && log.details.toLowerCase().includes(search.toLowerCase()));
 
     const matchAction = actionFilter === 'ALL' || log.action === actionFilter;
     return matchSearch && matchAction;
@@ -47,7 +68,7 @@ export default function AuditLogsPage() {
   const exportCsv = () => {
     const headers = "ID,Timestamp,Actor,Role,Action,EntityType,EntityID,IPAddress,Details\n";
     const rows = filteredLogs.map(l =>
-      `"${l.id}","${l.timestamp}","${l.actor}","${l.role}","${l.action}","${l.entityType}","${l.entityId}","${l.ipAddress}","${l.details.replace(/"/g, '""')}"`
+      `"${l.id}","${l.timestamp}","${l.actor}","${l.role}","${l.action}","${l.entityType}","${l.entityId}","${l.ipAddress}","${(l.details || '').replace(/"/g, '""')}"`
     ).join("\n");
 
     const blob = new Blob([headers + rows], { type: 'text/csv' });
@@ -63,23 +84,71 @@ export default function AuditLogsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-mediblue-400" />
-            Immutable System Audit Trail
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-mediblue-400" />
+              Cryptographically Chained Audit Trail
+            </h1>
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-mediblue-500/10 text-mediblue-400 border border-mediblue-500/30">
+              SHA-256 Hash Chain
+            </span>
+          </div>
           <p className="text-xs text-slate-400">
-            Chronological record of user authentication, incident updates, device registrations, and simulations.
+            Immutable, tamper-evident forensic log protected by sequential cryptographic hash links.
           </p>
         </div>
 
-        <button
-          onClick={exportCsv}
-          className="px-3.5 py-2 bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-        >
-          <Download className="w-4 h-4 text-mediblue-400" />
-          Export Audit Trail (CSV)
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleVerifyChain}
+            disabled={verifying}
+            className="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+          >
+            <ShieldCheck className={`w-4 h-4 ${verifying ? 'animate-spin' : ''}`} />
+            {verifying ? 'Verifying Chain...' : 'Verify Cryptographic Hash Chain'}
+          </button>
+
+          <button
+            onClick={exportCsv}
+            className="px-3.5 py-2 bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+          >
+            <Download className="w-4 h-4 text-mediblue-400" />
+            Export CSV
+          </button>
+        </div>
       </div>
+
+      {/* Hash Chain Verification Result Banner */}
+      {chainResult && (
+        <div className={`p-4 rounded-2xl border flex items-center justify-between text-xs shadow-xl ${
+          chainResult.chain_valid
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+            : 'bg-red-500/10 border-red-500/30 text-red-300'
+        }`}>
+          <div className="flex items-center gap-3">
+            {chainResult.chain_valid ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            )}
+            <div>
+              <strong className="font-bold block text-sm">
+                {chainResult.chain_valid ? 'Hash Chain Integrity Intact & Verified' : 'Cryptographic Hash Chain Broken!'}
+              </strong>
+              <p className="text-[11px] opacity-90 mt-0.5">
+                {chainResult.message || chainResult.error}
+              </p>
+            </div>
+          </div>
+
+          {chainResult.head_hash && (
+            <div className="text-right font-mono text-[11px] bg-navy-950/80 px-3 py-1.5 rounded-xl border border-navy-800">
+              <span className="text-slate-400 block text-[9px]">HEAD HASH DIGEST:</span>
+              <span className="text-emerald-400">{chainResult.head_hash.slice(0, 20)}...</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -102,9 +171,11 @@ export default function AuditLogsPage() {
           >
             <option value="ALL">All Recorded Actions</option>
             <option value="USER_LOGIN">USER_LOGIN</option>
+            <option value="ASSESSMENT_SCOPE_AUTHORIZED">ASSESSMENT_SCOPE_AUTHORIZED</option>
+            <option value="ASSESSMENT_EXECUTED">ASSESSMENT_EXECUTED</option>
             <option value="INCIDENT_UPDATE">INCIDENT_UPDATE</option>
             <option value="DEVICE_STATUS_CHANGE">DEVICE_STATUS_CHANGE</option>
-            <option value="SIMULATION_TRIGGERED">SIMULATION_TRIGGERED</option>
+            <option value="INCIDENT_CONTAINMENT_SIMULATED">INCIDENT_CONTAINMENT_SIMULATED</option>
             <option value="INTEGRITY_TAMPER_SIMULATION">INTEGRITY_TAMPER_SIMULATION</option>
           </select>
         </div>

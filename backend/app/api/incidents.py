@@ -137,3 +137,21 @@ def update_incident(
     db.commit()
     db.refresh(inc)
     return inc
+
+
+@router.post("/correlate/{device_id}", response_model=IncidentResponse)
+def correlate_device_incidents(
+    device_id: str,
+    db: Session = Depends(get_db),
+    analyst_user: UserModel = Depends(require_analyst)
+):
+    """Correlate disparate telemetry and assessment findings to identify attack chains."""
+    from app.services.correlation_engine import correlation_engine
+    inc = correlation_engine.correlate_device_events(db, device_id)
+    if not inc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No multi-stage attack patterns identified for device {device_id}."
+        )
+    return inc
+

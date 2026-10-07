@@ -116,3 +116,42 @@ def export_incidents_csv(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+@router.get("/assessments.csv")
+def export_assessments_csv(
+    db: Session = Depends(get_db),
+    analyst_user: UserModel = Depends(require_analyst)
+):
+    """Streams CSV file generated from stored Assessment findings in database."""
+    from app.models.db_models import FindingModel
+    findings = db.query(FindingModel).order_by(FindingModel.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["FindingID", "AssessmentID", "DeviceID", "Severity", "Category", "Title", "CVE", "CVSS", "Port", "Tool", "Remediation"])
+
+    for f in findings:
+        writer.writerow([
+            f.id,
+            f.assessment_id,
+            f.device_id,
+            f.severity,
+            f.category,
+            f.title,
+            f.cve_id or "",
+            f.cvss_score or "",
+            f.affected_port or "",
+            f.source_tool,
+            f.remediation_guidance or ""
+        ])
+
+    csv_data = output.getvalue()
+    filename = f"medishield-findings-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M')}.csv"
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+

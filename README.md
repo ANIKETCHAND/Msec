@@ -1,173 +1,177 @@
-# MediShield — IoMT Security & Privacy Platform
+# MediShield — IoMT Security & Privacy Platform (v2.0 Upgrade)
 
-> **Academic Cybersecurity Research Prototype**  
-> An integrated platform for Internet of Medical Things (IoMT) real-time security monitoring, explainable rule-based intrusion detection, authentic machine learning attack classification, server-enforced role-based access control (RBAC), authenticated encryption (AES-256-GCM), and cryptographic data integrity verification (SHA-256).
-
----
-
-## 1. Executive Summary & Problem Statement
-
-Modern healthcare facilities increasingly rely on the **Internet of Medical Things (IoMT)**—network-connected smart medical equipment including bedside 12-lead ECG monitors, critical care ventilators, smart infusion pumps, and wireless continuous glucose monitors. While these connected technologies improve patient outcomes and enable real-time clinical monitoring, they introduce acute cybersecurity vulnerabilities:
-- **Lateral Movement & Rogue Hardware**: Unmanaged Wi-Fi bridges or unauthorized devices injected onto critical hospital VLANs.
-- **Credential Brute-Force**: High-frequency dictionary attacks against management interfaces (SSH, Web, Telnet).
-- **Volumetric Floods (DoS/DDoS)**: Denial-of-service traffic surges that can saturate medical gateways and interrupt life-critical telemetry.
-- **Unencrypted Wireless Transmission & Data Tampering**: Silent modification of vital patient telemetry leading to incorrect clinical dosages or delayed emergency alerts.
-
-**MediShield** demonstrates how proactive telemetry surveillance, deterministic rule heuristics, authentic machine learning models trained on UNB's **CICIoMT2024** dataset, server-side RBAC, authenticated encryption (AES-256-GCM), and SHA-256 data integrity auditing can be unified into an operator-grade medical SOC dashboard.
+> **Academic Cybersecurity Research Prototype & Hackathon Demonstration Platform**  
+> An integrated defensive security operations platform for the Internet of Medical Things (IoMT). Provides real-time asset posture monitoring, explainable rule-based intrusion detection, authentic machine learning attack classification, authorized vulnerability assessment orchestration (Nmap, Nuclei, ZAP, Nikto, OpenVAS), passive IDS ingestion (Suricata, Zeek, Tshark), cryptographic SHA-256 audit hash chaining, and interactive defensive containment simulation.
 
 ---
 
-## 2. Technology Stack
+## 1. Defensive Security & Ethical Safety Mandate
+
+MediShield is strictly a **DEFENSIVE SECURITY PLATFORM** designed for hospital IoMT asset protection and educational research:
+- **Authorized Bounded Scope**: Security tools and assessments operate **only** against devices explicitly registered in MediShield inventory within operator-signed, time-limited scope certificates. Arbitrary internet scanning is strictly blocked at the backend.
+- **Strictly Non-Destructive**: Automated exploitation, credential cracking, denial-of-service testing, medical-device shutdown, medication alteration, and real-world hardware containment are **prohibited**.
+- **Transparent Simulation**: All incident response containment actions remain simulated within a virtual testbed with unmistakable indicators:
+  > `"AUTHORIZED SECURITY ASSESSMENT ONLY • SIMULATION — NO REAL DEVICE CONTROL"`
+
+---
+
+## 2. Core Architecture & System Map
+
+```mermaid
+flowchart TD
+    subgraph UI ["Operator Tier (React 18 + Vite)"]
+        Dashboard["Security Dashboard"]
+        Inventory["Device Inventory & Posture"]
+        Topology["Interactive VLAN Topology"]
+        AsmCenter["Assessment Operations Center"]
+        ToolsMgmt["Tools & Scanners Manager"]
+        Containment["Defensive Response Simulator"]
+        AuditUI["Chained Audit Logs"]
+        AIAssist["MediShield AI Assistant"]
+    end
+
+    subgraph API ["Backend API Gateway (FastAPI)"]
+        RBAC["Server-Enforced RBAC Middleware"]
+        ScopeEngine["Scope Validator & Certification"]
+        Orchestrator["Assessment Orchestrator"]
+        RiskEng["Clinical Risk & Posture Score Engine"]
+        VulnIntel["IoMT Vulnerability Intelligence"]
+        RuleEng["Explainable Detection Engine"]
+        MLEng["Random Forest ML Classifier"]
+        CorrEng["Multi-Source Correlation Engine"]
+        IDSEng["Suricata & Zeek Ingestion Sensor"]
+        AuditChain["SHA-256 Hash Chaining Service"]
+    end
+
+    subgraph Tools ["Defensive Assessment Adapters"]
+        Nmap["Nmap (Safe Service Auditor)"]
+        Nuclei["Nuclei (CVE Template Auditor)"]
+        ZAP["OWASP ZAP (API / Web Auditor)"]
+        Nikto["Nikto (Web Server Hardener)"]
+        OpenVAS["OpenVAS / GVM Adapter"]
+        Suricata["Suricata (EVE JSON Alerts)"]
+        Zeek["Zeek (Connection & TLS Logs)"]
+    end
+
+    subgraph DB ["Persistence Tier"]
+        SQL[(PostgreSQL / SQLite Fallback)]
+    end
+
+    UI -->|Bearer JWT + HTTPS| API
+    API --> Tools
+    API --> SQL
+```
+
+---
+
+## 3. Technology Stack
 
 - **Frontend Tier**:
   - React 18 SPA built with Vite
-  - Tailwind CSS with clinical navy/cyan dark palette
-  - Recharts for time-series telemetry streams, severity donuts, and event trend areas
+  - Tailwind CSS with hospital dark mode theme
+  - Recharts for live time-series vitals & vulnerability distributions
   - Lucide React iconography
 - **Backend API Gateway**:
   - Python 3.11 with FastAPI (asynchronous ASGI framework)
   - Pydantic v2 schemas for strict input validation
-  - Uvicorn server
   - Python `cryptography` library for AES-256-GCM authenticated encryption
+  - SHA-256 cryptographic hash chaining for tamper-evident audit logs
 - **Persistence Tier**:
   - Relational PostgreSQL / Supabase schema (with automatic local SQLite fallback for offline execution)
-  - SQLAlchemy 2.0 ORM with 8 relational models
+  - SQLAlchemy 2.0 ORM with 11 relational models & dynamic column auto-migration
 - **Machine Learning Subsystem**:
-  - scikit-learn (Random Forest classifier & Isolation Forest anomaly detector)
-  - pandas, numpy, joblib
-  - Dataset: UNB CICIoMT2024 feature format with group-aware leakage prevention
+  - scikit-learn (Random Forest classifier trained on UNB CICIoMT2024 dataset)
+  - Medians imputation and robust scaling with zero feature leakage
 - **Testing & Quality Assurance**:
-  - pytest & FastAPI TestClient (12 passing automated integration tests)
-  - Vite production build verification
+  - 19 automated pytest integration tests passing with 100% success
+  - Production Vite build verified
 
 ---
 
-## 3. System Architecture
+## 4. Key Functional Features (Phases 0 to 34)
 
-```mermaid
-flowchart TD
-    subgraph Client ["Client Tier (Browser)"]
-        UI["React 18 + Vite SPA"]
-        Context["App Context & Live Sync"]
-        Pages["11 Healthcare SOC Pages"]
-    end
-
-    subgraph Gateway ["Application Gateway & API Tier (FastAPI)"]
-        FastAPI["FastAPI 0.142+ ASGI"]
-        CORS["Strict CORS Middleware"]
-        AuthMid["RBAC & Session Validator"]
-        RuleEng["Explainable Rule Detection Engine"]
-        Crypto["AES-256-GCM & SHA-256 Engine"]
-    end
-
-    subgraph DataTier ["Persistence & Analytics Tier"]
-        DB[(PostgreSQL / Supabase / SQLite)]
-        ML["CICIoMT2024 ML Inference (Random Forest)"]
-    end
-
-    UI <-->|HTTPS / JSON REST| FastAPI
-    FastAPI --> CORS
-    CORS --> AuthMid
-    AuthMid --> RuleEng
-    AuthMid --> Crypto
-    FastAPI <-->|SQLAlchemy ORM| DB
-    FastAPI <-->|In-Memory Joblib Artifact| ML
-```
+| Feature | Description | Implementation |
+|---|---|---|
+| **IoMT Asset Inventory** | Hospital hardware inventory (Philips ECG, Medtronic Ventilator, Baxter Infusion, Dexcom CGM) with manufacturer, model, clinical department, and security posture score. | `DeviceModel`, `DeviceInventoryPage.jsx`, `DeviceDetailPage.jsx` |
+| **Assessment Scope Engine** | Bounded, audited authorization certificates required before running any security tool. Prevents arbitrary host targeting. | `ScopeValidator`, `AssessmentScopeModel`, `assessments.py` |
+| **Tool Orchestration** | Unified multi-tool scanner coordinator (Nmap, Nuclei, ZAP, Nikto, OpenVAS) with native subprocess execution and faithful synthetic IoMT fallback. | `AssessmentOrchestrator`, `BaseScannerAdapter`, `AssessmentCenterPage.jsx` |
+| **Clinical Risk Engine** | Transparent posture scoring taking into account device criticality (Ventilator = 1.5x, Infusion = 1.3x) and department weighting (ICU = 1.3x). | `RiskEngine`, `VulnerabilityIntelligenceService` |
+| **Passive IDS Ingestion** | Normalizes Suricata EVE JSON alerts and Zeek connection anomalies into real-time security events. | `IDSManager`, `ids_service.py`, `POST /api/detection/ids/ingest` |
+| **Multi-Source Correlation** | Detects multi-stage attack chains (e.g. Port Scan + DoS flood = Critical Penetration Incident) and raises coordinated incident tickets. | `CorrelationEngine`, `POST /api/incidents/correlate/{id}` |
+| **Network Topology Map** | Visual map of clinical VLANs (`ICU_VLAN_10`, `WARD_VLAN_20`, `ER_VLAN_30`, `AMBULATORY_VLAN_40`, `CORE_VLAN_1`) with real-time status glows. | `NetworkTopologyPage.jsx` |
+| **Containment Simulator** | Tests defensive microsegmentation playbooks (VLAN 99 quarantine, ingress rate-limiting, session revocation). | `ResponseSimulatorPage.jsx` |
+| **SHA-256 Audit Hash Chain** | Cryptographically links each audit log entry to its predecessor using SHA-256, enabling instant tamper verification. | `AuditChainService`, `GET /api/audit-logs/verify-chain`, `AuditLogsPage.jsx` |
+| **MediShield AI Assistant** | Grounded clinical cybersecurity chatbot with defensive safety guardrails. | `AIAssistantWidget.jsx` |
 
 ---
 
-## 4. Phase-Wise Development Status
+## 5. Localhost Run & Setup Instructions
 
-| Phase | Description | Status | Verification Summary |
-|---|---|---|---|
-| **Phase 1** | Project Planning & Setup | **Completed** | Modular scaffold, FastAPI backend, health check, documentation |
-| **Phase 2** | Frontend Dashboard | **Completed** | 11 pages, charts, topology maps, simulation triggers, Vite build OK |
-| **Phase 3** | Backend API & Database | **Completed** | 8 relational tables, auto-seeding, Pydantic v2 schemas, CRUD endpoints |
-| **Phase 4** | Authentication & RBAC | **Completed** | PBKDF2 hashing, Bearer tokens, Admin / Analyst / Doctor roles enforced |
-| **Phase 5** | Rule-Based Intrusion Detection | **Completed** | Configurable heuristic rules, automated event generation, scenarios |
-| **Phase 6** | Machine Learning Intrusion Detection | **Completed** | Group-split training, Random Forest + Isolation Forest, genuine reports |
-| **Phase 7** | Privacy, Encryption & Integrity | **Completed** | AES-256-GCM authenticated cipher, SHA-256 digest tamper detection |
-| **Phase 8** | Incident Management & Reports | **Completed** | Ticket triage, analyst assignment, notes, live CSV export endpoints |
-| **Phase 9** | Integration & Testing | **Completed** | 12/12 automated pytest tests passing, frontend builds with 0 errors |
-| **Phase 10** | Deployment & Documentation | **Completed** | Vercel & Render manifests, full architecture & API references |
+### Prerequisites
+- Python 3.11+
+- Node.js 18+ & npm
 
----
-
-## 5. Quick Start Instructions
-
-### 5.1 Backend Setup
-From the repository root:
-```powershell
+### Backend Setup
+```bash
 cd backend
-# Activate virtual environment
-.\.venv\Scripts\Activate.ps1
-
-# Install requirements
+python -m venv .venv
+.\.venv\Scripts\activate  # On Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-
-# Start FastAPI server
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
-- API Base URL: `http://127.0.0.1:8000`
-- Interactive OpenAPI Docs: `http://127.0.0.1:8000/docs`
-- Health Endpoint: `http://127.0.0.1:8000/api/health`
+- API Documentation (Swagger UI): `http://127.0.0.1:8000/docs`
+- Health check: `http://127.0.0.1:8000/api/health`
 
-### 5.2 Frontend Setup
-From the repository root:
-```powershell
+### Frontend Setup
+```bash
 cd frontend
-# Install dependencies
 npm install
-
-# Start Vite development server
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
-- Open in browser: `http://127.0.0.1:5173`
+- Open browser at: `http://127.0.0.1:5173`
 
-### 5.3 Automated Verification
-```powershell
-# Run backend pytest suite (12 tests)
+### Demo Credentials (Role-Based Access Control)
+- **Administrator**: `admin@medishield.local` / `adminpassword123` (Full system access, policy configuration, device registration)
+- **Security Analyst**: `analyst@medishield.local` / `analystpassword123` (Assessment scope creation, scan execution, incident triage, quarantine)
+- **Doctor Demo**: `doctor@medishield.local` / `doctorpassword123` (Read-only clinical telemetry; restricted from administrative and audit features)
+
+---
+
+## 6. Automated Testing & Verification
+
+Run the complete automated backend integration test suite:
+```bash
 cd backend
-.\.venv\Scripts\pytest -v
-
-# Run frontend build check
-cd ../frontend
-npm run build
-
-# Run ML evaluation
-cd ..
-.\backend\.venv\Scripts\python.exe ml\src\evaluate.py
+pytest -v
 ```
+**Results**:
+- 19 passed integration tests covering authentication, RBAC, scope validation, multi-tool execution, passive IDS ingestion, event correlation, detection policies, and SHA-256 audit hash chain verification.
+
+Build the frontend for production:
+```bash
+cd frontend
+npm run build
+```
+**Results**:
+- 0 lint errors, 2301 transformed modules, production bundle compiled cleanly in `dist/`.
 
 ---
 
-## 6. End-to-End Academic Demonstration Workflow
+## 7. College Project & Hackathon Demonstration Script
 
-1. **Authentication & Roles**:
-   - Log in as **Security Analyst** (`analyst@medishield.local` / `analystpassword123`) or switch to **Administrator** (`admin@medishield.local` / `adminpassword123`).
-   - Switch to **Doctor Demo** (`doctor@medishield.local` / `doctorpassword123`) and verify that administrative actions (such as adding devices) are prohibited by server-side 403 Forbidden checks.
-2. **Device Surveillance & Topology**:
-   - Open **Device Inventory** to filter devices by ICU, Ward, ER, and Ambulatory VLANs.
-   - Click **DEV-VENT-502** to view live multi-parameter telemetry graphs, encryption state, and device quarantine controls.
-3. **Safe Simulation Scenarios**:
-   - Click **Quick Scenarios $\to$ Brute Force** to simulate repeated failed authentications.
-   - Watch the rule-based detection engine automatically flag **EVT-2026-001** and escalate device risk to **High**.
-4. **Incident Investigation Workflow**:
-   - Open **Security Events**, select the alert, and click **Open Investigation Ticket**.
-   - Navigate to **Incident Management**, assign the ticket to an analyst, update status to **Investigating**, and record forensic notes.
-5. **Machine Learning Attack Classification**:
-   - Navigate to **ML Detection Overview** to inspect the real performance metrics and confusion matrix trained on UNB CICIoMT2024 features.
-   - Run interactive inference to classify simulated flow features into *Benign*, *DoS SYN Flood*, *Port Scan*, or *Brute Force*.
-6. **Privacy & Cryptographic Data Integrity**:
-   - Open **Privacy & Data Integrity** to inspect AES-256-GCM encrypted patient records and SHA-256 digests.
-   - Click **Tamper Payload** to simulate a 1-byte unauthorized memory mutation.
-   - Click **Verify Integrity** to demonstrate instant cryptographic detection of the altered record.
-7. **Audit Logs & CSV Reporting**:
-   - Open **Audit Logs** to inspect the immutable chronological trail of logins, state updates, and simulation triggers.
-   - Open **Security Reports** and click **Export Events CSV** to stream real database records directly into spreadsheet format.
-
----
-
-## 7. Prototype Scope & Research Notice
-
-MediShield is an academic cybersecurity prototype utilizing synthetic medical device data. It is not a certified medical device, does not connect to real clinical devices, and must not be used for clinical decisions. Detailed limitations are documented in [`docs/limitations.md`](docs/limitations.md).
+1. **Step 1: Role-Based Access Control**  
+   Log in as `Doctor Demo`. Demonstrate that clinical vitals can be viewed, but administrative actions, policies, and audit logs are securely blocked with server-side 403 Forbidden. Then log in as `Security Analyst`.
+2. **Step 2: Device Inventory & Hardware Posture**  
+   Navigate to **Device Inventory**. Show the 5 realistic IoMT assets with real hospital manufacturers (Philips, Medtronic, Baxter, Dexcom) and their current Security Posture Scores.
+3. **Step 3: Network Topology & VLAN Microsegmentation**  
+   Open **Network Topology**. Show the interactive microsegmentation map dividing devices across ICU, General Ward, ER, and Outpatient VLANs.
+4. **Step 4: Authorize & Launch an Assessment**  
+   Go to **Assessment Center**. Authorize a new scope certificate for `DEV-VENT-502` (`192.168.10.52`). Select `Nmap` and `Nuclei`. Click **Execute Assessment Now**. Show live scan results, normalized findings (Modbus unauthenticated exposure, diagnostic memory leak), and clinical posture score deduction.
+5. **Step 5: Multi-Source Attack Correlation**  
+   Trigger simulated traffic spike on the ventilator. Demonstrate how the **Correlation Engine** links the reconnaissance finding with the volumetric traffic flood to create a coordinated `Multi-Stage Penetration Attack` incident ticket.
+6. **Step 6: Defensive Containment Simulator**  
+   Navigate to **Response Simulator**. Trigger `Quarantine Switch Port (VLAN 99 Microsegmentation)`. Show the safety banner, simulated VLAN isolation state, and zero disruption to simulated patient life support.
+7. **Step 7: Cryptographic SHA-256 Audit Hash Chain Verification**  
+   Go to **Audit Logs**. Click **Verify Cryptographic Hash Chain**. Watch the system verify the unbroken SHA-256 chain across all logged events, confirming tamper-evident forensic compliance.
+8. **Step 8: MediShield AI Assistant**  
+   Click the **MediShield AI Assistant** button at the bottom-right. Ask questions about ventilator Modbus hardening or infusion pump security. Try an offensive prompt to demonstrate defensive safety guardrails in action.

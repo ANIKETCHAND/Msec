@@ -11,6 +11,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     JSON,
+    Integer,
 )
 from sqlalchemy.orm import relationship
 from app.database.session import Base
@@ -122,6 +123,8 @@ class AuditLogModel(Base):
     ip_address = Column(String(45), default="127.0.0.1", nullable=False)
     details = Column(Text, nullable=True)
     status = Column(String(50), default="success", nullable=False)
+    prev_hash = Column(String(64), nullable=True)
+    entry_hash = Column(String(64), nullable=True)
 
 
 class IntegrityRecordModel(Base):
@@ -164,4 +167,67 @@ class DetectionPolicyModel(Base):
     heartbeat_timeout_sec = Column(Float, default=180.0, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
     updated_by = Column(String(255), default="system", nullable=False)
+
+
+class AssessmentScopeModel(Base):
+    __tablename__ = "assessment_scopes"
+
+    id = Column(String(50), primary_key=True, default=lambda: f"SCOPE-{str(uuid.uuid4())[:8]}")
+    device_id = Column(String(50), ForeignKey("devices.id"), nullable=False, index=True)
+    target_ip = Column(String(50), nullable=False)
+    target_hostname = Column(String(255), nullable=True)
+    authorization_status = Column(String(50), default="AUTHORIZED", nullable=False)  # AUTHORIZED, PENDING, REJECTED, EXPIRED, REVOKED
+    authorized_scope = Column(JSON, default=list)  # e.g. ["PORT_DISCOVERY", "SERVICE_ENUMERATION", "VULNERABILITY_CHECK", "SECURITY_POSTURE"]
+    assessment_profile = Column(String(100), default="DEFENSIVE_AUDIT", nullable=False)  # DEFENSIVE_AUDIT, PASSIVE_DISCOVERY, COMPLIANCE_SCAN
+    selected_tools = Column(JSON, default=list)  # e.g. ["nmap", "nuclei", "zap"]
+    initiating_user_id = Column(String(50), nullable=False)
+    initiating_user_email = Column(String(255), nullable=False)
+    justification = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_by = Column(String(255), nullable=True)
+
+
+class AssessmentModel(Base):
+    __tablename__ = "assessments"
+
+    id = Column(String(50), primary_key=True, default=lambda: f"ASM-{str(uuid.uuid4())[:8]}")
+    scope_id = Column(String(50), ForeignKey("assessment_scopes.id"), nullable=False, index=True)
+    device_id = Column(String(50), ForeignKey("devices.id"), nullable=False, index=True)
+    target_ip = Column(String(50), nullable=False)
+    status = Column(String(50), default="QUEUED", nullable=False)  # QUEUED, RUNNING, COMPLETED, FAILED, CANCELLED
+    profile = Column(String(100), default="DEFENSIVE_AUDIT", nullable=False)
+    tools_executed = Column(JSON, default=list)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    total_findings = Column(Integer, default=0, nullable=False)
+    critical_findings = Column(Integer, default=0, nullable=False)
+    high_findings = Column(Integer, default=0, nullable=False)
+    medium_findings = Column(Integer, default=0, nullable=False)
+    low_findings = Column(Integer, default=0, nullable=False)
+    security_score = Column(Float, default=100.0, nullable=False)
+    raw_results = Column(JSON, default=dict)
+    summary = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
+class FindingModel(Base):
+    __tablename__ = "assessment_findings"
+
+    id = Column(String(50), primary_key=True, default=lambda: f"FND-{str(uuid.uuid4())[:8]}")
+    assessment_id = Column(String(50), ForeignKey("assessments.id"), nullable=False, index=True)
+    device_id = Column(String(50), ForeignKey("devices.id"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    severity = Column(String(20), default="LOW", nullable=False)  # CRITICAL, HIGH, MEDIUM, LOW, INFO
+    category = Column(String(100), default="CONFIGURATION", nullable=False)  # NETWORK, PORT, SSL/TLS, VULNERABILITY, PROTOCOL, CONFIGURATION
+    cve_id = Column(String(50), nullable=True)
+    cvss_score = Column(Float, nullable=True)
+    affected_port = Column(Integer, nullable=True)
+    affected_service = Column(String(100), nullable=True)
+    source_tool = Column(String(50), nullable=False)  # nmap, nuclei, zap, nikto, openvas, rule_engine
+    remediation_guidance = Column(Text, nullable=True)
+    raw_evidence = Column(JSON, default=dict)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 

@@ -28,3 +28,14 @@ def list_audit_logs(
         query = query.filter(AuditLogModel.actor.ilike(f"%{actor}%"))
 
     return query.order_by(AuditLogModel.timestamp.desc()).offset(skip).limit(limit).all()
+
+
+@router.get("/verify-chain")
+def verify_audit_hash_chain(
+    db: Session = Depends(get_db),
+    analyst_user: UserModel = Depends(require_analyst)
+):
+    """Cryptographically verifies the unbroken SHA-256 hash chain across audit trail entries."""
+    from app.services.audit_chain_service import audit_chain_service
+    return audit_chain_service.verify_chain(db)
+

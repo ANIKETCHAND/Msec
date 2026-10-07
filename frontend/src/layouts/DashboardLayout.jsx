@@ -19,7 +19,11 @@ import {
   UserCheck,
   CheckCircle2,
   X,
-  Menu
+  Menu,
+  Shield,
+  Network,
+  Wrench,
+  SlidersHorizontal
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }) {
@@ -41,7 +45,10 @@ export default function DashboardLayout({ children }) {
   const navItems = [
     { id: 'dashboard', label: 'Security Dashboard', icon: LayoutDashboard },
     { id: 'devices', label: 'Device Inventory', icon: Server },
-    { id: 'device-detail', label: 'Device Details', icon: Activity },
+    { id: 'topology', label: 'Network Topology', icon: Network },
+    { id: 'assessment-center', label: 'Assessment Center', icon: Shield },
+    { id: 'tools', label: 'Security Tools', icon: Wrench },
+    { id: 'response-simulator', label: 'Response Simulator', icon: SlidersHorizontal },
     { id: 'security-events', label: 'Security Events', icon: AlertTriangle, badge: securityEvents.filter(e => e.status === 'open').length },
     { id: 'incidents', label: 'Incident Management', icon: FileText },
     { id: 'ml-detection', label: 'ML Detection Overview', icon: Brain },

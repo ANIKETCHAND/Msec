@@ -47,12 +47,16 @@ export default function ReportsPage() {
         securityEvents.map(e =>
           `"${e.id}","${e.timestamp}","${e.ruleId}","${e.ruleName}","${e.deviceId}","${e.deviceName}","${e.severity}","${e.status}"`
         ).join("\n");
-    } else {
+    } else if (reportType === 'incidents') {
       filename = `medishield-incidents-report-${new Date().toISOString().slice(0, 10)}.csv`;
       csvContent = "IncidentID,Title,Severity,Status,AssignedTo,DeviceID,CreatedAt\n" +
         incidents.map(i =>
           `"${i.id}","${i.title}","${i.severity}","${i.status}","${i.assignedTo}","${i.deviceId}","${i.createdAt}"`
         ).join("\n");
+    } else {
+      window.location.href = '/api/reports/assessments.csv';
+      logAudit('REPORT_EXPORT', 'SecurityReport', 'assessments.csv', 'Exported assessment findings CSV report.');
+      return;
     }
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -102,6 +106,12 @@ export default function ReportsPage() {
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${reportType === 'incidents' ? 'bg-mediblue-600 text-white' : 'bg-navy-800 text-slate-400 hover:text-white'}`}
           >
             Incident Triage Log
+          </button>
+          <button
+            onClick={() => setReportType('assessments')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${reportType === 'assessments' ? 'bg-mediblue-600 text-white' : 'bg-navy-800 text-slate-400 hover:text-white'}`}
+          >
+            Vulnerability Findings
           </button>
         </div>
 

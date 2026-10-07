@@ -16,5 +16,7 @@ class AuditLogResponse(BaseModel):
     ip_address: str
     details: Optional[str] = None
     status: str
+    prev_hash: Optional[str] = None
+    entry_hash: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

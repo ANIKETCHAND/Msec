@@ -6,7 +6,8 @@ from app.models.db_models import UserModel
 from app.schemas.detection import DetectionEvaluateRequest, DetectionEvaluateResponse
 from app.services.detection_engine import detection_engine
 from app.services.ml_service import ml_service
-from app.middleware.rbac import get_current_user
+from app.database.session import get_db
+from app.middleware.rbac import get_current_user, require_analyst
 
 router = APIRouter(prefix="/detection", tags=["Detection"])
 
@@ -100,3 +101,31 @@ def evaluate_flow(
         suggested_action="No action required. Telemetry flow within expected clinical thresholds.",
         evaluated_at=datetime.now(timezone.utc)
     )
+
+
+@router.get("/ids/status")
+def get_ids_engine_status(current_user: UserModel = Depends(get_current_user)):
+    """Retrieve operational status of passive network IDS tools (Suricata, Zeek, Tshark)."""
+    from app.services.ids_service import ids_manager
+    return ids_manager.check_availability()
+
+
+@router.post("/ids/ingest")
+def ingest_ids_alert(
+    payload: dict,
+    source_type: str = "suricata",
+    db = Depends(get_db),
+    current_user: UserModel = Depends(require_analyst)
+):
+    """Ingest external Suricata EVE JSON or Zeek connection log alerts."""
+    from app.services.ids_service import ids_manager
+    event = ids_manager.ingest_alert(db=db, alert_payload=payload, source_type=source_type)
+    return {
+        "status": "ingested",
+        "event_id": event.id,
+        "rule_id": event.rule_id,
+        "rule_name": event.rule_name,
+        "device_id": event.device_id,
+        "severity": event.severity
+    }
+

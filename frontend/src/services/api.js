@@ -204,6 +204,58 @@ class ApiService {
       body: JSON.stringify(policies)
     });
   }
+
+  // Defensive Security Assessments & Scope Authorization
+  async getToolInventory() {
+    return await this.request('/assessments/tools/inventory');
+  }
+
+  async getScopes(deviceId = null) {
+    return await this.request(`/assessments/scopes${deviceId ? `?device_id=${deviceId}` : ''}`);
+  }
+
+  async authorizeScope(scopeData) {
+    return await this.request('/assessments/authorize-scope', {
+      method: 'POST',
+      body: JSON.stringify(scopeData)
+    });
+  }
+
+  async revokeScope(scopeId) {
+    return await this.request(`/assessments/scopes/${scopeId}/revoke`, {
+      method: 'POST'
+    });
+  }
+
+  async executeAssessment(launchData) {
+    return await this.request('/assessments/execute', {
+      method: 'POST',
+      body: JSON.stringify(launchData)
+    });
+  }
+
+  async getAssessments(deviceId = null) {
+    return await this.request(`/assessments${deviceId ? `?device_id=${deviceId}` : ''}`);
+  }
+
+  async getAssessment(assessmentId) {
+    return await this.request(`/assessments/${assessmentId}`);
+  }
+
+  async verifyAuditChain() {
+    return await this.request('/audit-logs/verify-chain');
+  }
+
+  async getIdsStatus() {
+    return await this.request('/detection/ids/status');
+  }
+
+  async correlateIncident(deviceId) {
+    return await this.request(`/incidents/correlate/${deviceId}`, {
+      method: 'POST'
+    });
+  }
 }
 
 export const api = new ApiService();
+

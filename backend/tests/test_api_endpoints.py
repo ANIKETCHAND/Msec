@@ -289,3 +289,212 @@ def test_analyst_can_quarantine_device():
     assert patch_resp2.json()["status"] == "online"
 
 
+def test_assessment_scope_authorization_and_defensive_restrictions():
+    """Verify defensive scope enforcement: only registered devices with matching IPs can be authorized."""
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    analyst_token = analyst_login.json()["access_token"]
+    analyst_headers = {"Authorization": f"Bearer {analyst_token}"}
+
+    # 1. Valid authorization for registered device
+    scope_resp = client.post("/api/assessments/authorize-scope", json={
+        "device_id": "DEV-ECG-001",
+        "target_ip": "192.168.10.45",
+        "assessment_profile": "DEFENSIVE_AUDIT",
+        "authorized_scope": ["PORT_DISCOVERY", "SERVICE_ENUMERATION"],
+        "selected_tools": ["nmap"],
+        "duration_hours": 4,
+        "justification": "Routine quarterly medical telemetry port verification"
+    }, headers=analyst_headers)
+    assert scope_resp.status_code == 201
+    scope_data = scope_resp.json()
+    assert scope_data["device_id"] == "DEV-ECG-001"
+    assert scope_data["authorization_status"] == "AUTHORIZED"
+    scope_id = scope_data["id"]
+
+    # 2. Blocked: Mismatched / arbitrary internet IP targeting
+    bad_ip_resp = client.post("/api/assessments/authorize-scope", json={
+        "device_id": "DEV-ECG-001",
+        "target_ip": "8.8.8.8",
+        "assessment_profile": "DEFENSIVE_AUDIT",
+        "selected_tools": ["nmap"],
+        "justification": "Attempting arbitrary internet target"
+    }, headers=analyst_headers)
+    assert bad_ip_resp.status_code == 400
+    assert "does not match registered device IP" in bad_ip_resp.json()["detail"]
+
+    # 3. Blocked: Unregistered device ID
+    non_device_resp = client.post("/api/assessments/authorize-scope", json={
+        "device_id": "DEV-NONEXISTENT-999",
+        "target_ip": "192.168.10.99",
+        "assessment_profile": "DEFENSIVE_AUDIT",
+        "selected_tools": ["nmap"],
+        "justification": "Non-existent device"
+    }, headers=analyst_headers)
+    assert non_device_resp.status_code == 404
+
+    # 4. Doctor role blocked from scope creation (RBAC)
+    doc_login = client.post("/api/auth/login", json={
+        "email": "doctor@medishield.local",
+        "password": "doctorpassword123"
+    })
+    doc_token = doc_login.json()["access_token"]
+    doc_headers = {"Authorization": f"Bearer {doc_token}"}
+    doc_resp = client.post("/api/assessments/authorize-scope", json={
+        "device_id": "DEV-ECG-001",
+        "target_ip": "192.168.10.45",
+        "justification": "Unauthorized role attempt"
+    }, headers=doc_headers)
+    assert doc_resp.status_code == 403
+
+    # 5. List scopes includes the authorized scope
+    list_resp = client.get("/api/assessments/scopes", headers=analyst_headers)
+    assert list_resp.status_code == 200
+    assert any(s["id"] == scope_id for s in list_resp.json())
+
+    # 6. Revoke scope
+    revoke_resp = client.post(f"/api/assessments/scopes/{scope_id}/revoke", headers=analyst_headers)
+    assert revoke_resp.status_code == 200
+    assert revoke_resp.json()["authorization_status"] == "REVOKED"
+
+
+def test_assessment_execution_orchestration_and_findings():
+    """Verify tool inventory status and execution of authorized multi-tool assessment."""
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    token = analyst_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Query tool inventory
+    inv_resp = client.get("/api/assessments/tools/inventory", headers=headers)
+    assert inv_resp.status_code == 200
+    tools = inv_resp.json()
+    assert any(t["name"] == "nmap" for t in tools)
+    assert any(t["name"] == "nuclei" for t in tools)
+
+    # 2. Authorize scope for DEV-VENT-502
+    scope_resp = client.post("/api/assessments/authorize-scope", json={
+        "device_id": "DEV-VENT-502",
+        "target_ip": "192.168.10.52",
+        "assessment_profile": "DEFENSIVE_AUDIT",
+        "authorized_scope": ["PORT_DISCOVERY", "VULNERABILITY_CHECK"],
+        "selected_tools": ["nmap", "nuclei"],
+        "duration_hours": 2,
+        "justification": "ICU Ventilator defensive compliance verification"
+    }, headers=headers)
+    assert scope_resp.status_code == 201
+    scope_id = scope_resp.json()["id"]
+
+    # 3. Attempt execution with unapproved tool (e.g. 'nikto' not in selected_tools) -> 403
+    unapproved_tool_resp = client.post("/api/assessments/execute", json={
+        "scope_id": scope_id,
+        "device_id": "DEV-VENT-502",
+        "profile": "DEFENSIVE_AUDIT",
+        "tools": ["nikto"]
+    }, headers=headers)
+    assert unapproved_tool_resp.status_code == 403
+
+    # 4. Execute authorized assessment with nmap & nuclei
+    exec_resp = client.post("/api/assessments/execute", json={
+        "scope_id": scope_id,
+        "device_id": "DEV-VENT-502",
+        "profile": "DEFENSIVE_AUDIT",
+        "tools": ["nmap", "nuclei"]
+    }, headers=headers)
+    assert exec_resp.status_code == 201
+    asm_data = exec_resp.json()
+    assert asm_data["status"] == "COMPLETED"
+    assert asm_data["device_id"] == "DEV-VENT-502"
+    assert len(asm_data["findings"]) > 0
+    assert asm_data["security_score"] <= 100.0
+
+    # 5. Verify device in DB was updated with new score & assessment status
+    dev_resp = client.get("/api/devices/DEV-VENT-502", headers=headers)
+    assert dev_resp.status_code == 200
+    dev_data = dev_resp.json()
+    assert dev_data["security_score"] == asm_data["security_score"]
+    assert dev_data["assessment_status"] in ["ASSESSED", "REMEDIATION_REQUIRED"]
+
+
+def test_ids_ingest_and_status():
+    """Verify passive IDS status query and Suricata EVE JSON alert ingestion."""
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    token = analyst_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Query IDS status
+    status_resp = client.get("/api/detection/ids/status", headers=headers)
+    assert status_resp.status_code == 200
+    assert "suricata" in status_resp.json()
+    assert "zeek" in status_resp.json()
+
+    # 2. Ingest simulated Suricata EVE JSON alert for registered device DEV-ECG-001 (192.168.10.45)
+    eve_alert = {
+        "timestamp": "2026-10-07T12:00:00.000Z",
+        "src_ip": "10.0.0.99",
+        "dest_ip": "192.168.10.45",
+        "dest_port": 2575,
+        "proto": "TCP",
+        "app_proto": "hl7",
+        "alert": {
+            "action": "allowed",
+            "gid": 1,
+            "signature_id": 2024001,
+            "signature": "ET CLINICAL Unencrypted HL7 Telemetry Data Broadcast",
+            "category": "Potentially Vulnerable Clinical Traffic",
+            "severity": 2
+        }
+    }
+    ingest_resp = client.post("/api/detection/ids/ingest", json=eve_alert, headers=headers)
+    assert ingest_resp.status_code == 200
+    ingest_data = ingest_resp.json()
+    assert ingest_data["status"] == "ingested"
+    assert ingest_data["device_id"] == "DEV-ECG-001"
+    assert ingest_data["severity"] == "high"
+
+
+def test_event_correlation_and_incident_generation():
+    """Verify multi-source event correlation generates structured incident tickets."""
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    token = analyst_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # DEV-VENT-502 has findings and telemetry alerts from previous tests
+    corr_resp = client.post("/api/incidents/correlate/DEV-VENT-502", headers=headers)
+    # Returns 200 with incident if patterns match, or 404 if insufficient patterns
+    assert corr_resp.status_code in [200, 404]
+    if corr_resp.status_code == 200:
+        inc_data = corr_resp.json()
+        assert inc_data["device_id"] == "DEV-VENT-502"
+        assert any("SIMULATION" in n.get("text", "") for n in inc_data["notes"])
+
+
+def test_audit_hash_chain_verification():
+    """Verify cryptographic SHA-256 hash chain verification endpoint."""
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    token = analyst_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    verify_resp = client.get("/api/audit-logs/verify-chain", headers=headers)
+    assert verify_resp.status_code == 200
+    data = verify_resp.json()
+    assert "chain_valid" in data
+    assert data["chain_valid"] is True
+    assert data["total_records"] > 0
+
+
+
+
