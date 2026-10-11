@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import StatusBadge from '../components/common/StatusBadge';
 import {
   FileText,
   Search,
@@ -9,7 +10,6 @@ import {
   User,
   Plus,
   Send,
-  ShieldAlert,
   ChevronRight,
   Filter,
   CheckCircle,
@@ -35,32 +35,6 @@ export default function IncidentManagementPage() {
     return matchSearch && matchStatus;
   });
 
-  const getSeverityBadge = (severity) => {
-    switch (severity.toLowerCase()) {
-      case 'critical':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'high':
-        return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'medium':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      default:
-        return 'bg-sky-500/20 text-sky-400 border-sky-500/30';
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status.toLowerCase()) {
-      case 'new':
-        return 'bg-sky-500/20 text-sky-400 border-sky-500/30';
-      case 'investigating':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      case 'resolved':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      default:
-        return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
-    }
-  };
-
   const handleAddNote = (e) => {
     e.preventDefault();
     if (!newNoteText.trim() || !selectedIncident) return;
@@ -70,213 +44,205 @@ export default function IncidentManagementPage() {
 
   const handleTransition = (newStatus) => {
     if (!selectedIncident) return;
-    updateIncidentStatus(selectedIncident.id, newStatus, `Transitioned status to ${newStatus}.`);
+    updateIncidentStatus(selectedIncident.id, newStatus, `Transitioned incident to ${newStatus}.`);
   };
-
-  // Re-sync selected incident if incidents array updates
-  const activeIncident = incidents.find(i => i.id === selectedIncident?.id) || selectedIncident;
 
   return (
     <div className="space-y-6">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          <FileText className="w-5 h-5 text-mediblue-400" />
-          IoMT Incident Management & Triage
-        </h1>
-        <p className="text-xs text-slate-400">
-          Structured response workflows, forensic investigation notes, and status transitions for IoMT security events.
-        </p>
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E7EB]">
+        <div>
+          <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
+            <span>Incident Management</span>
+            <span className="text-xs font-mono text-[#6B7280] font-normal">
+              ({incidents.length} active tickets)
+            </span>
+          </h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Investigation tickets, analyst assignments, and incident lifecycle management.
+          </p>
+        </div>
       </div>
 
-      {/* Main Grid: Left Ticket List, Right Active Ticket Investigation */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Tickets Queue (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-3">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Search incidents..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-mediblue-500"
-              />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-navy-950 border border-navy-700 rounded-xl px-2 py-1.5 text-xs text-slate-200 focus:outline-none"
-              >
-                <option value="ALL">All</option>
-                <option value="NEW">New</option>
-                <option value="INVESTIGATING">Investigating</option>
-                <option value="RESOLVED">Resolved</option>
-                <option value="CLOSED">Closed</option>
-              </select>
-            </div>
+      {/* 2. Controls */}
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        <div className="sm:col-span-8 relative">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tickets by ID, title, evidence summary..."
+            className="w-full bg-white text-xs text-[#171717] placeholder-[#9CA3AF] pl-8 pr-3 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
+          />
+        </div>
 
-            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {filteredIncidents.map(inc => {
-                const isSelected = activeIncident?.id === inc.id;
+        <div className="sm:col-span-4">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full bg-white text-xs text-[#171717] px-2.5 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
+          >
+            <option value="ALL">Status: All Incidents</option>
+            <option value="NEW">Status: New</option>
+            <option value="INVESTIGATING">Status: In Investigation</option>
+            <option value="RESOLVED">Status: Resolved</option>
+            <option value="CLOSED">Status: Closed</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 3. 2-Column Split: Ticket List (Left 5 cols) & Investigation Panel (Right 7 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Ticket List */}
+        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
+          <div className="px-4 py-3 bg-[#F9FAFB] border-b border-[#E5E7EB] text-xs font-semibold uppercase text-[#6B7280]">
+            Incident Queue ({filteredIncidents.length})
+          </div>
+
+          <div className="divide-y divide-[#F3F4F6] max-h-[600px] overflow-y-auto">
+            {filteredIncidents.length === 0 ? (
+              <p className="py-8 text-center text-xs text-[#6B7280]">No tickets match filter.</p>
+            ) : (
+              filteredIncidents.map((inc) => {
+                const isSelected = selectedIncident?.id === inc.id;
                 return (
-                  <button
+                  <div
                     key={inc.id}
                     onClick={() => setSelectedIncident(inc)}
-                    className={`
-                      w-full text-left p-3.5 rounded-xl border transition
-                      ${isSelected
-                        ? 'bg-navy-800 border-mediblue-500 shadow-md'
-                        : 'bg-navy-950/60 border-navy-800 hover:bg-navy-850 hover:border-navy-700'
-                      }
-                    `}
+                    className={`p-4 cursor-pointer transition-swiss border-l-2 ${
+                      isSelected ? 'bg-[#E6F4FF]/50 border-l-[#1677FF]' : 'hover:bg-[#F9FAFB] border-l-transparent'
+                    }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-bold text-mediblue-400">{inc.id}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getSeverityBadge(inc.severity)}`}>
-                        {inc.severity.toUpperCase()}
-                      </span>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-mono text-xs font-semibold text-[#171717]">{inc.id}</span>
+                      <StatusBadge status={inc.severity} size="xs" />
                     </div>
 
-                    <h3 className="font-semibold text-xs text-white mt-1 line-clamp-1">{inc.title}</h3>
-                    <p className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">{inc.description}</p>
+                    <h4 className="text-xs font-semibold text-[#171717] line-clamp-1">{inc.title}</h4>
+                    <p className="text-[11px] text-[#6B7280] line-clamp-2 mt-1 leading-relaxed">{inc.description}</p>
 
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-navy-800/80">
-                      <span className="capitalize">{inc.status}</span>
+                    <div className="mt-2.5 flex items-center justify-between text-[11px] text-[#6B7280] font-mono">
                       <span>{inc.assignedTo}</span>
+                      <StatusBadge status={inc.status} size="xs" />
                     </div>
-                  </button>
+                  </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </div>
         </div>
 
-        {/* Right Column: Incident Workspace & Notes (7 cols) */}
-        <div className="lg:col-span-7">
-          {activeIncident ? (
-            <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6 space-y-6 shadow-xl">
+        {/* Selected Incident Details Panel */}
+        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-lg p-5 space-y-5">
+          {selectedIncident ? (
+            <>
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-navy-800 pb-4">
+              <div className="pb-4 border-b border-[#F3F4F6] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-mediblue-400">{activeIncident.id}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getStatusBadge(activeIncident.status)}`}>
-                      {activeIncident.status.toUpperCase()}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getSeverityBadge(activeIncident.severity)}`}>
-                      {activeIncident.severity.toUpperCase()}
-                    </span>
+                    <span className="font-mono text-xs text-[#6B7280]">{selectedIncident.id}</span>
+                    <StatusBadge status={selectedIncident.severity} size="xs" />
+                    <StatusBadge status={selectedIncident.status} size="xs" />
                   </div>
-                  <h2 className="text-base font-bold text-white mt-1">{activeIncident.title}</h2>
+                  <h2 className="text-base font-semibold text-[#171717] mt-1">{selectedIncident.title}</h2>
                 </div>
 
-                {/* Workflow Transitions (Analyst & Admin only) */}
+                {/* Transition Actions */}
                 {currentUser.role !== 'Doctor Demo' && (
                   <div className="flex items-center gap-1.5 text-xs">
-                    {activeIncident.status === 'new' && (
+                    {selectedIncident.status !== 'investigating' && selectedIncident.status !== 'resolved' && (
                       <button
                         onClick={() => handleTransition('investigating')}
-                        className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 rounded-xl font-semibold transition"
+                        className="px-2.5 py-1 rounded bg-[#E6F4FF] text-[#1677FF] hover:bg-blue-100 font-medium transition-swiss"
                       >
-                        Start Investigation
+                        Investigate
                       </button>
                     )}
-                    {activeIncident.status === 'investigating' && (
+                    {selectedIncident.status !== 'resolved' && (
                       <button
                         onClick={() => handleTransition('resolved')}
-                        className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 rounded-xl font-semibold transition"
+                        className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium transition-swiss"
                       >
-                        Mark Resolved
-                      </button>
-                    )}
-                    {activeIncident.status === 'resolved' && (
-                      <button
-                        onClick={() => handleTransition('closed')}
-                        className="px-3 py-1.5 bg-slate-500/20 hover:bg-slate-500/30 text-slate-300 border border-slate-500/30 rounded-xl font-semibold transition"
-                      >
-                        Close Incident
+                        Resolve
                       </button>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Meta details */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 bg-navy-950 rounded-xl border border-navy-800 text-xs">
+              {/* Description & Target Endpoint */}
+              <div className="space-y-3 text-xs">
                 <div>
-                  <span className="text-slate-400">Target Device:</span>
-                  <div className="font-semibold text-white">
+                  <span className="text-[#6B7280] font-medium uppercase text-[10px] tracking-wider block mb-1">
+                    Description & Forensic Findings
+                  </span>
+                  <p className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-[#171717] leading-relaxed">
+                    {selectedIncident.description}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded">
+                  <div>
+                    <span className="text-[#6B7280] text-[11px] block">Target Medical Device</span>
                     <button
-                      onClick={() => { setSelectedDeviceId(activeIncident.deviceId); setCurrentPage('device-detail'); }}
-                      className="text-mediblue-400 hover:underline"
+                      onClick={() => {
+                        setSelectedDeviceId(selectedIncident.deviceId);
+                        setCurrentPage('device-detail');
+                      }}
+                      className="font-mono text-[#1677FF] hover:underline font-semibold"
                     >
-                      {activeIncident.deviceId}
+                      {selectedIncident.deviceId}
                     </button>
                   </div>
-                </div>
-                <div>
-                  <span className="text-slate-400">Assigned Investigator:</span>
-                  <div className="font-semibold text-white">{activeIncident.assignedTo}</div>
-                </div>
-                <div>
-                  <span className="text-slate-400">Opened At:</span>
-                  <div className="text-slate-300 font-mono text-[11px]">{activeIncident.createdAt}</div>
+                  <div>
+                    <span className="text-[#6B7280] text-[11px] block">Assigned Security Lead</span>
+                    <span className="font-medium text-[#171717]">{selectedIncident.assignedTo}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="space-y-1">
-                <span className="text-xs font-semibold text-slate-300">Incident Narrative:</span>
-                <p className="text-xs text-slate-300 bg-navy-950/60 p-3 rounded-xl border border-navy-800/80 leading-relaxed">
-                  {activeIncident.description}
-                </p>
-              </div>
-
-              {/* Investigation Journal / Notes */}
-              <div className="space-y-3">
-                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-mediblue-400" />
-                  Investigation Notes & Audit Trail
+              {/* Notes & Audit Timeline */}
+              <div className="space-y-3 pt-2">
+                <span className="text-[#6B7280] font-medium uppercase text-[10px] tracking-wider block">
+                  Analyst Timeline & Notes ({selectedIncident.notes?.length || 0})
                 </span>
 
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                  {activeIncident.notes.map((n, idx) => (
-                    <div key={idx} className="p-3 bg-navy-950/80 rounded-xl border border-navy-800/80 text-xs space-y-1">
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span className="font-bold text-slate-300">{n.author}</span>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {(selectedIncident.notes || []).map((n, idx) => (
+                    <div key={idx} className="p-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded text-xs">
+                      <div className="flex items-center justify-between text-[11px] text-[#6B7280] mb-1 font-mono">
+                        <span className="font-medium text-[#171717]">{n.author}</span>
                         <span>{n.time}</span>
                       </div>
-                      <p className="text-slate-300">{n.text}</p>
+                      <p className="text-[#171717] leading-relaxed">{n.text}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Add Note Form */}
-                {currentUser.role !== 'Doctor Demo' ? (
-                  <form onSubmit={handleAddNote} className="flex gap-2 pt-2">
+                {currentUser.role !== 'Doctor Demo' && (
+                  <form onSubmit={handleAddNote} className="flex items-center gap-2 pt-2">
                     <input
                       type="text"
-                      placeholder="Add forensic finding or containment note..."
+                      placeholder="Add investigation note or remediation step..."
                       value={newNoteText}
                       onChange={(e) => setNewNoteText(e.target.value)}
-                      className="flex-1 bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-mediblue-500"
+                      className="flex-1 bg-white border border-[#E5E7EB] rounded px-3 py-1.5 text-xs text-[#171717] focus:outline-none focus:border-[#1677FF]"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                      disabled={!newNoteText.trim()}
+                      className="px-3 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] disabled:opacity-40 text-white text-xs font-medium transition-swiss"
                     >
-                      <Send className="w-3.5 h-3.5" /> Post
+                      Post Note
                     </button>
                   </form>
-                ) : (
-                  <p className="text-[11px] text-slate-400 italic">Doctor role: Read-only access to incident journal.</p>
                 )}
               </div>
-            </div>
+            </>
           ) : (
-            <div className="p-12 text-center text-slate-400 bg-navy-900 border border-navy-800 rounded-2xl">
-              Select an incident from the queue to review forensic findings.
-            </div>
+            <p className="py-12 text-center text-xs text-[#6B7280]">Select an incident to view details.</p>
           )}
         </div>
       </div>

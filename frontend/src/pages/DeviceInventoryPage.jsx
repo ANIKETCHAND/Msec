@@ -1,36 +1,28 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import StatusBadge from '../components/common/StatusBadge';
 import {
   Server,
   Search,
-  Filter,
   Plus,
+  Filter,
   ArrowUpDown,
-  Shield,
-  Activity,
   ChevronRight,
-  Wifi,
-  WifiOff,
-  AlertTriangle,
-  Radio,
-  SlidersHorizontal,
+  ChevronLeft,
   X,
-  Building2,
-  Cpu,
   CheckCircle2,
-  HelpCircle,
-  Clock
+  Clock,
+  Shield,
+  Activity
 } from 'lucide-react';
 
 export default function DeviceInventoryPage() {
-  const { devices, setSelectedDeviceId, setCurrentPage, currentUser, logAudit } = useApp();
+  const { devices, setSelectedDeviceId, setCurrentPage, currentUser, toggleDeviceIsolation } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [riskFilter, setRiskFilter] = useState('ALL');
-  const [segmentFilter, setSegmentFilter] = useState('ALL');
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
-  const [assessmentFilter, setAssessmentFilter] = useState('ALL');
   const [sortField, setSortField] = useState('name');
   const [sortAsc, setSortAsc] = useState(true);
   const [currentPageNum, setCurrentPageNum] = useState(1);
@@ -44,7 +36,7 @@ export default function DeviceInventoryPage() {
   const [newDeviceDepartment, setNewDeviceDepartment] = useState('Intensive Care Unit');
   const [newDeviceSegment, setNewDeviceSegment] = useState('ICU_VLAN_10');
 
-  // Filtered & sorted list
+  // Filtered & sorted device dataset
   const filteredDevices = useMemo(() => {
     return devices.filter(dev => {
       const q = searchQuery.toLowerCase();
@@ -54,16 +46,13 @@ export default function DeviceInventoryPage() {
         dev.ipAddress?.includes(q) ||
         dev.deviceType?.toLowerCase().includes(q) ||
         (dev.manufacturer && dev.manufacturer.toLowerCase().includes(q)) ||
-        (dev.model && dev.model.toLowerCase().includes(q)) ||
         (dev.department && dev.department.toLowerCase().includes(q));
 
       const matchStatus = statusFilter === 'ALL' || dev.status?.toUpperCase() === statusFilter;
       const matchRisk = riskFilter === 'ALL' || dev.riskLevel?.toUpperCase() === riskFilter;
-      const matchSegment = segmentFilter === 'ALL' || dev.networkSegment === segmentFilter;
       const matchDepartment = departmentFilter === 'ALL' || dev.department === departmentFilter;
-      const matchAssessment = assessmentFilter === 'ALL' || (dev.assessmentStatus || 'NOT_ASSESSED') === assessmentFilter;
 
-      return matchSearch && matchStatus && matchRisk && matchSegment && matchDepartment && matchAssessment;
+      return matchSearch && matchStatus && matchRisk && matchDepartment;
     }).sort((a, b) => {
       let valA = a[sortField] ?? '';
       let valB = b[sortField] ?? '';
@@ -72,308 +61,230 @@ export default function DeviceInventoryPage() {
       }
       return sortAsc ? valA - valB : valB - valA;
     });
-  }, [devices, searchQuery, statusFilter, riskFilter, segmentFilter, departmentFilter, assessmentFilter, sortField, sortAsc]);
+  }, [devices, searchQuery, statusFilter, riskFilter, departmentFilter, sortField, sortAsc]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredDevices.length / itemsPerPage) || 1;
   const paginatedDevices = filteredDevices.slice((currentPageNum - 1) * itemsPerPage, currentPageNum * itemsPerPage);
 
-  const getRiskBadge = (risk) => {
-    switch (risk?.toLowerCase()) {
-      case 'critical':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'high':
-        return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'medium':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      default:
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+  // Sorting toggle
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(true);
     }
   };
 
-  const getAssessmentBadge = (status) => {
-    switch (status) {
-      case 'ASSESSED':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-max"><CheckCircle2 className="w-3 h-3" /> Assessed</span>;
-      case 'IN_PROGRESS':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1 w-max"><Activity className="w-3 h-3 animate-pulse" /> Scanning</span>;
-      case 'REMEDIATION_REQUIRED':
-        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center gap-1 w-max"><AlertTriangle className="w-3 h-3" /> Action Needed</span>;
-      default:
-        return <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-700/40 text-slate-400 border border-slate-700/50 flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> Not Assessed</span>;
-    }
-  };
-
-  const getSecurityScoreBadge = (score) => {
-    const s = typeof score === 'number' ? score : 85;
-    let colorClass = 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
-    if (s < 60) {
-      colorClass = 'text-red-400 border-red-500/30 bg-red-500/10';
-    } else if (s < 80) {
-      colorClass = 'text-amber-400 border-amber-500/30 bg-amber-500/10';
-    }
-    return (
-      <span className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold border ${colorClass}`}>
-        {Math.round(s)}/100
-      </span>
-    );
-  };
-
-  const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'online':
-        return (
-          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            Online
-          </span>
-        );
-      case 'offline':
-        return (
-          <span className="inline-flex items-center gap-1 text-[11px] text-red-400 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-            Offline
-          </span>
-        );
-      case 'isolated':
-        return (
-          <span className="inline-flex items-center gap-1 text-[11px] text-purple-400 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-            Quarantined
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-            Suspicious
-          </span>
-        );
-    }
-  };
-
-  const handleRowClick = (deviceId) => {
+  const handleDeviceClick = (deviceId) => {
     setSelectedDeviceId(deviceId);
     setCurrentPage('device-detail');
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 1. Header & Register Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E7EB]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Server className="w-5 h-5 text-mediblue-400" />
-              IoMT Device Inventory & Asset Posture
-            </h1>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-mediblue-500/10 text-mediblue-400 border border-mediblue-500/30">
-              Defensive Asset Registry
+          <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
+            <span>Device Inventory</span>
+            <span className="text-xs font-mono text-[#6B7280] font-normal">
+              ({devices.length} registered assets)
             </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Registered medical equipment, hardware specifications, network segmentation, and real-time security posture.
+          </h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Registered medical equipment, hardware specifications, clinical VLANs, and risk posture.
           </p>
         </div>
 
-        {/* Register Device Button (RBAC protected for Admin) */}
         {currentUser.role === 'Administrator' && (
           <button
             onClick={() => setAddModalOpen(true)}
-            className="px-3.5 py-2 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-mediblue-600/20"
+            className="px-3 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shrink-0 shadow-xs"
           >
-            <Plus className="w-4 h-4" />
-            Register Simulated Device
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Register Asset</span>
           </button>
         )}
       </div>
 
-      {/* Safety Notice Banner */}
-      <div className="p-3 bg-navy-900/80 border border-navy-700/60 rounded-xl flex items-center justify-between text-xs text-slate-300">
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          <span>
-            <strong className="text-emerald-400">DEFENSIVE SECURITY SCOPE:</strong> Only explicitly inventoried and authorized IoMT assets are monitored and scoped for defensive diagnostics.
-          </span>
-        </div>
-        <span className="text-[10px] font-mono text-slate-400 px-2 py-0.5 rounded bg-navy-950 border border-navy-800 hidden md:inline">
-          SIMULATION — NO REAL DEVICE CONTROL
-        </span>
-      </div>
-
-      {/* Search & Filters Bar */}
-      <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              placeholder="Search ID, model, IP, dept..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPageNum(1); }}
-              className="w-full bg-navy-950 border border-navy-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-mediblue-500"
-            />
-          </div>
-
-          {/* Department Filter */}
-          <div>
-            <select
-              value={departmentFilter}
-              onChange={(e) => { setDepartmentFilter(e.target.value); setCurrentPageNum(1); }}
-              className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
-            >
-              <option value="ALL">All Departments</option>
-              <option value="Intensive Care Unit">Intensive Care Unit</option>
-              <option value="General Medicine Ward">General Medicine Ward</option>
-              <option value="Emergency Department">Emergency Department</option>
-              <option value="Ambulatory & Cardiology">Ambulatory & Cardiology</option>
-            </select>
-          </div>
-
-          {/* Network Segment Filter */}
-          <div>
-            <select
-              value={segmentFilter}
-              onChange={(e) => { setSegmentFilter(e.target.value); setCurrentPageNum(1); }}
-              className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
-            >
-              <option value="ALL">All Segments (VLAN)</option>
-              <option value="ICU_VLAN_10">ICU_VLAN_10</option>
-              <option value="WARD_VLAN_20">WARD_VLAN_20</option>
-              <option value="ER_VLAN_30">ER_VLAN_30</option>
-              <option value="AMBULATORY_VLAN_40">AMBULATORY_VLAN_40</option>
-              <option value="CORE_VLAN_1">CORE_VLAN_1</option>
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPageNum(1); }}
-              className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="ONLINE">Online</option>
-              <option value="OFFLINE">Offline</option>
-              <option value="SUSPICIOUS">Suspicious</option>
-              <option value="ISOLATED">Quarantined</option>
-            </select>
-          </div>
-
-          {/* Assessment Filter */}
-          <div>
-            <select
-              value={assessmentFilter}
-              onChange={(e) => { setAssessmentFilter(e.target.value); setCurrentPageNum(1); }}
-              className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
-            >
-              <option value="ALL">All Assessment States</option>
-              <option value="NOT_ASSESSED">Not Assessed</option>
-              <option value="ASSESSED">Assessed</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="REMEDIATION_REQUIRED">Remediation Req.</option>
-            </select>
-          </div>
+      {/* 2. Controls & Filter Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+        {/* Search */}
+        <div className="lg:col-span-5 relative">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPageNum(1); }}
+            placeholder="Search by device name, ID, IP address, manufacturer..."
+            className="w-full bg-white text-xs text-[#171717] placeholder-[#9CA3AF] pl-8 pr-3 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none focus:ring-1 focus:ring-[#1677FF]/20 transition-swiss font-mono"
+          />
         </div>
 
-        {/* Sorting options */}
-        <div className="flex items-center justify-between pt-2 border-t border-navy-800 text-[11px] text-slate-400">
-          <div className="flex items-center gap-3">
-            <span>Sort By:</span>
-            <button
-              onClick={() => { setSortField('name'); setSortAsc(!sortAsc); }}
-              className={`hover:text-white flex items-center gap-1 ${sortField === 'name' ? 'text-mediblue-400 font-semibold' : ''}`}
-            >
-              Name <ArrowUpDown className="w-3 h-3" />
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => { setSortField('securityScore'); setSortAsc(!sortAsc); }}
-              className={`hover:text-white flex items-center gap-1 ${sortField === 'securityScore' ? 'text-mediblue-400 font-semibold' : ''}`}
-            >
-              Score <ArrowUpDown className="w-3 h-3" />
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => { setSortField('riskLevel'); setSortAsc(!sortAsc); }}
-              className={`hover:text-white flex items-center gap-1 ${sortField === 'riskLevel' ? 'text-mediblue-400 font-semibold' : ''}`}
-            >
-              Risk <ArrowUpDown className="w-3 h-3" />
-            </button>
-          </div>
-          <div>
-            Showing {filteredDevices.length} matching medical assets
-          </div>
+        {/* Status Filter */}
+        <div className="lg:col-span-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPageNum(1); }}
+            className="w-full bg-white text-xs text-[#171717] px-2.5 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
+          >
+            <option value="ALL">Status: All</option>
+            <option value="ONLINE">Status: Online</option>
+            <option value="SUSPICIOUS">Status: Suspicious</option>
+            <option value="ISOLATED">Status: Quarantined</option>
+            <option value="OFFLINE">Status: Offline</option>
+          </select>
+        </div>
+
+        {/* Risk Filter */}
+        <div className="lg:col-span-2">
+          <select
+            value={riskFilter}
+            onChange={(e) => { setRiskFilter(e.target.value); setCurrentPageNum(1); }}
+            className="w-full bg-white text-xs text-[#171717] px-2.5 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
+          >
+            <option value="ALL">Risk: All</option>
+            <option value="LOW">Risk: Low</option>
+            <option value="MEDIUM">Risk: Medium</option>
+            <option value="HIGH">Risk: High</option>
+            <option value="CRITICAL">Risk: Critical</option>
+          </select>
+        </div>
+
+        {/* Department Filter */}
+        <div className="lg:col-span-3">
+          <select
+            value={departmentFilter}
+            onChange={(e) => { setDepartmentFilter(e.target.value); setCurrentPageNum(1); }}
+            className="w-full bg-white text-xs text-[#171717] px-2.5 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
+          >
+            <option value="ALL">Department: All</option>
+            <option value="Intensive Care Unit">Intensive Care Unit (ICU)</option>
+            <option value="Cardiology">Cardiology</option>
+            <option value="Emergency Department">Emergency Department</option>
+            <option value="General Ward">General Ward</option>
+          </select>
         </div>
       </div>
 
-      {/* Device Table */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* 3. Clean Swiss Device Table */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-navy-950/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
-              <tr>
-                <th className="py-3 px-4">Device ID</th>
-                <th className="py-3 px-4">Asset & Manufacturer</th>
-                <th className="py-3 px-4">Department & Room</th>
-                <th className="py-3 px-4">Network / IP</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Security Score</th>
-                <th className="py-3 px-4">Risk Level</th>
-                <th className="py-3 px-4">Assessment</th>
-                <th className="py-3 px-4 text-right">Details</th>
+            <thead>
+              <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-[#6B7280] font-medium uppercase text-[11px] tracking-wider select-none">
+                <th
+                  onClick={() => handleSort('name')}
+                  className="py-3 px-4 cursor-pointer hover:text-[#171717] transition-swiss"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Device</span>
+                    <ArrowUpDown className="w-3 h-3 text-[#9CA3AF]" />
+                  </div>
+                </th>
+                <th className="py-3 px-4">Type</th>
+                <th className="py-3 px-4">IP Address</th>
+                <th
+                  onClick={() => handleSort('riskLevel')}
+                  className="py-3 px-4 cursor-pointer hover:text-[#171717] transition-swiss"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Risk</span>
+                    <ArrowUpDown className="w-3 h-3 text-[#9CA3AF]" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('status')}
+                  className="py-3 px-4 cursor-pointer hover:text-[#171717] transition-swiss"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Status</span>
+                    <ArrowUpDown className="w-3 h-3 text-[#9CA3AF]" />
+                  </div>
+                </th>
+                <th className="py-3 px-4">Last Seen</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-navy-800 text-slate-300">
+            <tbody className="divide-y divide-[#F3F4F6]">
               {paginatedDevices.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="py-8 text-center text-slate-400">
-                    No devices match the specified query and filters.
+                  <td colSpan="7" className="py-8 text-center text-xs text-[#6B7280]">
+                    No medical devices match your selected search criteria.
                   </td>
                 </tr>
               ) : (
                 paginatedDevices.map((dev) => (
                   <tr
                     key={dev.id}
-                    onClick={() => handleRowClick(dev.id)}
-                    className="hover:bg-navy-800/40 cursor-pointer transition"
+                    onClick={() => handleDeviceClick(dev.id)}
+                    className="hover:bg-[#F9FAFB] cursor-pointer transition-swiss group"
                   >
-                    <td className="py-3.5 px-4 font-mono text-mediblue-400 font-semibold">
-                      {dev.id}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-white">{dev.name}</div>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                        <Cpu className="w-3 h-3 text-slate-500" />
-                        {dev.manufacturer || 'Generic'} • {dev.model || dev.deviceType}
+                    {/* Device Name & Hardware */}
+                    <td className="py-3 px-4">
+                      <div>
+                        <span className="font-semibold text-[#171717] group-hover:text-[#1677FF] transition-swiss block">
+                          {dev.name}
+                        </span>
+                        <span className="text-[11px] text-[#6B7280] font-mono mt-0.5 block">
+                          {dev.id} • {dev.manufacturer} {dev.model}
+                        </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4">
-                      <div className="text-slate-200 font-medium">{dev.department || 'General Ward'}</div>
-                      <div className="text-[10px] text-slate-400">{dev.location || dev.patientRoom || 'Station 1'}</div>
+
+                    {/* Device Type */}
+                    <td className="py-3 px-4 text-[#171717]">
+                      <span>{dev.deviceType}</span>
+                      <span className="block text-[11px] text-[#9CA3AF]">{dev.department}</span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-slate-300">
-                      <div>{dev.ipAddress}</div>
-                      <div className="text-slate-400 text-[10px]">{dev.networkSegment}</div>
+
+                    {/* IP Address & Segment */}
+                    <td className="py-3 px-4 font-mono text-[#6B7280]">
+                      <span className="text-[#171717] font-medium block">{dev.ipAddress}</span>
+                      <span className="text-[10px] text-[#9CA3AF] block">{dev.networkSegment}</span>
                     </td>
-                    <td className="py-3.5 px-4">
-                      {getStatusBadge(dev.status)}
+
+                    {/* Risk Badge */}
+                    <td className="py-3 px-4">
+                      <StatusBadge status={dev.riskLevel} size="xs" />
                     </td>
-                    <td className="py-3.5 px-4">
-                      {getSecurityScoreBadge(dev.securityScore)}
+
+                    {/* Operational Status */}
+                    <td className="py-3 px-4">
+                      <StatusBadge status={dev.status} size="xs" />
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${getRiskBadge(dev.riskLevel)}`}>
-                        {dev.riskLevel?.toUpperCase()}
-                      </span>
+
+                    {/* Last Seen */}
+                    <td className="py-3 px-4 font-mono text-[#6B7280] text-[11px]">
+                      {dev.lastSeen || 'Just now'}
                     </td>
-                    <td className="py-3.5 px-4">
-                      {getAssessmentBadge(dev.assessmentStatus)}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <ChevronRight className="w-4 h-4 text-slate-400 inline" />
+
+                    {/* Actions */}
+                    <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleDeviceClick(dev.id)}
+                          className="px-2 py-1 rounded text-[11px] font-medium text-[#1677FF] hover:bg-[#E6F4FF] transition-swiss"
+                        >
+                          Diagnostics
+                        </button>
+
+                        {(currentUser.role === 'Administrator' || currentUser.role === 'Security Analyst') && (
+                          <button
+                            onClick={() => toggleDeviceIsolation(dev.id)}
+                            title="Simulated microsegmentation quarantine"
+                            className={`px-2 py-1 rounded text-[11px] font-medium transition-swiss ${
+                              dev.status === 'isolated'
+                                ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                : 'text-amber-800 bg-amber-50 hover:bg-amber-100'
+                            }`}
+                          >
+                            {dev.status === 'isolated' ? 'Restore' : 'Quarantine'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -382,151 +293,118 @@ export default function DeviceInventoryPage() {
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        <div className="p-4 border-t border-navy-800 flex items-center justify-between text-xs text-slate-400">
-          <div>
-            Page {currentPageNum} of {totalPages}
-          </div>
+        {/* 4. Pagination */}
+        <div className="px-4 py-3 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between text-xs text-[#6B7280] select-none font-mono">
+          <span>
+            Showing {filteredDevices.length === 0 ? 0 : (currentPageNum - 1) * itemsPerPage + 1}–{Math.min(currentPageNum * itemsPerPage, filteredDevices.length)} of {filteredDevices.length} assets
+          </span>
+
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentPageNum(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPageNum(p => Math.max(p - 1, 1))}
               disabled={currentPageNum === 1}
-              className="px-3 py-1 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-lg"
+              className="p-1 rounded border border-[#E5E7EB] bg-white hover:bg-[#F3F4F6] disabled:opacity-40 transition-swiss"
             >
-              Previous
+              <ChevronLeft className="w-4 h-4 text-[#171717]" />
             </button>
+            <span className="tabular-nums">Page {currentPageNum} of {totalPages}</span>
             <button
-              onClick={() => setCurrentPageNum(p => Math.min(totalPages, p + 1))}
+              onClick={() => setCurrentPageNum(p => Math.min(p + 1, totalPages))}
               disabled={currentPageNum === totalPages}
-              className="px-3 py-1 bg-navy-800 hover:bg-navy-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-lg"
+              className="p-1 rounded border border-[#E5E7EB] bg-white hover:bg-[#F3F4F6] disabled:opacity-40 transition-swiss"
             >
-              Next
+              <ChevronRight className="w-4 h-4 text-[#171717]" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Add Device Modal */}
+      {/* Register Asset Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-navy-900 border border-navy-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-navy-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <Server className="w-4 h-4 text-mediblue-400" />
-                Register Simulated IoMT Asset
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white border border-[#E5E7EB] rounded-lg max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
+              <div className="flex items-center gap-2 text-[#171717] font-semibold text-sm">
+                <Server className="w-4 h-4 text-[#1677FF]" />
+                <span>Register Medical Endpoint</span>
+              </div>
               <button
                 onClick={() => setAddModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-[#9CA3AF] hover:text-[#171717]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                logAudit('DEVICE_REGISTERED', 'Device', `DEV-${Math.floor(1000 + Math.random()*9000)}`, `Registered ${newDeviceName} (${newDeviceManufacturer}).`);
-                setAddModalOpen(false);
-              }}
-              className="space-y-3 text-xs"
-            >
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Device Name</label>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[#6B7280] font-medium mb-1">Asset Model Name</label>
                 <input
                   type="text"
-                  placeholder="e.g. Bedside Pulse Oximeter B-2"
+                  placeholder="e.g. Philips IntelliVue MX800"
                   value={newDeviceName}
                   onChange={(e) => setNewDeviceName(e.target.value)}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                  required
+                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none focus:border-[#1677FF]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-slate-300 font-medium">Manufacturer</label>
-                  <input
-                    type="text"
-                    value={newDeviceManufacturer}
-                    onChange={(e) => setNewDeviceManufacturer(e.target.value)}
-                    className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                    required
-                  />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[#6B7280] font-medium mb-1">Device Class</label>
+                  <select
+                    value={newDeviceType}
+                    onChange={(e) => setNewDeviceType(e.target.value)}
+                    className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none"
+                  >
+                    <option>Infusion Pump</option>
+                    <option>Patient Monitor</option>
+                    <option>Mechanical Ventilator</option>
+                    <option>Continuous Glucose Monitor</option>
+                    <option>EHR Gateway</option>
+                  </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-slate-300 font-medium">Model</label>
-                  <input
-                    type="text"
-                    value={newDeviceModel}
-                    onChange={(e) => setNewDeviceModel(e.target.value)}
-                    className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                    required
-                  />
+                <div>
+                  <label className="block text-[#6B7280] font-medium mb-1">VLAN Segment</label>
+                  <select
+                    value={newDeviceSegment}
+                    onChange={(e) => setNewDeviceSegment(e.target.value)}
+                    className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none font-mono"
+                  >
+                    <option>ICU_VLAN_10</option>
+                    <option>WARD_VLAN_20</option>
+                    <option>ER_VLAN_30</option>
+                    <option>AMBULATORY_VLAN_40</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Device Type</label>
-                <select
-                  value={newDeviceType}
-                  onChange={(e) => setNewDeviceType(e.target.value)}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                >
-                  <option value="ECG Monitor">ECG Monitor</option>
-                  <option value="Infusion Pump">Infusion Pump</option>
-                  <option value="Ventilator">Ventilator</option>
-                  <option value="Glucose Monitor">Glucose Monitor</option>
-                  <option value="Bedside Monitor">Bedside Monitor</option>
-                  <option value="Wearable Health Patch">Wearable Health Patch</option>
-                  <option value="Defibrillator">Defibrillator</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Department</label>
-                <select
+              <div>
+                <label className="block text-[#6B7280] font-medium mb-1">Hospital Department</label>
+                <input
+                  type="text"
                   value={newDeviceDepartment}
                   onChange={(e) => setNewDeviceDepartment(e.target.value)}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                >
-                  <option value="Intensive Care Unit">Intensive Care Unit</option>
-                  <option value="General Medicine Ward">General Medicine Ward</option>
-                  <option value="Emergency Department">Emergency Department</option>
-                  <option value="Ambulatory & Cardiology">Ambulatory & Cardiology</option>
-                </select>
+                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none"
+                />
               </div>
+            </div>
 
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Assigned Network Segment</label>
-                <select
-                  value={newDeviceSegment}
-                  onChange={(e) => setNewDeviceSegment(e.target.value)}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                >
-                  <option value="ICU_VLAN_10">ICU_VLAN_10 (Critical Care)</option>
-                  <option value="WARD_VLAN_20">WARD_VLAN_20 (General Ward)</option>
-                  <option value="ER_VLAN_30">ER_VLAN_30 (Emergency Room)</option>
-                  <option value="AMBULATORY_VLAN_40">AMBULATORY_VLAN_40 (Outpatient)</option>
-                </select>
-              </div>
-
-              <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAddModalOpen(false)}
-                  className="px-3 py-1.5 bg-navy-800 text-slate-300 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-mediblue-600 hover:bg-mediblue-500 text-white font-semibold rounded-xl"
-                >
-                  Confirm Registration
-                </button>
-              </div>
-            </form>
+            <div className="pt-3 border-t border-[#E5E7EB] flex justify-end gap-2 text-xs">
+              <button
+                onClick={() => setAddModalOpen(false)}
+                className="px-3 py-1.5 rounded border border-[#E5E7EB] hover:bg-[#F3F4F6] text-[#6B7280]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setAddModalOpen(false);
+                }}
+                className="px-3 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white font-medium shadow-xs"
+              >
+                Save Registration
+              </button>
+            </div>
           </div>
         </div>
       )}

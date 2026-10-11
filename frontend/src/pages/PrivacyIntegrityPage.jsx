@@ -14,6 +14,7 @@ import {
   Unlock,
   Layers
 } from 'lucide-react';
+import StatusBadge from '../components/common/StatusBadge';
 
 export default function PrivacyIntegrityPage() {
   const { integrityRecords, tamperRecord, recomputeAndVerify, currentUser } = useApp();
@@ -26,67 +27,73 @@ export default function PrivacyIntegrityPage() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          <Lock className="w-5 h-5 text-mediblue-400" />
-          Privacy, Authenticated Encryption & Data Integrity
-        </h1>
-        <p className="text-xs text-slate-400">
-          Demonstration of AES-256-GCM authenticated encryption and SHA-256 cryptographic digest tamper detection.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-semibold tracking-tight text-neutral-900">
+              Privacy, Encryption & Cryptographic Integrity
+            </h1>
+            <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
+              AES-256-GCM & SHA-256
+            </span>
+          </div>
+          <p className="text-xs text-neutral-500 mt-1">
+            Verification of authenticated symmetric encryption and bit-level cryptographic tamper detection.
+          </p>
+        </div>
       </div>
 
       {/* Cryptographic Controls Banner */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="bg-white border border-neutral-200 p-4 rounded-lg space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-neutral-500">
             <span>Encryption Standard</span>
-            <Lock className="w-4 h-4 text-emerald-400" />
+            <Lock className="w-4 h-4 text-neutral-600" />
           </div>
-          <div className="text-lg font-bold text-white">AES-256-GCM</div>
-          <p className="text-[11px] text-slate-400">
-            Authenticated symmetric encryption with unique 96-bit IVs/nonces and 128-bit authentication tags.
+          <div className="text-base font-semibold text-neutral-900">AES-256-GCM</div>
+          <p className="text-[11px] text-neutral-500 leading-relaxed">
+            Authenticated symmetric encryption with unique 96-bit IVs and 128-bit authentication tags.
           </p>
         </div>
 
-        <div className="bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="bg-white border border-neutral-200 p-4 rounded-lg space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-neutral-500">
             <span>Integrity Digest</span>
-            <FileCheck2 className="w-4 h-4 text-mediblue-400" />
+            <FileCheck2 className="w-4 h-4 text-neutral-600" />
           </div>
-          <div className="text-lg font-bold text-white">SHA-256 Digests</div>
-          <p className="text-[11px] text-slate-400">
-            Deterministic cryptographic hashing to verify records against bit-level corruption or unauthorized modification.
+          <div className="text-base font-semibold text-neutral-900">SHA-256 Digests</div>
+          <p className="text-[11px] text-neutral-500 leading-relaxed">
+            Deterministic cryptographic hashing to verify records against corruption or unprivileged modification.
           </p>
         </div>
 
-        <div className="bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="bg-white border border-neutral-200 p-4 rounded-lg space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-neutral-500">
             <span>Key Management Model</span>
-            <Key className="w-4 h-4 text-amber-400" />
+            <Key className="w-4 h-4 text-neutral-600" />
           </div>
-          <div className="text-lg font-bold text-white">Server-Isolated Keys</div>
-          <p className="text-[11px] text-slate-400">
-            Environment secrets strictly isolated from client web bundles. Never hardcoded or transmitted.
+          <div className="text-base font-semibold text-neutral-900">Server-Isolated Secrets</div>
+          <p className="text-[11px] text-neutral-500 leading-relaxed">
+            Keys isolated in protected server environment variables; never exposed to browser bundles.
           </p>
         </div>
       </div>
 
       {/* Synthetic Records & Interactive Tamper Demo */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6 space-y-5 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-navy-800 pb-4">
+      <div className="bg-white border border-neutral-200 rounded-lg p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-200">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
-              Protected Synthetic Patient Telemetry Records
+            <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              Protected Patient Telemetry Records
             </h2>
-            <p className="text-xs text-slate-400">
-              Interactive testbed: Simulate memory modification to verify that SHA-256 digests instantly catch tampering.
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Simulate in-memory record tampering to verify real-time cryptographic digest mismatch detection.
             </p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {integrityRecords.map((rec) => {
             const isTampered = rec.status === 'TAMPERED';
             const decrypted = showDecrypted[rec.recordId];
@@ -95,28 +102,28 @@ export default function PrivacyIntegrityPage() {
               <div
                 key={rec.recordId}
                 className={`
-                  p-4 rounded-xl border transition
+                  p-4 rounded border transition-swiss
                   ${isTampered
-                    ? 'bg-medidanger-950/30 border-medidanger-500/50'
-                    : 'bg-navy-950/70 border-navy-800'
+                    ? 'bg-red-50/50 border-red-200'
+                    : 'bg-white border-neutral-200'
                   }
                 `}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-navy-800/80 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-neutral-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-mediblue-400">{rec.recordId}</span>
-                    <span className="text-xs text-slate-300 font-semibold">• {rec.recordType}</span>
-                    <span className="text-[11px] text-slate-400">({rec.deviceId})</span>
+                    <span className="font-mono text-xs font-semibold text-neutral-900">{rec.recordId}</span>
+                    <span className="text-xs text-neutral-600">• {rec.recordType}</span>
+                    <span className="text-[11px] font-mono text-neutral-400">({rec.deviceId})</span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     {isTampered ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
-                        <ShieldAlert className="w-3 h-3" /> INTEGRITY MISMATCH / TAMPERED
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-700 border border-red-200 flex items-center gap-1">
+                        <ShieldAlert className="w-3 h-3 text-red-600" /> INTEGRITY MISMATCH / TAMPERED
                       </span>
                     ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> VERIFIED & INTACT
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> VERIFIED & INTACT
                       </span>
                     )}
 
@@ -124,14 +131,14 @@ export default function PrivacyIntegrityPage() {
                     {isTampered ? (
                       <button
                         onClick={() => recomputeAndVerify(rec.recordId)}
-                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium flex items-center gap-1 transition-swiss"
                       >
                         <RefreshCw className="w-3 h-3" /> Re-sync & Verify
                       </button>
                     ) : (
                       <button
                         onClick={() => tamperRecord(rec.recordId)}
-                        className="px-2.5 py-1 bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                        className="px-2.5 py-1 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded text-xs font-medium flex items-center gap-1 transition-swiss"
                       >
                         <AlertTriangle className="w-3 h-3" /> Simulate Tampering
                       </button>
@@ -142,27 +149,27 @@ export default function PrivacyIntegrityPage() {
                 {/* Cryptographic Hashes & Ciphertext */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 text-xs">
                   <div className="space-y-1">
-                    <span className="text-slate-400 flex items-center justify-between">
-                      <span>SHA-256 Digest (Digest Algorithm):</span>
-                      <span className="text-[10px] font-mono text-slate-400">Last check: {rec.lastVerified}</span>
-                    </span>
-                    <div className="p-2 bg-navy-900 border border-navy-800 rounded-lg font-mono text-[11px] text-slate-300 truncate">
+                    <div className="flex items-center justify-between text-neutral-500">
+                      <span>SHA-256 Digest:</span>
+                      <span className="text-[10px] font-mono text-neutral-400">Verified: {rec.lastVerified}</span>
+                    </div>
+                    <div className="p-2 bg-neutral-50 border border-neutral-200 rounded font-mono text-[11px] text-neutral-800 truncate" title={rec.sha256Hash}>
                       {rec.sha256Hash}
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-slate-400 flex items-center justify-between">
+                    <div className="flex items-center justify-between text-neutral-500">
                       <span>AES-256-GCM Ciphertext Hex:</span>
                       <button
                         onClick={() => toggleDecrypted(rec.recordId)}
-                        className="text-[10px] text-mediblue-400 hover:underline flex items-center gap-1"
+                        className="text-[11px] text-neutral-700 hover:text-black underline flex items-center gap-1"
                       >
                         {decrypted ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                         {decrypted ? "Hide Plaintext" : "Decrypt Payload"}
                       </button>
-                    </span>
-                    <div className="p-2 bg-navy-900 border border-navy-800 rounded-lg font-mono text-[11px] text-slate-400 truncate">
+                    </div>
+                    <div className="p-2 bg-neutral-50 border border-neutral-200 rounded font-mono text-[11px] text-neutral-600 truncate" title={rec.encryptedDataHex || rec.encryptedPayload}>
                       {rec.encryptedDataHex || rec.encryptedPayload || "Not Encrypted"}
                     </div>
                   </div>
@@ -170,11 +177,11 @@ export default function PrivacyIntegrityPage() {
 
                 {/* Plaintext view (if toggled) */}
                 {decrypted && (
-                  <div className="mt-3 p-3 bg-navy-900 border border-mediblue-500/30 rounded-xl space-y-1 animate-in fade-in">
-                    <span className="text-[11px] text-mediblue-400 font-semibold flex items-center gap-1">
-                      <Code2 className="w-3.5 h-3.5" /> Authenticated Plaintext Payload:
+                  <div className="mt-3 p-3 bg-neutral-50 border border-neutral-300 rounded space-y-1">
+                    <span className="text-[11px] font-medium text-neutral-800 flex items-center gap-1">
+                      <Code2 className="w-3.5 h-3.5 text-neutral-600" /> Authenticated Plaintext Payload:
                     </span>
-                    <pre className="font-mono text-xs text-emerald-400 overflow-x-auto">
+                    <pre className="font-mono text-xs text-neutral-900 overflow-x-auto whitespace-pre-wrap p-2 bg-white rounded border border-neutral-200">
                       {rec.payloadJson || rec.rawPayload}
                     </pre>
                   </div>
@@ -186,15 +193,12 @@ export default function PrivacyIntegrityPage() {
       </div>
 
       {/* Security Scope & Limitation Notice */}
-      <div className="p-4 bg-navy-900 border border-navy-800 rounded-2xl flex items-start gap-3 text-xs text-slate-400">
-        <Info className="w-5 h-5 text-mediblue-400 shrink-0 mt-0.5" />
+      <div className="p-4 bg-neutral-50 border border-neutral-200 rounded-lg flex items-start gap-3 text-xs text-neutral-600">
+        <Info className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <span className="font-semibold text-slate-200">Prototype Integrity Limitation Notice:</span>
+          <span className="font-semibold text-neutral-900">Prototype Integrity Notice:</span>
           <p className="leading-relaxed">
-            A hash digest stored alongside a record in the same database verifies data integrity during transmission
-            or unprivileged modification. However, it does not guarantee protection against an attacker with full root access
-            to the underlying database who could recalculate both values. In high-assurance hospital architectures,
-            digests should be mirrored to immutable, write-once-read-many (WORM) audit ledgers.
+            Hash digests stored alongside records verify transmission integrity and unprivileged tampering. High-assurance medical architectures mirror digests to write-once-read-many (WORM) audit ledgers to prevent unauthorized root modifications.
           </p>
         </div>
       </div>

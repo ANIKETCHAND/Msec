@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
-import DashboardLayout from './layouts/DashboardLayout';
+import WorkspaceShell from './layouts/WorkspaceShell';
+import PageStack from './components/stack/PageStack';
 
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -17,7 +18,6 @@ import AssessmentCenterPage from './pages/AssessmentCenterPage';
 import ToolsManagementPage from './pages/ToolsManagementPage';
 import NetworkTopologyPage from './pages/NetworkTopologyPage';
 import ResponseSimulatorPage from './pages/ResponseSimulatorPage';
-import AIAssistantWidget from './components/AIAssistantWidget';
 
 function MainRouter() {
   const { currentPage } = useApp();
@@ -26,25 +26,28 @@ function MainRouter() {
     return <LoginPage />;
   }
 
-  return (
-    <DashboardLayout>
-      {currentPage === 'dashboard' && <DashboardPage />}
-      {currentPage === 'devices' && <DeviceInventoryPage />}
-      {currentPage === 'device-detail' && <DeviceDetailPage />}
-      {currentPage === 'assessment-center' && <AssessmentCenterPage />}
-      {currentPage === 'topology' && <NetworkTopologyPage />}
-      {currentPage === 'tools' && <ToolsManagementPage />}
-      {currentPage === 'response-simulator' && <ResponseSimulatorPage />}
-      {currentPage === 'security-events' && <SecurityEventsPage />}
-      {currentPage === 'incidents' && <IncidentManagementPage />}
-      {currentPage === 'ml-detection' && <MLDetectionPage />}
-      {currentPage === 'integrity' && <PrivacyIntegrityPage />}
-      {currentPage === 'audit-logs' && <AuditLogsPage />}
-      {currentPage === 'reports' && <ReportsPage />}
-      {currentPage === 'settings' && <SettingsPage />}
+  // Registry map of all functional pages for stacked workspace
+  const pageMap = {
+    dashboard: <DashboardPage />,
+    devices: <DeviceInventoryPage />,
+    'device-detail': <DeviceDetailPage />,
+    'assessment-center': <AssessmentCenterPage />,
+    topology: <NetworkTopologyPage />,
+    tools: <ToolsManagementPage />,
+    'response-simulator': <ResponseSimulatorPage />,
+    'security-events': <SecurityEventsPage />,
+    incidents: <IncidentManagementPage />,
+    'ml-detection': <MLDetectionPage />,
+    integrity: <PrivacyIntegrityPage />,
+    'audit-logs': <AuditLogsPage />,
+    reports: <ReportsPage />,
+    settings: <SettingsPage />,
+  };
 
-      <AIAssistantWidget />
-    </DashboardLayout>
+  return (
+    <WorkspaceShell>
+      <PageStack pageMap={pageMap} />
+    </WorkspaceShell>
   );
 }
 

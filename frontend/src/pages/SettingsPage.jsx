@@ -67,45 +67,51 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          <SettingsIcon className="w-5 h-5 text-mediblue-400" />
-          MediShield System & Detection Settings
-        </h1>
-        <p className="text-xs text-slate-400">
-          Configure rule-based intrusion thresholds, review key management parameters, and manage prototype state.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-200">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-semibold tracking-tight text-neutral-900">
+              System Configuration & Policies
+            </h1>
+            <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200">
+              Platform Governance
+            </span>
+          </div>
+          <p className="text-xs text-neutral-500 mt-1">
+            Configure rule-based intrusion thresholds, review runtime environment variables, and manage demonstration state.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Rule Thresholds Form */}
-        <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6 space-y-5 shadow-xl">
-          <div className="flex items-center justify-between border-b border-navy-800 pb-3">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-mediblue-400" />
+        <div className="bg-white border border-neutral-200 rounded-lg p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-200">
+            <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-neutral-600" />
               Intrusion Detection Thresholds (Rule Engine)
             </h2>
           </div>
 
           {savedNotice && (
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-xs text-emerald-400 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-800 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Detection thresholds successfully updated and logged to audit trail.</span>
             </div>
           )}
 
           {errorMessage && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-2 text-xs text-red-400 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="p-3 bg-red-50 border border-red-200 rounded text-xs text-red-800 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           <form onSubmit={handleSavePolicies} className="space-y-4 text-xs">
-            <div className="p-3.5 bg-navy-950 rounded-xl border border-navy-800 space-y-2">
+            <div className="p-3.5 bg-neutral-50 rounded border border-neutral-200 space-y-2">
               <div className="flex justify-between font-medium">
-                <span className="text-slate-300">RULE-AUTH-002: Failed Login Trigger</span>
-                <span className="font-mono text-mediblue-400 font-bold">{authThreshold} attempts</span>
+                <span className="text-neutral-800">RULE-AUTH-002: Failed Login Trigger</span>
+                <span className="font-mono text-neutral-900 font-semibold">{authThreshold} attempts</span>
               </div>
               <input
                 type="range"
@@ -114,17 +120,17 @@ export default function SettingsPage() {
                 step="1"
                 value={authThreshold}
                 onChange={(e) => setAuthThreshold(Number(e.target.value))}
-                className="w-full accent-mediblue-500"
+                className="w-full accent-neutral-800"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-neutral-500">
                 Number of consecutive failed authentications within 60s before raising a High severity alert.
               </p>
             </div>
 
-            <div className="p-3.5 bg-navy-950 rounded-xl border border-navy-800 space-y-2">
+            <div className="p-3.5 bg-neutral-50 rounded border border-neutral-200 space-y-2">
               <div className="flex justify-between font-medium">
-                <span className="text-slate-300">RULE-NET-003: Bandwidth Anomaly Limit</span>
-                <span className="font-mono text-mediblue-400 font-bold">{trafficThresholdMb} MB/s</span>
+                <span className="text-neutral-800">RULE-NET-003: Bandwidth Anomaly Limit</span>
+                <span className="font-mono text-neutral-900 font-semibold">{trafficThresholdMb} MB/s</span>
               </div>
               <input
                 type="range"
@@ -133,17 +139,17 @@ export default function SettingsPage() {
                 step="0.5"
                 value={trafficThresholdMb}
                 onChange={(e) => setTrafficThresholdMb(Number(e.target.value))}
-                className="w-full accent-mediblue-500"
+                className="w-full accent-neutral-800"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-neutral-500">
                 Sustained outbound bandwidth surge threshold indicative of DoS or telemetry exfiltration.
               </p>
             </div>
 
-            <div className="p-3.5 bg-navy-950 rounded-xl border border-navy-800 space-y-2">
+            <div className="p-3.5 bg-neutral-50 rounded border border-neutral-200 space-y-2">
               <div className="flex justify-between font-medium">
-                <span className="text-slate-300">RULE-STAT-004: Heartbeat Disconnect Timeout</span>
-                <span className="font-mono text-mediblue-400 font-bold">{heartbeatTimeoutSec} seconds</span>
+                <span className="text-neutral-800">RULE-STAT-004: Heartbeat Disconnect Timeout</span>
+                <span className="font-mono text-neutral-900 font-semibold">{heartbeatTimeoutSec} seconds</span>
               </div>
               <input
                 type="range"
@@ -152,9 +158,9 @@ export default function SettingsPage() {
                 step="15"
                 value={heartbeatTimeoutSec}
                 onChange={(e) => setHeartbeatTimeoutSec(Number(e.target.value))}
-                className="w-full accent-mediblue-500"
+                className="w-full accent-neutral-800"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-neutral-500">
                 Maximum acceptable gap between telemetry pings before triggering Critical Device Offline alarm.
               </p>
             </div>
@@ -162,12 +168,13 @@ export default function SettingsPage() {
             {currentUser.role === 'Administrator' ? (
               <button
                 type="submit"
-                className="w-full py-2.5 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold transition shadow-md shadow-mediblue-600/20"
+                disabled={loading}
+                className="w-full py-2 bg-neutral-900 hover:bg-black disabled:opacity-50 text-white rounded text-xs font-medium transition-swiss"
               >
-                Apply Threshold Modifications
+                {loading ? 'Applying Changes...' : 'Apply Threshold Modifications'}
               </button>
             ) : (
-              <p className="text-[11px] text-slate-400 italic text-center">
+              <p className="text-[11px] text-neutral-500 italic text-center">
                 Administrator role required to commit policy updates.
               </p>
             )}
@@ -176,43 +183,43 @@ export default function SettingsPage() {
 
         {/* Right Column: Platform Environment & Reset */}
         <div className="space-y-6">
-          <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6 space-y-4 shadow-xl text-xs">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Server className="w-4 h-4 text-emerald-400" />
-              Prototype Environment Variables
+          <div className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3.5 text-xs">
+            <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <Server className="w-4 h-4 text-neutral-600" />
+              Runtime Environment Variables
             </h2>
 
-            <div className="space-y-2.5 font-mono text-[11px]">
-              <div className="p-2.5 bg-navy-950 rounded-xl border border-navy-800 flex justify-between">
-                <span className="text-slate-400">VITE_API_BASE_URL:</span>
-                <span className="text-slate-200">http://127.0.0.1:8000</span>
+            <div className="space-y-2 font-mono text-[11px]">
+              <div className="p-2.5 bg-neutral-50 rounded border border-neutral-200 flex justify-between items-center">
+                <span className="text-neutral-500">VITE_API_BASE_URL:</span>
+                <span className="text-neutral-900 font-medium">http://127.0.0.1:8000</span>
               </div>
-              <div className="p-2.5 bg-navy-950 rounded-xl border border-navy-800 flex justify-between">
-                <span className="text-slate-400">ML_MODEL_PATH:</span>
-                <span className="text-slate-200">ml/artifacts/iomt_rf_model.joblib</span>
+              <div className="p-2.5 bg-neutral-50 rounded border border-neutral-200 flex justify-between items-center">
+                <span className="text-neutral-500">ML_MODEL_PATH:</span>
+                <span className="text-neutral-900 font-medium">ml/artifacts/iomt_rf_model.joblib</span>
               </div>
-              <div className="p-2.5 bg-navy-950 rounded-xl border border-navy-800 flex justify-between">
-                <span className="text-slate-400">AES_GCM_KEY_LEN:</span>
-                <span className="text-emerald-400">256 bits (32 bytes)</span>
+              <div className="p-2.5 bg-neutral-50 rounded border border-neutral-200 flex justify-between items-center">
+                <span className="text-neutral-500">AES_GCM_KEY_LEN:</span>
+                <span className="text-emerald-700 font-medium">256 bits (32 bytes)</span>
               </div>
             </div>
           </div>
 
           {/* Reset Baseline State Card */}
-          <div className="bg-navy-900 border border-navy-800 rounded-2xl p-6 space-y-4 shadow-xl">
-            <div className="flex items-center gap-2 text-white font-bold text-sm">
-              <RefreshCw className="w-4 h-4 text-amber-400" />
-              Reset Simulation State
+          <div className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
+            <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
+              <RefreshCw className="w-4 h-4 text-neutral-600" />
+              Reset Demonstration State
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-neutral-500 leading-relaxed">
               Restores simulated medical devices, events, incidents, and SHA-256 integrity records to their clean academic demonstration baseline.
             </p>
 
             <button
               onClick={resetAllSimulations}
-              className="px-4 py-2 bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+              className="px-3.5 py-1.5 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-300 rounded text-xs font-medium flex items-center gap-2 transition-swiss"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5 text-neutral-500" />
               Reset All In-Memory State
             </button>
           </div>

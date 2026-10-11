@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
+import StatusBadge from '../components/common/StatusBadge';
 import {
   ClipboardList,
   Search,
-  Filter,
-  ShieldAlert,
   Lock,
-  UserCheck,
-  FileSpreadsheet,
-  Download,
-  AlertCircle,
-  ShieldCheck,
   RefreshCw,
   CheckCircle2,
+  AlertTriangle,
+  ShieldCheck,
   Hash
 } from 'lucide-react';
 
@@ -22,21 +18,20 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('ALL');
 
-  // Chain verification state
+  // SHA-256 Chain verification state
   const [verifying, setVerifying] = useState(false);
   const [chainResult, setChainResult] = useState(null);
 
   // RBAC check: Doctor Demo cannot view system audit logs
   if (currentUser.role === 'Doctor Demo') {
     return (
-      <div className="p-8 text-center bg-navy-900 border border-navy-800 rounded-2xl max-w-lg mx-auto space-y-4 my-12">
-        <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 mx-auto flex items-center justify-center">
-          <Lock className="w-6 h-6" />
+      <div className="p-8 text-center bg-white border border-[#E5E7EB] rounded-lg max-w-md mx-auto space-y-4 my-12">
+        <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 text-[#EF4444] mx-auto flex items-center justify-center">
+          <Lock className="w-5 h-5" />
         </div>
-        <h2 className="text-base font-bold text-white">Access Restricted (RBAC Policy)</h2>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          The <strong className="text-white">Doctor Demo</strong> persona is restricted to clinical device telemetry.
-          Access to system audit logs requires <strong className="text-mediblue-400">Security Analyst</strong> or <strong className="text-mediblue-400">Administrator</strong> privileges.
+        <h2 className="text-sm font-semibold text-[#171717]">Access Restricted by Policy</h2>
+        <p className="text-xs text-[#6B7280] leading-relaxed">
+          The <strong>Doctor Demo</strong> persona is restricted to clinical telemetry. Viewing system audit logs requires <strong>Security Analyst</strong> or <strong>Administrator</strong> privileges.
         </p>
       </div>
     );
@@ -59,170 +54,134 @@ export default function AuditLogsPage() {
       log.id.toLowerCase().includes(search.toLowerCase()) ||
       log.actor.toLowerCase().includes(search.toLowerCase()) ||
       log.action.toLowerCase().includes(search.toLowerCase()) ||
-      (log.details && log.details.toLowerCase().includes(search.toLowerCase()));
+      (typeof log.details === 'string' && log.details.toLowerCase().includes(search.toLowerCase()));
 
     const matchAction = actionFilter === 'ALL' || log.action === actionFilter;
     return matchSearch && matchAction;
   });
 
-  const exportCsv = () => {
-    const headers = "ID,Timestamp,Actor,Role,Action,EntityType,EntityID,IPAddress,Details\n";
-    const rows = filteredLogs.map(l =>
-      `"${l.id}","${l.timestamp}","${l.actor}","${l.role}","${l.action}","${l.entityType}","${l.entityId}","${l.ipAddress}","${(l.details || '').replace(/"/g, '""')}"`
-    ).join("\n");
-
-    const blob = new Blob([headers + rows], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `medishield-audit-logs-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-  };
-
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 1. Header */}
+      <div className="pb-4 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-mediblue-400" />
-              Cryptographically Chained Audit Trail
-            </h1>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-mediblue-500/10 text-mediblue-400 border border-mediblue-500/30">
-              SHA-256 Hash Chain
+          <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
+            <span>Tamper-Evident Audit Trail</span>
+            <span className="text-xs font-mono text-[#6B7280] font-normal">
+              (Cryptographic SHA-256 Hash Chain)
             </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Immutable, tamper-evident forensic log protected by sequential cryptographic hash links.
+          </h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Cryptographically linked audit records verifying immutable operator actions and containment events.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleVerifyChain}
-            disabled={verifying}
-            className="px-3.5 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-          >
-            <ShieldCheck className={`w-4 h-4 ${verifying ? 'animate-spin' : ''}`} />
-            {verifying ? 'Verifying Chain...' : 'Verify Cryptographic Hash Chain'}
-          </button>
-
-          <button
-            onClick={exportCsv}
-            className="px-3.5 py-2 bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
-          >
-            <Download className="w-4 h-4 text-mediblue-400" />
-            Export CSV
-          </button>
-        </div>
+        <button
+          onClick={handleVerifyChain}
+          disabled={verifying}
+          className="px-3.5 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs shrink-0"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${verifying ? 'animate-spin' : ''}`} />
+          <span>Verify SHA-256 Hash Chain</span>
+        </button>
       </div>
 
-      {/* Hash Chain Verification Result Banner */}
+      {/* Chain Verification Result Banner */}
       {chainResult && (
-        <div className={`p-4 rounded-2xl border flex items-center justify-between text-xs shadow-xl ${
+        <div className={`p-4 rounded-lg border text-xs flex items-center justify-between ${
           chainResult.chain_valid
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-            : 'bg-red-500/10 border-red-500/30 text-red-300'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+            : 'bg-rose-50 border-rose-200 text-rose-800'
         }`}>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {chainResult.chain_valid ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-[#EF4444] shrink-0" />
             )}
-            <div>
-              <strong className="font-bold block text-sm">
-                {chainResult.chain_valid ? 'Hash Chain Integrity Intact & Verified' : 'Cryptographic Hash Chain Broken!'}
-              </strong>
-              <p className="text-[11px] opacity-90 mt-0.5">
-                {chainResult.message || chainResult.error}
-              </p>
-            </div>
+            <span>
+              <strong>{chainResult.chain_valid ? 'HASH CHAIN INTACT:' : 'HASH MISMATCH DETECTED:'}</strong>{' '}
+              {chainResult.verified_count} log entries verified across SHA-256 root block.
+            </span>
           </div>
-
-          {chainResult.head_hash && (
-            <div className="text-right font-mono text-[11px] bg-navy-950/80 px-3 py-1.5 rounded-xl border border-navy-800">
-              <span className="text-slate-400 block text-[9px]">HEAD HASH DIGEST:</span>
-              <span className="text-emerald-400">{chainResult.head_hash.slice(0, 20)}...</span>
-            </div>
-          )}
+          <button onClick={() => setChainResult(null)} className="text-[#6B7280] hover:text-[#171717]">Dismiss</button>
         </div>
       )}
 
-      {/* Filter Bar */}
-      <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+      {/* 2. Controls */}
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        <div className="sm:col-span-8 relative">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
           <input
             type="text"
-            placeholder="Search audit trail..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-navy-950 border border-navy-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-mediblue-500"
+            placeholder="Search audit trail by actor email, action, details..."
+            className="w-full bg-white text-xs text-[#171717] placeholder-[#9CA3AF] pl-8 pr-3 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
           />
         </div>
 
-        <div className="w-full sm:w-auto">
+        <div className="sm:col-span-4">
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="w-full sm:w-auto bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none"
+            className="w-full bg-white text-xs text-[#171717] px-2.5 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
           >
             <option value="ALL">All Recorded Actions</option>
-            <option value="USER_LOGIN">USER_LOGIN</option>
             <option value="ASSESSMENT_SCOPE_AUTHORIZED">ASSESSMENT_SCOPE_AUTHORIZED</option>
-            <option value="ASSESSMENT_EXECUTED">ASSESSMENT_EXECUTED</option>
-            <option value="INCIDENT_UPDATE">INCIDENT_UPDATE</option>
             <option value="DEVICE_STATUS_CHANGE">DEVICE_STATUS_CHANGE</option>
-            <option value="INCIDENT_CONTAINMENT_SIMULATED">INCIDENT_CONTAINMENT_SIMULATED</option>
-            <option value="INTEGRITY_TAMPER_SIMULATION">INTEGRITY_TAMPER_SIMULATION</option>
+            <option value="INCIDENT_UPDATE">INCIDENT_UPDATE</option>
+            <option value="REPORT_EXPORT">REPORT_EXPORT</option>
           </select>
         </div>
       </div>
 
-      {/* Audit Log Table */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* 3. Clean Swiss Audit Table */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-navy-950/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
-              <tr>
-                <th className="py-3 px-4">Audit ID</th>
+            <thead>
+              <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-[#6B7280] font-medium uppercase text-[11px] tracking-wider select-none">
                 <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">Actor & Role</th>
+                <th className="py-3 px-4">Actor</th>
                 <th className="py-3 px-4">Action</th>
                 <th className="py-3 px-4">Entity</th>
                 <th className="py-3 px-4">IP Address</th>
-                <th className="py-3 px-4">Forensic Details</th>
+                <th className="py-3 px-4">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-navy-800 text-slate-300">
-              {filteredLogs.map(log => (
-                <tr key={log.id} className="hover:bg-navy-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-medium text-mediblue-400">
-                    {log.id}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                    {log.timestamp}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="font-semibold text-white">{log.actor}</div>
-                    <div className="text-[10px] text-slate-400">{log.role}</div>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-[11px] font-semibold text-emerald-400">
-                    {log.action}
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-slate-300">
-                    {log.entityType} ({log.entityId})
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-slate-400">
-                    {log.ipAddress}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-300 text-[11px] max-w-xs truncate">
-                    {log.details}
+            <tbody className="divide-y divide-[#F3F4F6]">
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-xs text-[#6B7280]">
+                    No audit records match your query.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#F9FAFB] transition-swiss">
+                    <td className="py-3 px-4 font-mono text-[#6B7280] text-[11px] whitespace-nowrap">
+                      {log.timestamp}
+                    </td>
+                    <td className="py-3 px-4 font-medium text-[#171717]">
+                      <div>{log.actor}</div>
+                      <span className="text-[10px] text-[#9CA3AF] font-mono">{log.role}</span>
+                    </td>
+                    <td className="py-3 px-4 font-mono font-medium text-[#1677FF] text-[11px]">
+                      {log.action}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[#171717] text-[11px]">
+                      {log.entityType} ({log.entityId})
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[#6B7280] text-[11px]">
+                      {log.ipAddress || '192.168.1.104'}
+                    </td>
+                    <td className="py-3 px-4 text-[#6B7280] max-w-xs truncate">
+                      {typeof log.details === 'object' ? JSON.stringify(log.details) : log.details}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

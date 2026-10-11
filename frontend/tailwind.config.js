@@ -7,6 +7,25 @@ export default {
   theme: {
     extend: {
       colors: {
+        swiss: {
+          canvas: '#F5F6F8',
+          surface: '#FFFFFF',
+          surfaceMuted: '#F9FAFB',
+          border: '#E5E7EB',
+          borderSubtle: '#F3F4F6',
+          textPrimary: '#171717',
+          textSecondary: '#6B7280',
+          textMuted: '#9CA3AF',
+          blue: '#1677FF',
+          blueLight: '#E6F4FF',
+          blueHover: '#0958D9',
+          success: '#10B981',
+          successLight: '#ECFDF5',
+          warning: '#F59E0B',
+          warningLight: '#FFFBEB',
+          critical: '#EF4444',
+          criticalLight: '#FEF2F2',
+        },
         navy: {
           950: '#070b14',
           900: '#0a101d',

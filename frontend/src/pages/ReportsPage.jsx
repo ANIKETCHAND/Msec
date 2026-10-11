@@ -4,16 +4,14 @@ import {
   BarChart3,
   Download,
   Calendar,
-  Filter,
   FileSpreadsheet,
   CheckCircle2,
-  ShieldCheck,
   FileText,
-  Activity,
-  Layers
+  Layers,
+  ExternalLink
 } from 'lucide-react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
 export default function ReportsPage() {
@@ -24,17 +22,10 @@ export default function ReportsPage() {
 
   // Aggregated data for reports
   const severityBreakdown = [
-    { severity: 'Critical', count: securityEvents.filter(e => e.severity === 'critical').length, fill: '#ef4444' },
-    { severity: 'High', count: securityEvents.filter(e => e.severity === 'high').length, fill: '#f97316' },
-    { severity: 'Medium', count: securityEvents.filter(e => e.severity === 'medium').length, fill: '#f59e0b' },
-    { severity: 'Low', count: securityEvents.filter(e => e.severity === 'low').length, fill: '#0ea5e9' }
-  ];
-
-  const deviceRiskBreakdown = [
-    { risk: 'Low', count: devices.filter(d => d.riskLevel === 'low').length, fill: '#10b981' },
-    { risk: 'Medium', count: devices.filter(d => d.riskLevel === 'medium').length, fill: '#f59e0b' },
-    { risk: 'High', count: devices.filter(d => d.riskLevel === 'high').length, fill: '#f97316' },
-    { risk: 'Critical', count: devices.filter(d => d.riskLevel === 'critical').length, fill: '#ef4444' }
+    { severity: 'Critical', count: securityEvents.filter(e => e.severity === 'critical').length, fill: '#EF4444' },
+    { severity: 'High', count: securityEvents.filter(e => e.severity === 'high').length, fill: '#F59E0B' },
+    { severity: 'Medium', count: securityEvents.filter(e => e.severity === 'medium').length, fill: '#3B82F6' },
+    { severity: 'Low', count: securityEvents.filter(e => e.severity === 'low').length, fill: '#10B981' }
   ];
 
   const handleExportCSV = () => {
@@ -64,173 +55,129 @@ export default function ReportsPage() {
     const link = document.createElement("a");
     link.setAttribute("href", url);
     link.setAttribute("download", filename);
+    document.body.appendChild(link);
     link.click();
-
-    logAudit('REPORT_EXPORT', 'SecurityReport', filename, `Exported ${reportType} report as CSV.`);
+    document.body.removeChild(link);
+    logAudit('REPORT_EXPORT', 'SecurityReport', filename, `Exported ${reportType} report.`);
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 1. Header */}
+      <div className="pb-4 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-mediblue-400" />
-            Security Intelligence & Compliance Reports
+          <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
+            <span>Security Assessment & Compliance Reports</span>
           </h1>
-          <p className="text-xs text-slate-400">
-            Export structured security audits, incident metrics, and inventory compliance records.
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Export certified IoMT assessment logs, IDS event telemetry, and institutional audit archives.
           </p>
         </div>
 
         <button
           onClick={handleExportCSV}
-          className="px-4 py-2 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-mediblue-600/20"
+          className="px-3.5 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs shrink-0"
         >
-          <Download className="w-4 h-4" />
-          Download Report (CSV)
+          <Download className="w-3.5 h-3.5" />
+          <span>Export {reportType.toUpperCase()} CSV</span>
         </button>
       </div>
 
-      {/* Report Type Selector & Controls */}
-      <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setReportType('events')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${reportType === 'events' ? 'bg-mediblue-600 text-white' : 'bg-navy-800 text-slate-400 hover:text-white'}`}
+      {/* 2. Controls */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div>
+          <label className="block text-[#6B7280] font-medium mb-1">Report Data Category</label>
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value)}
+            className="w-full bg-white border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none font-mono"
           >
-            Security Events Stream
-          </button>
-          <button
-            onClick={() => setReportType('incidents')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${reportType === 'incidents' ? 'bg-mediblue-600 text-white' : 'bg-navy-800 text-slate-400 hover:text-white'}`}
-          >
-            Incident Triage Log
-          </button>
-          <button
-            onClick={() => setReportType('assessments')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${reportType === 'assessments' ? 'bg-mediblue-600 text-white' : 'bg-navy-800 text-slate-400 hover:text-white'}`}
-          >
-            Vulnerability Findings
-          </button>
+            <option value="events">Security Ingress & IDS Events</option>
+            <option value="incidents">Incident Management Tickets</option>
+            <option value="assessments">Multi-Tool Assessment Findings (Live API Stream)</option>
+          </select>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-400">Time Range:</span>
+        <div>
+          <label className="block text-[#6B7280] font-medium mb-1">Time Horizon Window</label>
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="bg-navy-950 border border-navy-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
+            className="w-full bg-white border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none font-mono"
           >
             <option value="24h">Past 24 Hours</option>
             <option value="7d">Past 7 Days</option>
             <option value="30d">Past 30 Days</option>
-            <option value="all">All Synthetic History</option>
+            <option value="all">Full Historical Log</option>
           </select>
         </div>
       </div>
 
-      {/* Analytics Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Severity Distribution Chart */}
-        <div className="bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-4">
-          <div>
-            <h2 className="text-sm font-bold text-white">Event Severity Distribution</h2>
-            <p className="text-[11px] text-slate-400">Active alerts grouped by risk tier.</p>
-          </div>
-
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={severityBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="severity" stroke="#64748b" tick={{ fontSize: 11 }} />
-                <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px' }}
-                />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {severityBreakdown.map((entry, index) => (
-                    <Bar key={`cell-${index}`} dataKey="count" fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* 3. Distribution Visualizer */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg p-5 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
+          <h2 className="text-sm font-semibold text-[#171717]">
+            Security Events by Severity Breakdown
+          </h2>
+          <span className="text-xs font-mono text-[#6B7280]">
+            {securityEvents.length} Total Logged Events
+          </span>
         </div>
 
-        {/* Device Posture Breakdown */}
-        <div className="bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-4">
-          <div>
-            <h2 className="text-sm font-bold text-white">Device Inventory Risk Posture</h2>
-            <p className="text-[11px] text-slate-400">IoMT asset vulnerability and risk stratification.</p>
-          </div>
-
-          <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={deviceRiskBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="risk" stroke="#64748b" tick={{ fontSize: 11 }} />
-                <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '11px' }}
-                />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {deviceRiskBreakdown.map((entry, index) => (
-                    <Bar key={`cell-risk-${index}`} dataKey="count" fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={severityBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
+              <XAxis dataKey="severity" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+              <YAxis stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#FFFFFF',
+                  borderColor: '#E5E7EB',
+                  borderRadius: '6px',
+                  fontSize: '12px'
+                }}
+              />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Tabular Preview */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-navy-800 flex items-center justify-between text-xs">
-          <span className="font-bold text-white uppercase tracking-wider">
-            Export Preview ({reportType === 'events' ? 'Security Events' : 'Incidents'})
-          </span>
-          <span className="text-slate-400 font-mono">
-            {reportType === 'events' ? securityEvents.length : incidents.length} records ready
-          </span>
-        </div>
+      {/* 4. Ready Downloadable Exports */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-[#171717] pb-3 border-b border-[#F3F4F6]">
+          Standard Compliance Exports
+        </h2>
 
-        <div className="overflow-x-auto max-h-72">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-navy-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
-              <tr>
-                <th className="py-2.5 px-4">ID</th>
-                <th className="py-2.5 px-4">{reportType === 'events' ? 'Rule' : 'Title'}</th>
-                <th className="py-2.5 px-4">Target Device</th>
-                <th className="py-2.5 px-4">Severity</th>
-                <th className="py-2.5 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-navy-800 text-slate-300">
-              {reportType === 'events' ? (
-                securityEvents.map(e => (
-                  <tr key={e.id} className="hover:bg-navy-800/40">
-                    <td className="py-2.5 px-4 font-mono text-mediblue-400">{e.id}</td>
-                    <td className="py-2.5 px-4">{e.ruleName}</td>
-                    <td className="py-2.5 px-4">{e.deviceName}</td>
-                    <td className="py-2.5 px-4 uppercase font-semibold">{e.severity}</td>
-                    <td className="py-2.5 px-4 capitalize">{e.status}</td>
-                  </tr>
-                ))
-              ) : (
-                incidents.map(i => (
-                  <tr key={i.id} className="hover:bg-navy-800/40">
-                    <td className="py-2.5 px-4 font-mono text-mediblue-400">{i.id}</td>
-                    <td className="py-2.5 px-4 font-semibold text-white">{i.title}</td>
-                    <td className="py-2.5 px-4">{i.deviceId}</td>
-                    <td className="py-2.5 px-4 uppercase font-semibold">{i.severity}</td>
-                    <td className="py-2.5 px-4 capitalize">{i.status}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="divide-y divide-[#F3F4F6]">
+          <div className="py-3 flex items-center justify-between text-xs">
+            <div>
+              <p className="font-semibold text-[#171717]">Institutional IoMT Assessment Report</p>
+              <p className="text-[11px] text-[#6B7280] font-mono mt-0.5">Format: CSV &bull; Backend Endpoint: /api/reports/assessments.csv</p>
+            </div>
+            <a
+              href="/api/reports/assessments.csv"
+              className="px-3 py-1.5 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#1677FF] font-medium flex items-center gap-1.5 transition-swiss"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download</span>
+            </a>
+          </div>
+
+          <div className="py-3 flex items-center justify-between text-xs">
+            <div>
+              <p className="font-semibold text-[#171717]">Clinical Telemetry Ingress Log</p>
+              <p className="text-[11px] text-[#6B7280] font-mono mt-0.5">Format: CSV &bull; Client Generated from Local State</p>
+            </div>
+            <button
+              onClick={handleExportCSV}
+              className="px-3 py-1.5 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#1677FF] font-medium flex items-center gap-1.5 transition-swiss"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

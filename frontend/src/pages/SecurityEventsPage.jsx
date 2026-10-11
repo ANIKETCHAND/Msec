@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import StatusBadge from '../components/common/StatusBadge';
 import {
   AlertTriangle,
   Search,
   Filter,
-  ShieldAlert,
   ChevronRight,
   Eye,
   FilePlus2,
   CheckCircle2,
-  Sparkles,
-  Zap,
-  Activity,
-  WifiOff,
-  Code2,
-  X
+  X,
+  Clock,
+  Server
 } from 'lucide-react';
 
 export default function SecurityEventsPage() {
@@ -23,7 +20,6 @@ export default function SecurityEventsPage() {
     setSelectedDeviceId,
     setCurrentPage,
     createIncidentFromEvent,
-    triggerSimulation,
     currentUser
   } = useApp();
 
@@ -36,7 +32,6 @@ export default function SecurityEventsPage() {
     const matchSearch =
       evt.id.toLowerCase().includes(search.toLowerCase()) ||
       evt.ruleName.toLowerCase().includes(search.toLowerCase()) ||
-      evt.deviceName.toLowerCase().includes(search.toLowerCase()) ||
       evt.deviceId.toLowerCase().includes(search.toLowerCase());
 
     const matchSev = severityFilter === 'ALL' || evt.severity.toUpperCase() === severityFilter;
@@ -45,226 +40,213 @@ export default function SecurityEventsPage() {
     return matchSearch && matchSev && matchStat;
   });
 
-  const getSeverityBadge = (severity) => {
-    switch (severity.toLowerCase()) {
-      case 'critical':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'high':
-        return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'medium':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      default:
-        return 'bg-sky-500/20 text-sky-400 border-sky-500/30';
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E7EB]">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-400" />
-            IoMT Security Detection Events
+          <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
+            <span>Security Events & IDS Telemetry</span>
+            <span className="text-xs font-mono text-[#6B7280] font-normal">
+              ({securityEvents.length} events logged)
+            </span>
           </h1>
-          <p className="text-xs text-slate-400">
-            Rule-based detections and heuristic anomaly flags triggered by synthetic clinical telemetry.
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Passive Suricata EVE, Zeek connection logs, and heuristic rule triggers.
           </p>
         </div>
 
-        {/* Quick Simulation Trigger Bar */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => triggerSimulation('auth_spike')}
-            className="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-          >
-            <Zap className="w-3.5 h-3.5" /> + Brute Force Alert
-          </button>
-          <button
-            onClick={() => triggerSimulation('traffic_spike')}
-            className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-          >
-            <Activity className="w-3.5 h-3.5" /> + Traffic Surge Alert
-          </button>
+        <div className="flex items-center gap-2 text-xs font-mono text-[#6B7280]">
+          <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+          <span>Real-Time Stream Active</span>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-navy-900 border border-navy-800 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+      {/* 2. Controls Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        <div className="sm:col-span-6 relative">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
           <input
             type="text"
-            placeholder="Search events by rule, device or ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-navy-950 border border-navy-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-mediblue-500"
+            placeholder="Search by event name, alert ID, device ID..."
+            className="w-full bg-white text-xs text-[#171717] placeholder-[#9CA3AF] pl-8 pr-3 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="sm:col-span-3">
           <select
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
-            className="bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
+            className="w-full bg-white text-xs text-[#171717] px-2.5 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
           >
-            <option value="ALL">All Severities</option>
-            <option value="CRITICAL">Critical</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
+            <option value="ALL">Severity: All</option>
+            <option value="CRITICAL">Severity: Critical</option>
+            <option value="HIGH">Severity: High</option>
+            <option value="MEDIUM">Severity: Medium</option>
+            <option value="LOW">Severity: Low</option>
           </select>
+        </div>
 
+        <div className="sm:col-span-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-mediblue-500"
+            className="w-full bg-white text-xs text-[#171717] px-2.5 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none transition-swiss font-mono"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="OPEN">Open</option>
-            <option value="INVESTIGATING">Investigating</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="CLOSED">Closed</option>
+            <option value="ALL">Status: All</option>
+            <option value="OPEN">Status: Open</option>
+            <option value="INVESTIGATING">Status: Investigating</option>
+            <option value="RESOLVED">Status: Resolved</option>
           </select>
         </div>
       </div>
 
-      {/* Events Table */}
-      <div className="bg-navy-900 border border-navy-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* 3. Clean Swiss Table */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-navy-950/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
-              <tr>
-                <th className="py-3 px-4">Event ID</th>
-                <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">Detection Rule</th>
-                <th className="py-3 px-4">Target Device</th>
+            <thead>
+              <tr className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-[#6B7280] font-medium uppercase text-[11px] tracking-wider select-none">
                 <th className="py-3 px-4">Severity</th>
+                <th className="py-3 px-4">Event Trigger</th>
+                <th className="py-3 px-4">Target Endpoint</th>
+                <th className="py-3 px-4">Timestamp</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-navy-800 text-slate-300">
-              {filteredEvents.map((evt) => (
-                <tr key={evt.id} className="hover:bg-navy-800/40 transition">
-                  <td className="py-3.5 px-4 font-mono font-medium text-mediblue-400">
-                    {evt.id}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-400">{evt.timestamp}</td>
-                  <td className="py-3.5 px-4">
-                    <div className="font-semibold text-white">{evt.ruleName}</div>
-                    <div className="font-mono text-[10px] text-slate-400">{evt.ruleId}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <button
-                      onClick={() => { setSelectedDeviceId(evt.deviceId); setCurrentPage('device-detail'); }}
-                      className="font-medium text-white hover:underline text-left"
-                    >
-                      {evt.deviceName}
-                    </button>
-                    <div className="font-mono text-[10px] text-slate-400">{evt.deviceId}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${getSeverityBadge(evt.severity)}`}>
-                      {evt.severity.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 capitalize font-mono text-[11px] text-slate-300">
-                    {evt.status}
-                  </td>
-                  <td className="py-3.5 px-4 text-right space-x-1.5">
-                    <button
-                      onClick={() => setSelectedEvent(evt)}
-                      className="px-2.5 py-1 bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 rounded-lg text-xs transition inline-flex items-center gap-1"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-mediblue-400" /> Inspect
-                    </button>
-
-                    {currentUser.role !== 'Doctor Demo' && (
-                      <button
-                        onClick={() => createIncidentFromEvent(evt)}
-                        title="Promote event to formal incident ticket"
-                        className="px-2.5 py-1 bg-mediblue-600/30 hover:bg-mediblue-600 text-mediblue-300 hover:text-white border border-mediblue-500/40 rounded-lg text-xs transition inline-flex items-center gap-1 font-semibold"
-                      >
-                        <FilePlus2 className="w-3.5 h-3.5" /> Escalate
-                      </button>
-                    )}
+            <tbody className="divide-y divide-[#F3F4F6]">
+              {filteredEvents.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-xs text-[#6B7280]">
+                    No security events found matching current criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredEvents.map((evt) => (
+                  <tr
+                    key={evt.id}
+                    onClick={() => setSelectedEvent(evt)}
+                    className="hover:bg-[#F9FAFB] cursor-pointer transition-swiss group"
+                  >
+                    <td className="py-3 px-4">
+                      <StatusBadge status={evt.severity} size="xs" />
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="font-semibold text-[#171717] group-hover:text-[#1677FF] transition-swiss block">
+                        {evt.ruleName}
+                      </span>
+                      <span className="text-[11px] text-[#6B7280] font-mono block mt-0.5">
+                        {evt.id}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono">
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDeviceId(evt.deviceId);
+                          setCurrentPage('device-detail');
+                        }}
+                        className="text-[#1677FF] hover:underline font-medium"
+                      >
+                        {evt.deviceId}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[#6B7280] text-[11px]">
+                      {evt.timestamp}
+                    </td>
+                    <td className="py-3 px-4">
+                      <StatusBadge status={evt.status} size="xs" />
+                    </td>
+                    <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedEvent(evt)}
+                          className="px-2 py-1 rounded text-[11px] font-medium text-[#6B7280] hover:text-[#171717] hover:bg-[#F3F4F6] transition-swiss"
+                        >
+                          Evidence
+                        </button>
+                        {currentUser.role !== 'Doctor Demo' && evt.status !== 'resolved' && (
+                          <button
+                            onClick={() => createIncidentFromEvent(evt)}
+                            className="px-2 py-1 rounded text-[11px] font-medium text-[#1677FF] bg-[#E6F4FF] hover:bg-blue-100 transition-swiss"
+                          >
+                            Escalate Ticket
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Event Detail Inspection Modal */}
+      {/* Event Evidence Detail Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-navy-900 border border-navy-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-navy-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white border border-[#E5E7EB] rounded-lg max-w-lg w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
               <div>
-                <span className="font-mono text-xs text-mediblue-400 font-bold">{selectedEvent.id}</span>
-                <h2 className="text-base font-bold text-white">{selectedEvent.ruleName}</h2>
+                <h3 className="font-semibold text-sm text-[#171717]">{selectedEvent.ruleName}</h3>
+                <span className="text-[11px] font-mono text-[#6B7280]">{selectedEvent.id}</span>
               </div>
-              <button onClick={() => setSelectedEvent(null)} className="text-slate-400 hover:text-white">
+              <button
+                onClick={() => setSelectedEvent(null)}
+                className="text-[#9CA3AF] hover:text-[#171717]"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2 p-3 bg-navy-950 rounded-xl border border-navy-800">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-[#F9FAFB] rounded border border-[#E5E7EB]">
                 <div>
-                  <span className="text-slate-400">Target Device:</span>
-                  <div className="font-semibold text-white">{selectedEvent.deviceName}</div>
-                  <div className="font-mono text-[10px] text-slate-400">{selectedEvent.deviceId}</div>
+                  <span className="text-[#6B7280] block text-[11px]">Target Device</span>
+                  <span className="font-semibold text-[#171717] font-mono">{selectedEvent.deviceId}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">Severity Assessment:</span>
-                  <div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getSeverityBadge(selectedEvent.severity)}`}>
-                      {selectedEvent.severity.toUpperCase()}
-                    </span>
-                  </div>
+                  <span className="text-[#6B7280] block text-[11px]">Severity Level</span>
+                  <StatusBadge status={selectedEvent.severity} size="xs" />
                 </div>
               </div>
 
-              {/* Evidence JSON */}
-              <div className="space-y-1">
-                <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                  <Code2 className="w-3.5 h-3.5 text-mediblue-400" />
-                  Forensic Event Evidence (JSON Payload):
-                </span>
-                <pre className="p-3 bg-navy-950 border border-navy-800 rounded-xl font-mono text-[11px] text-emerald-400 overflow-x-auto">
-                  {JSON.stringify(selectedEvent.evidence, null, 2)}
+              <div>
+                <span className="font-medium text-[#171717] block mb-1">Recommended Response Action</span>
+                <p className="p-2.5 bg-blue-50 border border-blue-100 rounded text-blue-900 leading-relaxed">
+                  {selectedEvent.suggestedAction}
+                </p>
+              </div>
+
+              <div>
+                <span className="font-medium text-[#171717] block mb-1">Packet Payload Evidence</span>
+                <pre className="p-3 bg-[#171717] text-[#F3F4F6] rounded font-mono text-[11px] overflow-x-auto">
+                  {JSON.stringify(selectedEvent.evidence || {}, null, 2)}
                 </pre>
-              </div>
-
-              {/* Suggested Remediation */}
-              <div className="p-3 bg-mediblue-950/40 border border-mediblue-800/40 rounded-xl space-y-1">
-                <span className="font-semibold text-mediblue-400">Recommended Analyst Action:</span>
-                <p className="text-slate-300 leading-relaxed">{selectedEvent.suggestedAction}</p>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
+            <div className="pt-3 border-t border-[#E5E7EB] flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setSelectedDeviceId(selectedEvent.deviceId);
+                  setSelectedEvent(null);
+                  setCurrentPage('device-detail');
+                }}
+                className="text-xs text-[#1677FF] hover:underline font-medium"
+              >
+                Inspect Device &rarr;
+              </button>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="px-3 py-1.5 bg-navy-800 text-slate-300 rounded-xl text-xs"
+                className="px-3 py-1.5 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-xs font-medium text-[#171717]"
               >
-                Dismiss
+                Close
               </button>
-              {currentUser.role !== 'Doctor Demo' && (
-                <button
-                  onClick={() => {
-                    const evt = selectedEvent;
-                    setSelectedEvent(null);
-                    createIncidentFromEvent(evt);
-                  }}
-                  className="px-4 py-1.5 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5"
-                >
-                  <FilePlus2 className="w-3.5 h-3.5" /> Escalate to Incident
-                </button>
-              )}
             </div>
           </div>
         </div>

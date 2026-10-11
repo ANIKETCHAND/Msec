@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
+import StatusBadge from '../components/common/StatusBadge';
 import {
   Shield,
   ShieldCheck,
@@ -9,16 +10,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  Cpu,
   Layers,
-  Activity,
   FileText,
-  Search,
   RefreshCw,
   Plus,
   X,
   ChevronRight,
-  Info
+  Info,
+  Server,
+  ArrowRight
 } from 'lucide-react';
 
 export default function AssessmentCenterPage() {
@@ -32,15 +32,13 @@ export default function AssessmentCenterPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Scope creation modal
-  const [scopeModalOpen, setScopeModalOpen] = useState(false);
-  const [selectedDeviceId, setSelectedDeviceId] = useState(devices[0]?.id || 'DEV-ECG-001');
+  // 8-Step Focused Workflow State
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedDeviceId, setSelectedDeviceId] = useState(devices[0]?.id || 'DEV-VENT-502');
   const [selectedProfile, setSelectedProfile] = useState('DEFENSIVE_AUDIT');
   const [selectedTools, setSelectedTools] = useState(['nmap', 'nuclei']);
-  const [justification, setJustification] = useState('Quarterly biomedical network compliance audit');
   const [durationHours, setDurationHours] = useState(4);
-
-  // Assessment run selection
+  const [justification, setJustification] = useState('Hospital clinical IoMT compliance audit');
   const [activeScopeId, setActiveScopeId] = useState('');
 
   const targetDevice = devices.find(d => d.id === selectedDeviceId) || devices[0];
@@ -62,19 +60,18 @@ export default function AssessmentCenterPage() {
       if (fetchedAsms && fetchedAsms.length > 0) {
         setSelectedAssessment(fetchedAsms[0]);
       }
-      const active = fetchedScopes.find(s => s.authorization_status === 'AUTHORIZED');
+      const active = (fetchedScopes || []).find(s => s.authorization_status === 'AUTHORIZED');
       if (active) {
         setActiveScopeId(active.id);
       }
     } catch (err) {
-      setErrorMsg('Failed to load assessment data.');
+      setErrorMsg('Failed to fetch assessment scopes.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateScope = async (e) => {
-    e.preventDefault();
+  const handleCreateScope = async () => {
     setErrorMsg('');
     setSuccessMsg('');
     try {
@@ -86,33 +83,23 @@ export default function AssessmentCenterPage() {
         duration_hours: Number(durationHours),
         justification: justification
       });
-      setSuccessMsg(`Scope certificate ${newScope.id} successfully authorized!`);
-      setScopeModalOpen(false);
+      setSuccessMsg(`Scope certificate ${newScope.id} authorized.`);
       setActiveScopeId(newScope.id);
+      setCurrentStep(7); // Advance to execution step
       loadData();
     } catch (err) {
-      setErrorMsg(err.message || 'Scope authorization failed.');
-    }
-  };
-
-  const handleRevokeScope = async (scopeId) => {
-    try {
-      await api.revokeScope(scopeId);
-      setSuccessMsg(`Scope ${scopeId} revoked.`);
-      loadData();
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to revoke scope.');
+      setErrorMsg(err.message || 'Authorization failed. Check backend credentials.');
     }
   };
 
   const handleExecuteAssessment = async () => {
     if (!activeScopeId) {
-      setErrorMsg('Please select an authorized scope certificate first.');
+      setErrorMsg('No authorized scope certificate selected.');
       return;
     }
     const currentScope = scopes.find(s => s.id === activeScopeId);
     if (!currentScope) {
-      setErrorMsg('Selected scope is invalid or expired.');
+      setErrorMsg('Selected scope is expired or unauthorized.');
       return;
     }
 
@@ -127,7 +114,8 @@ export default function AssessmentCenterPage() {
         tools: currentScope.selected_tools
       });
       setSelectedAssessment(result);
-      setSuccessMsg(`Defensive assessment completed! Score: ${result.security_score}/100.`);
+      setSuccessMsg(`Defensive assessment completed. Posture Score: ${result.security_score}/100.`);
+      setCurrentStep(8); // Advance to results step
       loadData();
     } catch (err) {
       setErrorMsg(err.message || 'Assessment execution failed.');
@@ -142,417 +130,424 @@ export default function AssessmentCenterPage() {
     );
   };
 
-  const getSeverityBadge = (sev) => {
-    switch (sev?.toUpperCase()) {
-      case 'CRITICAL':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'HIGH':
-        return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'MEDIUM':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      case 'LOW':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      default:
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 1. Header */}
+      <div className="pb-4 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Shield className="w-5 h-5 text-mediblue-400" />
-              Security Assessment Operations Center
-            </h1>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-mediblue-500/10 text-mediblue-400 border border-mediblue-500/30">
-              Orchestrator v2.0
+          <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
+            <span>Assessment Operations Center</span>
+            <span className="text-xs font-mono text-[#6B7280] font-normal">
+              (Multi-Tool Defensive Scanner)
             </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Authorized multi-tool vulnerability diagnostics, bounded scopes, and clinical posture scoring.
+          </h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Authorized IoMT posture verification, vulnerability intelligence, and clinical risk calculation.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setScopeModalOpen(true)}
-            className="px-3.5 py-2 bg-mediblue-600 hover:bg-mediblue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-lg shadow-mediblue-600/20"
+            onClick={loadData}
+            disabled={loading}
+            className="px-3 py-1.5 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-xs text-[#171717] font-medium transition-swiss flex items-center gap-1.5"
           >
-            <Plus className="w-4 h-4" />
-            Authorize New Scope
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* Defensive Safety Banner */}
-      <div className="p-3 bg-navy-900/90 border border-navy-700/80 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 text-slate-300">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+      {/* Safety Scope Notice Banner */}
+      <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2 text-[#171717]">
+          <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
           <span>
-            <strong className="text-emerald-400">AUTHORIZED SECURITY ASSESSMENT ONLY:</strong> Assessments are restricted exclusively to registered IoMT assets within signed authorization scopes.
+            <strong>AUTHORIZED SECURITY ASSESSMENT ONLY:</strong> Tool adapters operate exclusively against authorized targets with server-side validation.
           </span>
         </div>
-        <span className="text-[10px] font-mono text-amber-400/90 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 w-max font-semibold">
-          SIMULATION — NO REAL DEVICE CONTROL
+        <span className="text-[10px] font-mono text-[#F59E0B] px-2 py-0.5 rounded bg-amber-50 border border-amber-200 w-max font-semibold">
+          DEFENSIVE ONLY — NON-DESTRUCTIVE
         </span>
       </div>
 
-      {/* Notifications */}
+      {/* Alerts */}
       {errorMsg && (
-        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" /> {errorMsg}
+        <div className="p-3 rounded bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+          <span>{errorMsg}</span>
+          <button onClick={() => setErrorMsg('')}><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
       {successMsg && (
-        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> {successMsg}
+        <div className="p-3 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+          <span>{successMsg}</span>
+          <button onClick={() => setSuccessMsg('')}><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
 
-      {/* Active Scope & Launch Pad */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Scope Selector & Launcher */}
-        <div className="bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-4 shadow-xl">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <Play className="w-4 h-4 text-emerald-400" />
-            Launch Authorized Diagnostic Run
-          </h2>
+      {/* 2. 8-STEP PROGRESS BAR TRACKER */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg p-4">
+        <div className="flex items-center justify-between overflow-x-auto gap-2 pb-1 text-xs select-none font-mono">
+          {[
+            { num: 1, label: 'Select Target' },
+            { num: 2, label: 'Verify Auth' },
+            { num: 3, label: 'Scope Config' },
+            { num: 4, label: 'Tool Adapters' },
+            { num: 5, label: 'Review Plan' },
+            { num: 6, label: 'Authorize' },
+            { num: 7, label: 'Execute' },
+            { num: 8, label: 'Results' },
+          ].map((step) => {
+            const isCompleted = currentStep > step.num;
+            const isCurrent = currentStep === step.num;
 
-          <div className="space-y-3 text-xs">
-            <div>
-              <label className="text-slate-400 font-medium block mb-1">Select Active Scope Certificate</label>
-              <select
-                value={activeScopeId}
-                onChange={(e) => setActiveScopeId(e.target.value)}
-                className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
+            return (
+              <button
+                key={step.num}
+                onClick={() => setCurrentStep(step.num)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-swiss whitespace-nowrap ${
+                  isCurrent
+                    ? 'bg-[#1677FF] text-white font-semibold shadow-xs'
+                    : isCompleted
+                    ? 'text-emerald-700 bg-emerald-50 font-medium'
+                    : 'text-[#9CA3AF] hover:text-[#171717]'
+                }`}
               >
-                <option value="">-- Choose Scope --</option>
-                {scopes.filter(s => s.authorization_status === 'AUTHORIZED').map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.id} • {s.device_id} ({s.target_ip})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {activeScopeId && (() => {
-              const sc = scopes.find(s => s.id === activeScopeId);
-              if (!sc) return null;
-              return (
-                <div className="p-3 bg-navy-950 rounded-xl border border-navy-800 space-y-1.5 text-[11px]">
-                  <div className="text-slate-400">Target: <strong className="text-white">{sc.device_id}</strong></div>
-                  <div className="text-slate-400">Target IP: <strong className="text-mediblue-400 font-mono">{sc.target_ip}</strong></div>
-                  <div className="text-slate-400">Profile: <strong className="text-slate-200">{sc.assessment_profile}</strong></div>
-                  <div className="text-slate-400">Tools: <span className="text-emerald-400 font-mono">{sc.selected_tools.join(', ')}</span></div>
-                  <div className="text-slate-400">Expires: <span className="text-amber-400 font-mono">{new Date(sc.expires_at).toLocaleTimeString()}</span></div>
-                </div>
-              );
-            })()}
-
-            <button
-              onClick={handleExecuteAssessment}
-              disabled={executing || !activeScopeId}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition"
-            >
-              {executing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Orchestrating Defensive Assessment...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 fill-white" />
-                  Execute Assessment Now
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Right 2 Columns: Active Scopes Registry */}
-        <div className="lg:col-span-2 bg-navy-900 border border-navy-800 p-5 rounded-2xl space-y-4 shadow-xl">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Clock className="w-4 h-4 text-mediblue-400" />
-              Authorization Scope Certificates Registry
-            </h2>
-            <span className="text-xs text-slate-400 font-mono">{scopes.length} scopes registered</span>
-          </div>
-
-          <div className="overflow-x-auto max-h-56">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-navy-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
-                <tr>
-                  <th className="py-2.5 px-3">Scope ID</th>
-                  <th className="py-2.5 px-3">Device / IP</th>
-                  <th className="py-2.5 px-3">Profile</th>
-                  <th className="py-2.5 px-3">Tools</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-navy-800/70 text-slate-300">
-                {scopes.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-6 text-center text-slate-400">
-                      No authorization scopes active. Click "Authorize New Scope" above.
-                    </td>
-                  </tr>
-                ) : (
-                  scopes.map(sc => (
-                    <tr key={sc.id} className="hover:bg-navy-800/30">
-                      <td className="py-2.5 px-3 font-mono text-mediblue-400 font-medium">{sc.id}</td>
-                      <td className="py-2.5 px-3">
-                        <div className="font-semibold text-white">{sc.device_id}</div>
-                        <div className="text-[10px] font-mono text-slate-400">{sc.target_ip}</div>
-                      </td>
-                      <td className="py-2.5 px-3 text-[11px]">{sc.assessment_profile}</td>
-                      <td className="py-2.5 px-3 font-mono text-[10px] text-emerald-400">{sc.selected_tools.join(', ')}</td>
-                      <td className="py-2.5 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                          sc.authorization_status === 'AUTHORIZED'
-                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                            : 'bg-red-500/20 text-red-400 border-red-500/30'
-                        }`}>
-                          {sc.authorization_status}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        {sc.authorization_status === 'AUTHORIZED' && (
-                          <button
-                            onClick={() => handleRevokeScope(sc.id)}
-                            className="px-2 py-1 bg-navy-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 rounded text-[10px] transition"
-                          >
-                            Revoke
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                <span>{step.num}.</span>
+                <span>{step.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Assessment Findings & Details View */}
-      {selectedAssessment && (
-        <div className="bg-navy-900 border border-navy-800 rounded-2xl overflow-hidden shadow-2xl space-y-4 p-5">
-          {/* Summary Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-navy-800 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white">
-                  Assessment Findings: {selectedAssessment.device_id}
-                </h2>
-                <span className="font-mono text-xs px-2 py-0.5 rounded bg-mediblue-500/20 text-mediblue-400 border border-mediblue-500/30">
-                  {selectedAssessment.id}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-1">
-                {selectedAssessment.summary || 'Normalized findings from multi-tool diagnostic scan.'}
-              </p>
+      {/* 3. STEP CONTENT WORKFLOW */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg p-6 space-y-6">
+        {/* Step 1: Select Target Device */}
+        {currentStep === 1 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#171717]">Step 1: Select Medical Asset for Assessment</h3>
+            <p className="text-xs text-[#6B7280]">
+              Choose an explicitly registered medical asset. Tools will strictly target this IP endpoint.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {devices.map((dev) => (
+                <div
+                  key={dev.id}
+                  onClick={() => setSelectedDeviceId(dev.id)}
+                  className={`p-3.5 rounded border cursor-pointer transition-swiss ${
+                    selectedDeviceId === dev.id
+                      ? 'border-[#1677FF] bg-[#E6F4FF]/30 shadow-xs'
+                      : 'border-[#E5E7EB] hover:bg-[#F9FAFB]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs font-semibold text-[#171717]">
+                    <span>{dev.name}</span>
+                    <StatusBadge status={dev.riskLevel} size="xs" />
+                  </div>
+                  <p className="text-[11px] font-mono text-[#6B7280] mt-1">{dev.id} • {dev.ipAddress}</p>
+                  <p className="text-[11px] text-[#9CA3AF] mt-0.5">{dev.department} • {dev.networkSegment}</p>
+                </div>
+              ))}
             </div>
-
-            {/* Score Ring */}
-            <div className="flex items-center gap-4 bg-navy-950 p-3 rounded-xl border border-navy-800">
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Security Posture</span>
-                <span className={`text-xl font-mono font-bold ${
-                  selectedAssessment.security_score >= 80 ? 'text-emerald-400' :
-                  selectedAssessment.security_score >= 60 ? 'text-amber-400' : 'text-red-400'
-                }`}>
-                  {selectedAssessment.security_score}/100
-                </span>
-              </div>
-              <div className="h-8 w-px bg-navy-800"></div>
-              <div className="text-xs space-y-0.5">
-                <div className="text-[10px] text-slate-400">Total Findings: <strong className="text-white">{selectedAssessment.total_findings}</strong></div>
-                <div className="text-[10px] text-red-400 font-semibold">Critical / High: {selectedAssessment.critical_findings + selectedAssessment.high_findings}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Findings Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-navy-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-navy-800">
-                <tr>
-                  <th className="py-3 px-4">Severity</th>
-                  <th className="py-3 px-4">Finding & Description</th>
-                  <th className="py-3 px-4">Port / Service</th>
-                  <th className="py-3 px-4">Source Tool</th>
-                  <th className="py-3 px-4">Remediation Guidance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-navy-800 text-slate-300">
-                {!selectedAssessment.findings || selectedAssessment.findings.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="py-8 text-center text-slate-400">
-                      No security vulnerabilities or misconfigurations detected for this device.
-                    </td>
-                  </tr>
-                ) : (
-                  selectedAssessment.findings.map(f => (
-                    <tr key={f.id} className="hover:bg-navy-800/30">
-                      <td className="py-3 px-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getSeverityBadge(f.severity)}`}>
-                          {f.severity.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-white">{f.title}</div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">{f.description}</div>
-                        {f.cve_id && (
-                          <div className="mt-1 flex items-center gap-2">
-                            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-red-500/10 text-red-400 border border-red-500/20">
-                              {f.cve_id} (CVSS {f.cvss_score})
-                            </span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-slate-300">
-                        {f.affected_port ? `${f.affected_port}/${f.affected_service || 'tcp'}` : 'N/A'}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-[11px] text-mediblue-400 uppercase">
-                        {f.source_tool}
-                      </td>
-                      <td className="py-3 px-4 text-emerald-400 text-[11px]">
-                        {f.remediation_guidance || 'Follow vendor hardening guidelines.'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Authorize Scope Modal */}
-      {scopeModalOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-navy-900 border border-navy-700 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-navy-800 pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-mediblue-400" />
-                Authorize Defensive Security Scope Certificate
-              </h2>
-              <button onClick={() => setScopeModalOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="px-4 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs"
+              >
+                <span>Next: Verify Authorization</span>
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
+          </div>
+        )}
 
-            <form onSubmit={handleCreateScope} className="space-y-4 text-xs">
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Target IoMT Device</label>
-                <select
-                  value={selectedDeviceId}
-                  onChange={(e) => setSelectedDeviceId(e.target.value)}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                >
-                  {devices.map(d => (
-                    <option key={d.id} value={d.id}>
-                      {d.name} ({d.id} - {d.ipAddress})
-                    </option>
-                  ))}
-                </select>
+        {/* Step 2: Verify Authorization */}
+        {currentStep === 2 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#171717]">Step 2: Server-Side Scope Authorization Status</h3>
+            <p className="text-xs text-[#6B7280]">
+              Checking pre-existing time-bounded authorization certificates for {targetDevice.name} ({targetDevice.ipAddress}).
+            </p>
+            <div className="p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[#6B7280]">Selected Target:</span>
+                <span className="font-semibold text-[#171717]">{targetDevice.name} ({targetDevice.id})</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-slate-300 font-medium">Target IP (Strict Whitelist)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={targetDevice.ipAddress}
-                    className="w-full bg-navy-950/60 border border-navy-800 rounded-xl px-3 py-2 text-slate-400 font-mono"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-slate-300 font-medium">Duration (Hours)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="24"
-                    value={durationHours}
-                    onChange={(e) => setDurationHours(e.target.value)}
-                    className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#6B7280]">Target IP:</span>
+                <span className="font-mono text-[#171717]">{targetDevice.ipAddress}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#6B7280]">Active Scopes on Target:</span>
+                <span className="font-mono text-[#1677FF] font-semibold">
+                  {scopes.filter(s => s.device_id === targetDevice.id && s.authorization_status === 'AUTHORIZED').length} Active
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setCurrentStep(1)} className="px-3 py-1.5 rounded border border-[#E5E7EB] text-xs">Back</button>
+              <button
+                onClick={() => setCurrentStep(3)}
+                className="px-4 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs"
+              >
+                <span>Next: Configure Scope</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Assessment Profile</label>
+        {/* Step 3: Configure Scope & Profile */}
+        {currentStep === 3 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#171717]">Step 3: Assessment Profile & Duration</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block text-[#6B7280] font-medium mb-1">Assessment Profile</label>
                 <select
                   value={selectedProfile}
                   onChange={(e) => setSelectedProfile(e.target.value)}
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
+                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none"
                 >
-                  <option value="DEFENSIVE_AUDIT">DEFENSIVE_AUDIT (Ports, Services & Posture)</option>
-                  <option value="PASSIVE_DISCOVERY">PASSIVE_DISCOVERY (Informational Only)</option>
-                  <option value="COMPLIANCE_SCAN">COMPLIANCE_SCAN (IoMT Clinical Standards)</option>
+                  <option value="DEFENSIVE_AUDIT">DEFENSIVE_AUDIT (Safe TCP Connect, Service Banners)</option>
+                  <option value="VULNERABILITY_DISCOVERY">VULNERABILITY_DISCOVERY (IoMT CVE Template Matching)</option>
+                  <option value="COMPLIANCE_VERIFICATION">COMPLIANCE_VERIFICATION (FDA & HIPAA Controls)</option>
                 </select>
               </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium block">Approved Defensive Tools</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['nmap', 'nuclei', 'zap', 'nikto', 'openvas'].map(t => (
-                    <label
-                      key={t}
-                      className={`p-2 rounded-xl border flex items-center gap-2 cursor-pointer transition ${
-                        selectedTools.includes(t)
-                          ? 'bg-mediblue-600/20 border-mediblue-500/50 text-white font-semibold'
-                          : 'bg-navy-950 border-navy-800 text-slate-400'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedTools.includes(t)}
-                        onChange={() => toggleTool(t)}
-                        className="rounded"
-                      />
-                      <span className="capitalize">{t}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-slate-300 font-medium">Audited Justification</label>
-                <textarea
-                  value={justification}
-                  onChange={(e) => setJustification(e.target.value)}
-                  rows="2"
-                  className="w-full bg-navy-950 border border-navy-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-mediblue-500"
-                  required
+              <div>
+                <label className="block text-[#6B7280] font-medium mb-1">Duration Window (Hours)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={durationHours}
+                  onChange={(e) => setDurationHours(e.target.value)}
+                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none font-mono"
                 />
               </div>
-
-              <div className="pt-3 border-t border-navy-800 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setScopeModalOpen(false)}
-                  className="px-3.5 py-1.5 bg-navy-800 text-slate-300 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-mediblue-600 hover:bg-mediblue-500 text-white font-semibold rounded-xl"
-                >
-                  Sign & Authorize Scope
-                </button>
-              </div>
-            </form>
+            </div>
+            <div>
+              <label className="block text-[#6B7280] font-medium mb-1 text-xs">Audit Justification</label>
+              <input
+                type="text"
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+                className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-xs text-[#171717] focus:outline-none"
+              />
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setCurrentStep(2)} className="px-3 py-1.5 rounded border border-[#E5E7EB] text-xs">Back</button>
+              <button
+                onClick={() => setCurrentStep(4)}
+                className="px-4 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs"
+              >
+                <span>Next: Select Tool Adapters</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Step 4: Select Tools */}
+        {currentStep === 4 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#171717]">Step 4: Select Available Tool Adapters</h3>
+            <p className="text-xs text-[#6B7280]">
+              Adapters employ non-destructive flags (`-sT`, templates only). Synthetic fallback activates if binaries are not in system PATH.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              {[
+                { id: 'nmap', name: 'Nmap Adapter', desc: 'Safe TCP Connect (-sT), service version banner probe' },
+                { id: 'nuclei', name: 'Nuclei Adapter', desc: 'IoMT medical template CVE vulnerability detection' },
+                { id: 'zap', name: 'OWASP ZAP Adapter', desc: 'Passive REST/HL7 clinical API web service audit' },
+                { id: 'nikto', name: 'Nikto Adapter', desc: 'Embedded medical web server header inspection' },
+                { id: 'openvas', name: 'OpenVAS Adapter', desc: 'Authenticated clinical vulnerability baseline review' }
+              ].map((tool) => (
+                <label
+                  key={tool.id}
+                  className={`p-3 rounded border flex items-start gap-3 cursor-pointer transition-swiss ${
+                    selectedTools.includes(tool.id) ? 'border-[#1677FF] bg-[#E6F4FF]/20' : 'border-[#E5E7EB]'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTools.includes(tool.id)}
+                    onChange={() => toggleTool(tool.id)}
+                    className="mt-0.5 rounded text-[#1677FF] focus:ring-0"
+                  />
+                  <div>
+                    <span className="font-semibold text-[#171717] block">{tool.name}</span>
+                    <span className="text-[11px] text-[#6B7280] block mt-0.5">{tool.desc}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setCurrentStep(3)} className="px-3 py-1.5 rounded border border-[#E5E7EB] text-xs">Back</button>
+              <button
+                onClick={() => setCurrentStep(5)}
+                className="px-4 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs"
+              >
+                <span>Next: Review Configuration</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Review Configuration */}
+        {currentStep === 5 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#171717]">Step 5: Review Assessment Configuration</h3>
+            <div className="p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg space-y-2.5 text-xs">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-[#6B7280] block">Target Device</span>
+                  <span className="font-semibold text-[#171717]">{targetDevice.name} ({targetDevice.id})</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280] block">Target IP Endpoint</span>
+                  <span className="font-mono text-[#171717]">{targetDevice.ipAddress}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280] block">Selected Profile</span>
+                  <span className="font-mono text-[#171717]">{selectedProfile}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280] block">Valid Duration</span>
+                  <span className="font-mono text-[#171717]">{durationHours} Hours</span>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-[#E5E7EB]">
+                <span className="text-[#6B7280] block">Active Tools</span>
+                <span className="font-mono text-[#1677FF] font-semibold">{selectedTools.join(', ').toUpperCase()}</span>
+              </div>
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setCurrentStep(4)} className="px-3 py-1.5 rounded border border-[#E5E7EB] text-xs">Back</button>
+              <button
+                onClick={() => setCurrentStep(6)}
+                className="px-4 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs"
+              >
+                <span>Next: Confirm & Authorize</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Confirm & Authorize Scope */}
+        {currentStep === 6 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#171717]">Step 6: Authorize Assessment Scope</h3>
+            <p className="text-xs text-[#6B7280]">
+              Authorizing generates a cryptographically signed scope token stored on the server.
+            </p>
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 leading-relaxed">
+              Operator <strong>{currentUser.name}</strong> ({currentUser.role}) is issuing an authorized assessment certificate for target <strong>{targetDevice.ipAddress}</strong>.
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setCurrentStep(5)} className="px-3 py-1.5 rounded border border-[#E5E7EB] text-xs">Back</button>
+              <button
+                onClick={handleCreateScope}
+                className="px-5 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-semibold flex items-center gap-1.5 transition-swiss shadow-xs"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Issue Scope Certificate</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 7: View Progress / Execute */}
+        {currentStep === 7 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-[#171717]">Step 7: Launch Tool Orchestrator</h3>
+            <p className="text-xs text-[#6B7280]">
+              Certificate <strong>{activeScopeId}</strong> is validated. Ready to trigger multi-tool orchestrator.
+            </p>
+            <div className="p-6 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg text-center space-y-3">
+              {executing ? (
+                <div className="py-6 space-y-3">
+                  <RefreshCw className="w-8 h-8 text-[#1677FF] animate-spin mx-auto" />
+                  <p className="text-xs font-semibold text-[#171717]">Executing Security Tool Adapters...</p>
+                  <p className="text-[11px] text-[#6B7280] font-mono">Running Nmap (-sT) &bull; Nuclei Templates &bull; Normalizing Findings</p>
+                </div>
+              ) : (
+                <div className="py-4 space-y-3">
+                  <ShieldCheck className="w-10 h-10 text-[#10B981] mx-auto" />
+                  <p className="text-xs font-semibold text-[#171717]">Scope Validated &bull; Ready for Execution</p>
+                  <button
+                    onClick={handleExecuteAssessment}
+                    className="px-6 py-2.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-bold transition-swiss shadow-xs inline-flex items-center gap-2"
+                  >
+                    <Play className="w-4 h-4 fill-white" />
+                    <span>Run Defensive Assessment</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-between pt-2">
+              <button onClick={() => setCurrentStep(6)} className="px-3 py-1.5 rounded border border-[#E5E7EB] text-xs">Back</button>
+              {selectedAssessment && (
+                <button onClick={() => setCurrentStep(8)} className="text-xs text-[#1677FF] font-medium">Skip to Results &rarr;</button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 8: Review Results */}
+        {currentStep === 8 && (
+          <div className="space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
+              <div>
+                <h3 className="text-sm font-semibold text-[#171717]">Step 8: Assessment Findings & Risk Score</h3>
+                <p className="text-xs text-[#6B7280]">
+                  Target: {selectedAssessment?.device_id || targetDevice.id} &bull; Score: {selectedAssessment?.security_score ?? 85}/100
+                </p>
+              </div>
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="px-3 py-1 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-xs font-medium text-[#171717]"
+              >
+                New Assessment
+              </button>
+            </div>
+
+            {selectedAssessment?.findings && selectedAssessment.findings.length > 0 ? (
+              <div className="border border-[#E5E7EB] rounded-lg overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#F9FAFB] border-b border-[#E5E7EB] text-[#6B7280] font-medium uppercase text-[11px]">
+                    <tr>
+                      <th className="py-2.5 px-3">Severity</th>
+                      <th className="py-2.5 px-3">Title / Finding</th>
+                      <th className="py-2.5 px-3">CVE Reference</th>
+                      <th className="py-2.5 px-3">Tool</th>
+                      <th className="py-2.5 px-3">Remediation Guidance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F3F4F6]">
+                    {selectedAssessment.findings.map((f, idx) => (
+                      <tr key={idx} className="hover:bg-[#F9FAFB]">
+                        <td className="py-2.5 px-3"><StatusBadge status={f.severity} size="xs" /></td>
+                        <td className="py-2.5 px-3 font-semibold text-[#171717]">{f.title}</td>
+                        <td className="py-2.5 px-3 font-mono text-[#1677FF]">{f.cve_id || 'N/A'}</td>
+                        <td className="py-2.5 px-3 font-mono text-[#6B7280] uppercase">{f.source_tool}</td>
+                        <td className="py-2.5 px-3 text-[#6B7280] leading-relaxed">{f.remediation}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-[#F9FAFB] rounded-lg border border-[#E5E7EB] text-xs text-[#6B7280]">
+                Zero critical vulnerabilities identified during this assessment profile run.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

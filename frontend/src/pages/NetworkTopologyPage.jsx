@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import StatusBadge from '../components/common/StatusBadge';
 import {
   Network,
   Server,
   Activity,
   Shield,
-  ShieldAlert,
   ShieldCheck,
-  AlertTriangle,
-  Radio,
-  Cpu,
-  Wifi,
   ChevronRight,
-  ExternalLink,
   Layers,
   ArrowRight
 } from 'lucide-react';
 
 export default function NetworkTopologyPage() {
-  const { devices, setSelectedDeviceId, setCurrentPage, securityEvents } = useApp();
+  const { devices, setSelectedDeviceId, setCurrentPage } = useApp();
   const [selectedDevice, setSelectedDevice] = useState(devices[0] || null);
 
   const segments = [
@@ -27,48 +22,37 @@ export default function NetworkTopologyPage() {
       name: 'Core Security & Aggregation VLAN 1',
       subnet: '192.168.1.0/24',
       type: 'Infrastructure',
-      description: 'MediShield IDS Sensors, SIEM, and hospital boundary firewall.'
+      description: 'MediShield IDS Sensors, SIEM engine, and hospital boundary firewall.'
     },
     {
       id: 'ICU_VLAN_10',
       name: 'Critical Care ICU VLAN 10',
       subnet: '192.168.10.0/24',
-      type: 'High Priority Life-Support',
-      description: 'High-acuity ventilators, 12-lead ECG monitors, and infusion pumps.'
+      type: 'Life-Support Critical',
+      description: 'High-acuity mechanical ventilators, patient vital monitors, and smart infusion pumps.'
     },
     {
       id: 'WARD_VLAN_20',
-      name: 'General Ward VLAN 20',
+      name: 'General Inpatient Ward VLAN 20',
       subnet: '192.168.20.0/24',
       type: 'Clinical Inpatient',
-      description: 'Continuous glucose monitors, standard infusion devices, telemetry beds.'
+      description: 'Continuous glucose monitors, standard telemetry beds, and infusion gateways.'
     },
     {
       id: 'ER_VLAN_30',
       name: 'Emergency Department VLAN 30',
       subnet: '192.168.30.0/24',
       type: 'Acute Trauma & ER',
-      description: 'Mobile defibrillators and triage vital sign monitors.'
+      description: 'Defibrillators, crash cart telemetry, and triage physiological monitors.'
     },
     {
       id: 'AMBULATORY_VLAN_40',
       name: 'Ambulatory & Outpatient VLAN 40',
       subnet: '192.168.40.0/24',
       type: 'Wireless IoT',
-      description: 'Wearable health patches, mobile Holter monitors.'
+      description: 'Wearable health sensors and ambulatory telemetry patches.'
     }
   ];
-
-  const getDeviceStatusColor = (dev) => {
-    if (dev.status === 'isolated') return 'border-purple-500/60 bg-purple-500/10 text-purple-400';
-    if (dev.status === 'suspicious') return 'border-amber-500/60 bg-amber-500/10 text-amber-400';
-    if (dev.riskLevel === 'critical') return 'border-red-500/60 bg-red-500/10 text-red-400';
-    return 'border-emerald-500/60 bg-emerald-500/10 text-emerald-400';
-  };
-
-  const handleDeviceClick = (dev) => {
-    setSelectedDevice(dev);
-  };
 
   const navigateToDevice = (deviceId) => {
     setSelectedDeviceId(deviceId);
@@ -77,98 +61,87 @@ export default function NetworkTopologyPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 1. Header */}
+      <div className="pb-4 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <Network className="w-5 h-5 text-mediblue-400" />
-              Hospital IoMT Network Topology & VLAN Segmentation
-            </h1>
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-mediblue-500/10 text-mediblue-400 border border-mediblue-500/30">
-              Microsegmentation Map
+          <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
+            <span>Hospital IoMT Network Topology</span>
+            <span className="text-xs font-mono text-[#6B7280] font-normal">
+              (Clinical VLAN Microsegmentation)
             </span>
-          </div>
-          <p className="text-xs text-slate-400">
-            Real-time visual map of clinical VLAN subnets, device endpoints, and boundary microsegmentation posture.
+          </h1>
+          <p className="text-xs text-[#6B7280] mt-0.5">
+            Logical subnets, clinical device boundaries, and microsegmentation firewall ACLs.
           </p>
         </div>
       </div>
 
-      {/* Safety Notice */}
-      <div className="p-3 bg-navy-900 border border-navy-700/80 rounded-2xl flex items-center justify-between text-xs text-slate-300">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+      {/* Safety Scope Notice Banner */}
+      <div className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-2 text-[#171717]">
+          <ShieldCheck className="w-4 h-4 text-[#10B981] shrink-0" />
           <span>
-            <strong className="text-emerald-400">ISOLATION ENFORCEMENT:</strong> Network segments are strictly segregated to prevent lateral movement of malware or unauthorized command injection between clinical wards.
+            <strong>MICROSEGMENTATION ACL ENFORCEMENT:</strong> Hospital VLANs are isolated to prevent lateral reconnaissance between ICU life-support and external medical networks.
           </span>
         </div>
-        <span className="text-[10px] font-mono text-slate-400 hidden md:inline">
-          SIMULATION — NO REAL DEVICE CONTROL
+        <span className="text-[10px] font-mono text-[#F59E0B] px-2 py-0.5 rounded bg-amber-50 border border-amber-200 w-max font-semibold">
+          DEFENSIVE ARCHITECTURE
         </span>
       </div>
 
-      {/* Main Grid: VLAN Segments + Selected Device Drawer */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: VLAN Map */}
-        <div className="lg:col-span-2 space-y-4">
-          {segments.map(seg => {
+      {/* 2. Main Grid: VLAN Subnets (Left 8 cols) & Endpoint Inspector (Right 4 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left: VLAN Segments List */}
+        <div className="lg:col-span-8 space-y-4">
+          {segments.map((seg) => {
             const segDevices = devices.filter(d => d.networkSegment === seg.id);
+
             return (
               <div
                 key={seg.id}
-                className="bg-navy-900 border border-navy-800 rounded-2xl p-4 space-y-3 shadow-lg"
+                className="bg-white border border-[#E5E7EB] rounded-lg p-5 space-y-3"
               >
-                <div className="flex items-center justify-between border-b border-navy-800 pb-2.5">
+                <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
                   <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-mediblue-400" />
-                    <span className="font-bold text-white text-xs">{seg.name}</span>
-                    <span className="text-[10px] font-mono text-slate-400 bg-navy-950 px-2 py-0.5 rounded border border-navy-800">
+                    <Layers className="w-4 h-4 text-[#1677FF]" />
+                    <span className="font-semibold text-[#171717] text-xs sm:text-sm">{seg.name}</span>
+                    <span className="font-mono text-[11px] text-[#6B7280] bg-[#F9FAFB] px-2 py-0.5 rounded border border-[#E5E7EB]">
                       {seg.subnet}
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-400">
-                    {segDevices.length} Assets Online
+                  <span className="text-xs font-mono text-[#6B7280] tabular-nums">
+                    {segDevices.length} Endpoints
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <p className="text-xs text-[#6B7280]">{seg.description}</p>
+
+                {/* Endpoints in this VLAN */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   {segDevices.length === 0 ? (
-                    <div className="col-span-full py-3 text-center text-slate-500 text-xs">
-                      Gateway routing node only. No active endpoint devices.
+                    <div className="col-span-full py-4 text-center text-xs text-[#9CA3AF] bg-[#F9FAFB] rounded border border-[#E5E7EB]">
+                      Gateway firewall aggregation node only. No active endpoint hosts.
                     </div>
                   ) : (
-                    segDevices.map(dev => {
+                    segDevices.map((dev) => {
                       const isSelected = selectedDevice?.id === dev.id;
-                      const devAlerts = securityEvents.filter(e => e.deviceId === dev.id && e.status === 'open');
                       return (
                         <div
                           key={dev.id}
-                          onClick={() => handleDeviceClick(dev)}
-                          className={`
-                            p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-2
-                            ${isSelected ? 'ring-2 ring-mediblue-500 bg-navy-950 border-mediblue-500' : 'bg-navy-950/80 hover:bg-navy-800/50 border-navy-800'}
-                          `}
+                          onClick={() => setSelectedDevice(dev)}
+                          className={`p-3 rounded border cursor-pointer transition-swiss ${
+                            isSelected
+                              ? 'border-[#1677FF] bg-[#E6F4FF]/30 shadow-xs'
+                              : 'border-[#E5E7EB] hover:bg-[#F9FAFB]'
+                          }`}
                         >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="font-semibold text-white text-xs truncate max-w-[140px]">{dev.name}</div>
-                              <div className="text-[10px] font-mono text-slate-400">{dev.ipAddress}</div>
-                            </div>
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold border ${getDeviceStatusColor(dev)}`}>
-                              {dev.status.toUpperCase()}
-                            </span>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-[#171717] truncate">{dev.name}</span>
+                            <StatusBadge status={dev.status} size="xs" />
                           </div>
-
-                          <div className="flex items-center justify-between pt-1 border-t border-navy-800/60 text-[10px]">
-                            <span className="text-slate-400">
-                              Score: <strong className="text-mediblue-400 font-mono">{Math.round(dev.securityScore || 85)}</strong>
-                            </span>
-                            {devAlerts.length > 0 && (
-                              <span className="text-red-400 font-bold flex items-center gap-0.5">
-                                <AlertTriangle className="w-3 h-3" /> {devAlerts.length}
-                              </span>
-                            )}
+                          <div className="flex items-center justify-between text-[11px] font-mono text-[#6B7280] mt-1.5">
+                            <span>{dev.ipAddress}</span>
+                            <span>Score: {Math.round(dev.securityScore ?? 85)}</span>
                           </div>
                         </div>
                       );
@@ -180,68 +153,58 @@ export default function NetworkTopologyPage() {
           })}
         </div>
 
-        {/* Right Col: Selected Device Inspector */}
-        <div className="bg-navy-900 border border-navy-800 rounded-2xl p-5 space-y-4 shadow-xl h-fit sticky top-6">
-          <div className="flex items-center justify-between border-b border-navy-800 pb-3">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-mediblue-400" />
-              Node Inspector
-            </h2>
-            {selectedDevice && (
-              <span className="font-mono text-[10px] text-mediblue-400 bg-mediblue-500/10 px-2 py-0.5 rounded border border-mediblue-500/30">
-                {selectedDevice.id}
-              </span>
-            )}
+        {/* Right: Selected Endpoint Diagnostics */}
+        <div className="lg:col-span-4 bg-white border border-[#E5E7EB] rounded-lg p-5 space-y-4 sticky top-4">
+          <div className="pb-3 border-b border-[#F3F4F6]">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
+              Endpoint Inspector
+            </span>
+            <h3 className="text-base font-semibold text-[#171717] mt-1">
+              {selectedDevice ? selectedDevice.name : 'Select Device'}
+            </h3>
           </div>
 
           {selectedDevice ? (
-            <div className="space-y-4 text-xs">
-              <div>
-                <h3 className="font-bold text-white text-base">{selectedDevice.name}</h3>
-                <p className="text-slate-400 text-xs mt-0.5">
-                  {selectedDevice.manufacturer || 'IoMT Hardware'} • {selectedDevice.model || selectedDevice.deviceType}
-                </p>
+            <div className="space-y-3 text-xs">
+              <div className="space-y-2 p-3 bg-[#F9FAFB] rounded border border-[#E5E7EB] font-mono">
+                <div className="flex justify-between">
+                  <span className="text-[#6B7280]">Asset ID:</span>
+                  <span className="font-semibold text-[#171717]">{selectedDevice.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6B7280]">IPv4 Address:</span>
+                  <span className="font-semibold text-[#1677FF]">{selectedDevice.ipAddress}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6B7280]">VLAN Subnet:</span>
+                  <span className="text-[#171717]">{selectedDevice.networkSegment}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#6B7280]">Security Score:</span>
+                  <span className="font-bold text-[#10B981]">{Math.round(selectedDevice.securityScore ?? 85)}/100</span>
+                </div>
               </div>
 
-              <div className="space-y-2 bg-navy-950 p-3.5 rounded-xl border border-navy-800 text-[11px]">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Department:</span>
-                  <span className="text-white font-medium">{selectedDevice.department || 'Intensive Care Unit'}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Location:</span>
-                  <span className="text-slate-300">{selectedDevice.location || selectedDevice.patientRoom || 'Bed 01'}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">IP Address:</span>
-                  <span className="font-mono text-mediblue-400">{selectedDevice.ipAddress}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">MAC Address:</span>
-                  <span className="font-mono text-slate-400">{selectedDevice.macAddress}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">VLAN Segment:</span>
-                  <span className="font-mono text-slate-200">{selectedDevice.networkSegment}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Security Posture Score:</span>
-                  <span className="font-mono font-bold text-emerald-400">{Math.round(selectedDevice.securityScore || 85)}/100</span>
-                </div>
+              <div>
+                <span className="text-[#6B7280] block text-[11px] mb-1 font-medium">Department & Clinical Owner</span>
+                <p className="text-[#171717]">{selectedDevice.department} &bull; {selectedDevice.owner || 'Clinical Engineering'}</p>
+              </div>
+
+              <div>
+                <span className="text-[#6B7280] block text-[11px] mb-1 font-medium">Manufacturer & Firmware</span>
+                <p className="text-[#171717]">{selectedDevice.manufacturer} {selectedDevice.model} (v{selectedDevice.firmwareVersion || '2.4.1'})</p>
               </div>
 
               <button
                 onClick={() => navigateToDevice(selectedDevice.id)}
-                className="w-full py-2 bg-mediblue-600 hover:bg-mediblue-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-mediblue-600/20 transition"
+                className="w-full py-2 px-3 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white font-medium text-xs flex items-center justify-center gap-1.5 transition-swiss shadow-xs mt-2"
               >
-                Open Full Asset Dashboard
-                <ArrowRight className="w-4 h-4" />
+                <span>View Full Diagnostics</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
-            <div className="py-12 text-center text-slate-400 text-xs">
-              Select an asset on the network map to inspect its VLAN parameters and telemetry.
-            </div>
+            <p className="text-xs text-[#6B7280] py-8 text-center">Click a node to inspect its topology posture.</p>
           )}
         </div>
       </div>
