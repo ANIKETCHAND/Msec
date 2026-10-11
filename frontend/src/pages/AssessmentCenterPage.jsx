@@ -18,17 +18,22 @@ import {
   ChevronRight,
   Info,
   Server,
-  ArrowRight
+  ArrowRight,
+  Download,
+  FileCode,
+  ExternalLink
 } from 'lucide-react';
 
 export default function AssessmentCenterPage() {
-  const { devices, currentUser } = useApp();
+  const { devices, currentUser, setCurrentPage } = useApp();
 
   const [scopes, setScopes] = useState([]);
   const [assessments, setAssessments] = useState([]);
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [loading, setLoading] = useState(false);
   const [executing, setExecuting] = useState(false);
+  const [reportGenerating, setReportGenerating] = useState(false);
+  const [lastGeneratedReport, setLastGeneratedReport] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -121,6 +126,37 @@ export default function AssessmentCenterPage() {
       setErrorMsg(err.message || 'Assessment execution failed.');
     } finally {
       setExecuting(false);
+    }
+  };
+
+  const handleGenerateReport = async (format = 'PDF') => {
+    if (!selectedAssessment) return;
+    setReportGenerating(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      const rep = await api.generateReport(selectedAssessment.id, format);
+      setLastGeneratedReport(rep);
+      setSuccessMsg(`Successfully generated ${format} report (${rep.id}) with SHA-256 seal.`);
+    } catch (err) {
+      setErrorMsg(err.message || `Failed to generate ${format} report.`);
+    } finally {
+      setReportGenerating(false);
+    }
+  };
+
+  const handleCancelScan = async () => {
+    if (!selectedAssessment?.id) {
+      setExecuting(false);
+      return;
+    }
+    try {
+      await api.cancelAssessment(selectedAssessment.id);
+      setSuccessMsg('Assessment scan cancelled.');
+      setExecuting(false);
+      loadData();
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to cancel scan.');
     }
   };
 
@@ -473,6 +509,12 @@ export default function AssessmentCenterPage() {
                   <RefreshCw className="w-8 h-8 text-[#1677FF] animate-spin mx-auto" />
                   <p className="text-xs font-semibold text-[#171717]">Executing Security Tool Adapters...</p>
                   <p className="text-[11px] text-[#6B7280] font-mono">Running Nmap (-sT) &bull; Nuclei Templates &bull; Normalizing Findings</p>
+                  <button
+                    onClick={handleCancelScan}
+                    className="mt-2 px-3.5 py-1.5 rounded border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium transition-swiss"
+                  >
+                    Cancel Scan
+                  </button>
                 </div>
               ) : (
                 <div className="py-4 space-y-3">
@@ -497,7 +539,7 @@ export default function AssessmentCenterPage() {
           </div>
         )}
 
-        {/* Step 8: Review Results */}
+        {/* Step 8: Review Results & Generate Certified Reports */}
         {currentStep === 8 && (
           <div className="space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
@@ -507,14 +549,76 @@ export default function AssessmentCenterPage() {
                   Target: {selectedAssessment?.device_id || targetDevice.id} &bull; Score: {selectedAssessment?.security_score ?? 85}/100
                 </p>
               </div>
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="px-3 py-1 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-xs font-medium text-[#171717]"
-              >
-                New Assessment
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="px-3 py-1 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-xs font-medium text-[#171717]"
+                >
+                  New Assessment
+                </button>
+              </div>
             </div>
 
+            {/* Certified Report Generation Bar */}
+            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-[#171717]">Generate Certified Audit Report</h4>
+                  <p className="text-[11px] text-[#6B7280]">Export report with SHA-256 seal, executive summary, and remediation guidance.</p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleGenerateReport('PDF')}
+                    disabled={reportGenerating || !selectedAssessment}
+                    className="px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium flex items-center gap-1.5 transition-swiss disabled:opacity-50"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Generate PDF</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleGenerateReport('HTML')}
+                    disabled={reportGenerating || !selectedAssessment}
+                    className="px-3 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss disabled:opacity-50"
+                  >
+                    <FileCode className="w-3.5 h-3.5" />
+                    <span>Generate HTML</span>
+                  </button>
+                </div>
+              </div>
+
+              {lastGeneratedReport && (
+                <div className="pt-3 border-t border-[#F3F4F6] flex items-center justify-between text-xs bg-emerald-50/50 p-2.5 rounded border border-emerald-200">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#10B981]" />
+                    <span className="font-medium text-emerald-900">
+                      Report {lastGeneratedReport.id} ({lastGeneratedReport.report_type}) Ready
+                    </span>
+                    <span className="font-mono text-[10px] text-emerald-700">
+                      SHA-256: {lastGeneratedReport.sha256_hash.slice(0, 16)}...
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`/api/reports/${lastGeneratedReport.id}/download`}
+                      className="px-2.5 py-1 rounded bg-white text-[#171717] border border-[#E5E7EB] hover:bg-[#F9FAFB] text-xs font-semibold flex items-center gap-1"
+                      download
+                    >
+                      <Download className="w-3 h-3 text-[#1677FF]" /> Download
+                    </a>
+                    <button
+                      onClick={() => setCurrentPage('reports')}
+                      className="text-xs text-[#1677FF] hover:underline font-medium"
+                    >
+                      View in Reports &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Findings Table */}
             {selectedAssessment?.findings && selectedAssessment.findings.length > 0 ? (
               <div className="border border-[#E5E7EB] rounded-lg overflow-hidden">
                 <table className="w-full text-left text-xs">
@@ -534,7 +638,7 @@ export default function AssessmentCenterPage() {
                         <td className="py-2.5 px-3 font-semibold text-[#171717]">{f.title}</td>
                         <td className="py-2.5 px-3 font-mono text-[#1677FF]">{f.cve_id || 'N/A'}</td>
                         <td className="py-2.5 px-3 font-mono text-[#6B7280] uppercase">{f.source_tool}</td>
-                        <td className="py-2.5 px-3 text-[#6B7280] leading-relaxed">{f.remediation}</td>
+                        <td className="py-2.5 px-3 text-[#6B7280] leading-relaxed">{f.remediation_guidance || f.remediation}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -545,6 +649,29 @@ export default function AssessmentCenterPage() {
                 Zero critical vulnerabilities identified during this assessment profile run.
               </div>
             )}
+
+            {/* Guided Workflow Next Steps */}
+            <div className="p-4 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <span className="text-[#6B7280]">
+                High &amp; Critical findings have been automatically emitted into the Security Events pipeline.
+              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setCurrentPage('security-events')}
+                  className="px-3 py-1.5 rounded bg-white border border-[#E5E7EB] hover:bg-[#F3F4F6] text-[#171717] font-medium flex items-center gap-1.5 transition-swiss"
+                >
+                  <span>Review Security Events</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage('incidents')}
+                  className="px-3 py-1.5 rounded bg-[#1677FF] text-white hover:bg-[#0958D9] font-medium flex items-center gap-1.5 transition-swiss"
+                >
+                  <span>Investigate Incidents</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -48,7 +48,7 @@ export default function LoginPage() {
 
       setCurrentUser(activeUser);
       logAudit('USER_LOGIN', 'AuthSession', activeUser.email, `User logged in with role ${activeUser.role}.`);
-      setCurrentPage('dashboard');
+      setCurrentPage('assessment-center');
     } catch (err) {
       console.warn("[Login] Authentication error:", err.message);
       setError(err.message || 'Authentication failed. Please verify credentials.');

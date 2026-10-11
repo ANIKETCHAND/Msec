@@ -255,7 +255,62 @@ class ApiService {
       method: 'POST'
     });
   }
+
+  // Assessment Cancellation & Polling
+  async cancelAssessment(assessmentId) {
+    return await this.request(`/assessments/${assessmentId}/cancel`, {
+      method: 'POST'
+    });
+  }
+
+  // Reports Management (PDF / HTML)
+  async getReports(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return await this.request(`/reports${query ? `?${query}` : ''}`);
+  }
+
+  async getReport(reportId) {
+    return await this.request(`/reports/${reportId}`);
+  }
+
+  async generateReport(assessmentId, reportType = 'PDF') {
+    return await this.request(`/assessments/${assessmentId}/reports`, {
+      method: 'POST',
+      body: JSON.stringify({ report_type: reportType })
+    });
+  }
+
+  getReportDownloadUrl(reportId) {
+    return `${API_BASE}/reports/${reportId}/download`;
+  }
+
+  getReportPdfUrl(reportId) {
+    return `${API_BASE}/reports/${reportId}/pdf`;
+  }
+
+  async getReportHtml(reportId) {
+    const url = `${API_BASE}/reports/${reportId}/html`;
+    const res = await fetch(url, { headers: this.getHeaders() });
+    if (!res.ok) throw new Error('Failed to load HTML report');
+    return await res.text();
+  }
+
+  // Incident Notes & Status Triage
+  async addIncidentNote(incidentId, content) {
+    return await this.request(`/incidents/${incidentId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    });
+  }
+
+  async updateIncidentStatus(incidentId, status, resolutionNotes = null) {
+    return await this.request(`/incidents/${incidentId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, resolution_notes: resolutionNotes })
+    });
+  }
 }
 
 export const api = new ApiService();
+export const apiClient = api;
 

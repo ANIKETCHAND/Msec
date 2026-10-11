@@ -33,27 +33,23 @@ export default function WorkspaceShell({ children }) {
   const [simulationModalOpen, setSimulationModalOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  // Swiss categorized navigation groups
+  // Swiss categorized navigation groups following the primary guided workflow
   const navCategories = [
     {
-      name: 'OVERVIEW',
-      items: ['dashboard']
+      name: 'ASSESSMENT & REPORTS',
+      items: ['assessment-center', 'reports']
     },
     {
-      name: 'ASSET SECURITY',
-      items: ['devices', 'topology', 'assessment-center', 'tools', 'response-simulator']
+      name: 'MONITORING & INCIDENTS',
+      items: ['security-events', 'incidents']
     },
     {
-      name: 'MONITORING',
-      items: ['security-events', 'incidents', 'ml-detection']
+      name: 'ASSETS & OPERATIONS',
+      items: ['devices', 'audit-logs', 'dashboard']
     },
     {
-      name: 'GOVERNANCE',
-      items: ['reports', 'audit-logs', 'integrity']
-    },
-    {
-      name: 'SYSTEM',
-      items: ['settings']
+      name: 'SECURITY ARCHITECTURE',
+      items: ['topology', 'ml-detection', 'integrity', 'tools', 'response-simulator', 'settings']
     }
   ];
 

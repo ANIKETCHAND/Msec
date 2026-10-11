@@ -82,6 +82,8 @@ ml/artifacts/*.npy
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
 Desktop.ini
+
+# Generated Security Reports Storage
+backend/app/reports_storage/*
+!backend/app/reports_storage/.gitkeep

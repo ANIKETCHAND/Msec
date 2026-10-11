@@ -9,9 +9,15 @@ from app.models.db_models import (
     TelemetryModel,
     SecurityEventModel,
     IncidentModel,
+    IncidentNoteModel,
     AuditLogModel,
     IntegrityRecordModel,
-    ModelMetadataModel
+    ModelMetadataModel,
+    DetectionPolicyModel,
+    AssessmentScopeModel,
+    AssessmentModel,
+    FindingModel,
+    ReportModel,
 )
 from sqlalchemy import inspect, text
 from app.services.auth_service import auth_service

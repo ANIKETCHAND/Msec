@@ -14,6 +14,7 @@ from app.models.db_models import (
     AssessmentScopeModel,
     AssessmentModel,
     FindingModel,
+    ReportModel,
     AuditLogModel
 )
 from app.schemas.assessment import (
@@ -23,10 +24,12 @@ from app.schemas.assessment import (
     AssessmentResponse,
     FindingResponse
 )
+from app.schemas.report import ReportResponse, ReportGenerateRequest
+from app.services.report_service import report_service
 from app.middleware.rbac import get_current_user, require_analyst, require_admin
 from app.services.scope_validator import scope_validator
 
-assessments_router = APIRouter(prefix="/api/assessments", tags=["Defensive Security Assessments"])
+assessments_router = APIRouter(prefix="/assessments", tags=["Defensive Security Assessments"])
 
 
 @assessments_router.post(
@@ -249,4 +252,79 @@ def get_assessment(
     res = AssessmentResponse.model_validate(asm)
     res.findings = [FindingResponse.model_validate(f) for f in findings]
     return res
+
+
+@assessments_router.post(
+    "/{assessment_id}/cancel",
+    response_model=AssessmentResponse,
+    summary="Cancel Assessment Scan"
+)
+def cancel_assessment(
+    assessment_id: str,
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_analyst)
+):
+    """Cancels an active or queued defensive assessment."""
+    asm = db.query(AssessmentModel).filter(AssessmentModel.id == assessment_id).first()
+    if not asm:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    if asm.status not in ["COMPLETED", "FAILED", "CANCELLED"]:
+        asm.status = "CANCELLED"
+        asm.completed_at = datetime.now(timezone.utc)
+        asm.summary = (asm.summary or "") + f" [Cancelled by {user.email} at {asm.completed_at.isoformat()}]"
+
+        audit = AuditLogModel(
+            id=str(uuid.uuid4()),
+            actor=user.email,
+            role=user.role,
+            action="ASSESSMENT_CANCELLED",
+            entity_type="Assessment",
+            entity_id=asm.id,
+            ip_address="127.0.0.1",
+            details=json.dumps({"cancelled_by": user.email, "device_id": asm.device_id})
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(asm)
+
+    findings = db.query(FindingModel).filter(FindingModel.assessment_id == assessment_id).all()
+    res = AssessmentResponse.model_validate(asm)
+    res.findings = [FindingResponse.model_validate(f) for f in findings]
+    return res
+
+
+@assessments_router.post(
+    "/{assessment_id}/reports",
+    response_model=ReportResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Generate PDF or HTML Security Report for Assessment"
+)
+def generate_assessment_report(
+    assessment_id: str,
+    req: ReportGenerateRequest,
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_analyst)
+):
+    """Generates a downloadable, cryptographically sealed PDF or HTML audit report."""
+    return report_service.create_assessment_report(
+        db=db,
+        assessment_id=assessment_id,
+        report_type=req.report_type,
+        user=user
+    )
+
+
+@assessments_router.get(
+    "/{assessment_id}/reports",
+    response_model=List[ReportResponse],
+    summary="List Generated Reports for Assessment"
+)
+def list_assessment_reports(
+    assessment_id: str,
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(get_current_user)
+):
+    """Retrieves all reports created for a specific assessment."""
+    return db.query(ReportModel).filter(ReportModel.assessment_id == assessment_id).order_by(ReportModel.created_at.desc()).all()
 

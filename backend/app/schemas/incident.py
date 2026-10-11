@@ -26,6 +26,16 @@ class IncidentUpdate(BaseModel):
     new_note: Optional[str] = None
 
 
+class NoteCreate(BaseModel):
+    content: Optional[str] = None
+    text: Optional[str] = None
+
+
+class StatusUpdate(BaseModel):
+    status: str = Field(..., pattern="^(new|investigating|resolved|closed)$")
+    resolution_notes: Optional[str] = None
+
+
 class IncidentResponse(BaseModel):
     id: str
     title: str

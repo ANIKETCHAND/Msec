@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.db_models import IncidentModel, AuditLogModel, UserModel
-from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentResponse
+from app.models.db_models import IncidentModel, IncidentNoteModel, AuditLogModel, UserModel
+from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentResponse, NoteCreate, StatusUpdate
 from app.middleware.rbac import get_current_user, require_analyst
 
 router = APIRouter(prefix="/incidents", tags=["Incidents"])
@@ -131,6 +131,108 @@ def update_incident(
         entity_type="Incident",
         entity_id=inc.id,
         details=f"Status: {inc.status}, Assigned: {inc.assigned_to}.",
+        status="success"
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(inc)
+    return inc
+
+
+@router.post("/{incident_id}/notes", response_model=IncidentResponse)
+def add_incident_note(
+    incident_id: str,
+    payload: NoteCreate,
+    db: Session = Depends(get_db),
+    analyst_user: UserModel = Depends(require_analyst),
+):
+    """Add persistent analyst note to an incident investigation."""
+    inc = db.query(IncidentModel).filter(IncidentModel.id == incident_id).first()
+    if not inc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Incident {incident_id} not found."
+        )
+
+    note_text = (payload.content or payload.text or "").strip()
+    if not note_text:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Note content cannot be empty."
+        )
+
+    # Add to structured model
+    note_model = IncidentNoteModel(
+        incident_id=inc.id,
+        author_id=analyst_user.id,
+        author_name=analyst_user.full_name,
+        author_role=analyst_user.role,
+        content=note_text,
+    )
+    db.add(note_model)
+
+    # Also append to JSON notes for backward compatibility
+    current_notes = list(inc.notes or [])
+    current_notes.append({
+        "author": analyst_user.full_name,
+        "time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+        "text": note_text,
+    })
+    inc.notes = current_notes
+    inc.updated_at = datetime.now(timezone.utc)
+
+    audit = AuditLogModel(
+        actor=analyst_user.email,
+        role=analyst_user.role,
+        action="INCIDENT_NOTE_ADDED",
+        entity_type="Incident",
+        entity_id=inc.id,
+        details=f"Note added by {analyst_user.full_name}: {note_text[:60]}...",
+        status="success"
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(inc)
+    return inc
+
+
+@router.patch("/{incident_id}/status", response_model=IncidentResponse)
+def update_incident_status(
+    incident_id: str,
+    payload: StatusUpdate,
+    db: Session = Depends(get_db),
+    analyst_user: UserModel = Depends(require_analyst),
+):
+    """Update incident status (new, investigating, resolved, closed)."""
+    inc = db.query(IncidentModel).filter(IncidentModel.id == incident_id).first()
+    if not inc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Incident {incident_id} not found."
+        )
+
+    old_status = inc.status
+    inc.status = payload.status
+    if payload.resolution_notes:
+        inc.resolution_notes = payload.resolution_notes
+    inc.updated_at = datetime.now(timezone.utc)
+
+    # Append note to log status change
+    current_notes = list(inc.notes or [])
+    current_notes.append({
+        "author": analyst_user.full_name,
+        "time": datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+        "text": f"Status updated from '{old_status}' to '{payload.status}'." + (f" Resolution: {payload.resolution_notes}" if payload.resolution_notes else ""),
+    })
+    inc.notes = current_notes
+
+    audit = AuditLogModel(
+        actor=analyst_user.email,
+        role=analyst_user.role,
+        action="INCIDENT_STATUS_CHANGE",
+        entity_type="Incident",
+        entity_id=inc.id,
+        details=f"Status changed from {old_status} to {inc.status}.",
         status="success"
     )
     db.add(audit)

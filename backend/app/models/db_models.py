@@ -109,6 +109,8 @@ class IncidentModel(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
 
+    structured_notes = relationship("IncidentNoteModel", back_populates="incident", cascade="all, delete-orphan")
+
 
 class AuditLogModel(Base):
     __tablename__ = "audit_logs"
@@ -211,6 +213,9 @@ class AssessmentModel(Base):
     summary = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
+    findings = relationship("FindingModel", back_populates="assessment", cascade="all, delete-orphan")
+    reports = relationship("ReportModel", back_populates="assessment", cascade="all, delete-orphan")
+
 
 class FindingModel(Base):
     __tablename__ = "assessment_findings"
@@ -230,4 +235,40 @@ class FindingModel(Base):
     remediation_guidance = Column(Text, nullable=True)
     raw_evidence = Column(JSON, default=dict)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    assessment = relationship("AssessmentModel", back_populates="findings")
+
+
+class IncidentNoteModel(Base):
+    __tablename__ = "incident_notes"
+
+    id = Column(String(50), primary_key=True, default=lambda: f"NOT-{uuid.uuid4().hex[:10].upper()}")
+    incident_id = Column(String(50), ForeignKey("incidents.id", ondelete="CASCADE"), nullable=False, index=True)
+    author_id = Column(String(50), nullable=True)
+    author_name = Column(String(255), nullable=False)
+    author_role = Column(String(50), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    incident = relationship("IncidentModel", back_populates="structured_notes")
+
+
+class ReportModel(Base):
+    __tablename__ = "reports"
+
+    id = Column(String(50), primary_key=True, default=lambda: f"RPT-{uuid.uuid4().hex[:10].upper()}")
+    assessment_id = Column(String(50), ForeignKey("assessments.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_id = Column(String(50), ForeignKey("devices.id", ondelete="SET NULL"), nullable=True, index=True)
+    title = Column(String(255), nullable=False)
+    report_type = Column(String(20), nullable=False, index=True)  # PDF, HTML, CSV
+    file_path = Column(String(512), nullable=True)
+    file_size_bytes = Column(Integer, default=0, nullable=False)
+    sha256_hash = Column(String(64), nullable=False)
+    generated_by = Column(String(255), nullable=False)
+    summary = Column(Text, nullable=True)
+    meta_info = Column(JSON, default=dict)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False, index=True)
+
+    assessment = relationship("AssessmentModel", back_populates="reports")
+    device = relationship("DeviceModel")
 

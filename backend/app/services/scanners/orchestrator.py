@@ -16,6 +16,7 @@ from app.models.db_models import (
     AssessmentScopeModel,
     AssessmentModel,
     FindingModel,
+    SecurityEventModel,
     AuditLogModel,
     UserModel
 )
@@ -181,6 +182,37 @@ class AssessmentOrchestrator:
                 created_at=datetime.now(timezone.utc)
             )
             db.add(fnd)
+
+            # Automatically persist Security Event for High and Critical findings (Phase 5)
+            if sev in ["CRITICAL", "HIGH"]:
+                existing_evt = db.query(SecurityEventModel).filter(
+                    SecurityEventModel.device_id == device.id,
+                    SecurityEventModel.rule_name == enriched["title"],
+                    SecurityEventModel.status.in_(["open", "investigating"])
+                ).first()
+                if not existing_evt:
+                    evt_id = f"EVT-{datetime.now(timezone.utc).year}-{uuid.uuid4().hex[:6].upper()}"
+                    sec_evt = SecurityEventModel(
+                        id=evt_id,
+                        timestamp=datetime.now(timezone.utc),
+                        device_id=device.id,
+                        event_type="ASSESSMENT_FINDING",
+                        severity=sev.lower(),
+                        rule_id=enriched.get("cve_id") or f"RULE-{sf.category.upper()}",
+                        rule_name=enriched["title"],
+                        evidence={
+                            "assessment_id": assessment.id,
+                            "finding_id": finding_id,
+                            "cvss_score": enriched.get("cvss_score"),
+                            "affected_port": sf.affected_port,
+                            "affected_service": sf.affected_service,
+                            "description": enriched["description"]
+                        },
+                        suggested_action=enriched.get("remediation_guidance") or "Investigate and apply vendor patch.",
+                        status="open",
+                        created_at=datetime.now(timezone.utc)
+                    )
+                    db.add(sec_evt)
 
         # 5. Compute Security Posture Score using RiskEngine
         dept_val = getattr(device, "department", "General Ward") or "General Ward"

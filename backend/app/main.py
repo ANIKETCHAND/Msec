@@ -57,20 +57,31 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
-# Register API Routers under /api
-app.include_router(health_router, prefix=settings.API_V1_STR)
-app.include_router(auth_router, prefix=settings.API_V1_STR)
-app.include_router(devices_router, prefix=settings.API_V1_STR)
-app.include_router(telemetry_router, prefix=settings.API_V1_STR)
-app.include_router(security_events_router, prefix=settings.API_V1_STR)
-app.include_router(incidents_router, prefix=settings.API_V1_STR)
-app.include_router(detection_router, prefix=settings.API_V1_STR)
-app.include_router(integrity_router, prefix=settings.API_V1_STR)
-app.include_router(audit_logs_router, prefix=settings.API_V1_STR)
-app.include_router(reports_router, prefix=settings.API_V1_STR)
-app.include_router(simulation_router, prefix=settings.API_V1_STR)
-app.include_router(settings_router, prefix=settings.API_V1_STR)
-app.include_router(assessments_router)
+from app.core.error_handlers import register_error_handlers
+
+# Register Centralized Error Handlers
+register_error_handlers(app)
+
+# Register API Routers under both /api/v1 (primary) and /api (legacy backward-compatibility)
+api_routers = [
+    health_router,
+    auth_router,
+    devices_router,
+    telemetry_router,
+    security_events_router,
+    incidents_router,
+    detection_router,
+    integrity_router,
+    audit_logs_router,
+    reports_router,
+    simulation_router,
+    settings_router,
+    assessments_router,
+]
+
+for r in api_routers:
+    app.include_router(r, prefix="/api/v1")
+    app.include_router(r, prefix="/api")
 
 
 @app.get("/", tags=["Root"])
