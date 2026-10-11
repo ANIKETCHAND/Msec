@@ -9,6 +9,7 @@ import {
   HOURLY_EVENT_TRENDS
 } from '../services/mockData';
 import { api } from '../services/api';
+import { PAGE_REGISTRY } from '../utils/pageRegistry';
 
 const AppContext = createContext();
 
@@ -40,9 +41,75 @@ export const DEMO_USERS = {
 };
 
 export function AppProvider({ children }) {
+  const getInitialPage = () => {
+    try {
+      const path = window.location.pathname.replace(/^\//, '');
+      if (PAGE_REGISTRY[path]) return path;
+    } catch (e) {}
+    return 'dashboard';
+  };
+
   const [currentUser, setCurrentUser] = useState(DEMO_USERS.analyst);
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState(getInitialPage);
+  const [openTabs, setOpenTabs] = useState(() => {
+    const initPage = getInitialPage();
+    return ['dashboard', initPage !== 'dashboard' ? initPage : null].filter(Boolean);
+  });
   const [selectedDeviceId, setSelectedDeviceId] = useState('DEV-VENT-502');
+
+  // Synchronize openTabs and browser URL when currentPage changes
+  useEffect(() => {
+    if (currentPage && currentPage !== 'login') {
+      setOpenTabs(prev => {
+        if (prev.includes(currentPage)) return prev;
+        const next = [...prev, currentPage];
+        if (next.length > 8) {
+          const dropIndex = next.findIndex(p => p !== 'dashboard' && p !== currentPage);
+          if (dropIndex !== -1) next.splice(dropIndex, 1);
+        }
+        return next;
+      });
+
+      try {
+        const targetPath = currentPage === 'dashboard' ? '/' : `/${currentPage}`;
+        if (window.location.pathname !== targetPath) {
+          window.history.pushState({ page: currentPage }, '', targetPath);
+        }
+      } catch (e) {}
+    }
+  }, [currentPage]);
+
+  // Handle browser Back and Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const path = window.location.pathname.replace(/^\//, '');
+        const matched = PAGE_REGISTRY[path] ? path : 'dashboard';
+        setCurrentPage(matched);
+      } catch (e) {}
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const openTab = (pageId) => {
+    if (PAGE_REGISTRY[pageId]) {
+      setCurrentPage(pageId);
+    }
+  };
+
+  const closeTab = (pageId) => {
+    if (openTabs.length <= 1 || pageId === 'dashboard') return;
+    setOpenTabs(prev => {
+      const next = prev.filter(id => id !== pageId);
+      if (currentPage === pageId) {
+        const closedIdx = prev.indexOf(pageId);
+        const newActive = next[closedIdx] || next[closedIdx - 1] || next[0] || 'dashboard';
+        setCurrentPage(newActive);
+      }
+      return next;
+    });
+  };
 
   const [devices, setDevices] = useState(INITIAL_DEVICES);
   const [securityEvents, setSecurityEvents] = useState(INITIAL_SECURITY_EVENTS);
@@ -462,6 +529,10 @@ export function AppProvider({ children }) {
     setCurrentUser,
     currentPage,
     setCurrentPage,
+    openTabs,
+    setOpenTabs,
+    openTab,
+    closeTab,
     selectedDeviceId,
     setSelectedDeviceId,
     devices,

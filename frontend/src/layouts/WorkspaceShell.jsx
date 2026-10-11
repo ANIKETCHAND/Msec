@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp, DEMO_USERS } from '../context/AppContext';
-import { PAGE_REGISTRY } from '../components/stack/PageStack';
+import { PAGE_REGISTRY } from '../utils/pageRegistry';
+import OpenPageTabBar from '../components/stack/OpenPageTabBar';
 import {
   Shield,
   Search,
@@ -310,6 +311,9 @@ export default function WorkspaceShell({ children }) {
         ))}
       </nav>
 
+      {/* 3. OPEN-PAGE TAB BAR (Horizontal tabs for all currently open pages) */}
+      <OpenPageTabBar />
+
       {/* Simulation Feedback Notice */}
       {simulationNotice && (
         <div className="bg-[#E6F4FF] border-b border-[#B5D8FE] px-6 py-2 flex items-center justify-between text-xs text-[#0958D9] shrink-0 font-medium">
@@ -326,8 +330,8 @@ export default function WorkspaceShell({ children }) {
         </div>
       )}
 
-      {/* 3. MAIN WORKSPACE AREA WITH STACKED PAGES */}
-      <main className="flex-1 p-3 sm:p-5 overflow-hidden flex flex-col">
+      {/* 4. MAIN WORKSPACE AREA WITH ACTIVE PAGE CONTENT */}
+      <main className="flex-1 p-3 sm:p-5 overflow-hidden flex flex-col min-h-0 bg-[#F5F6F8]">
         {children}
       </main>
 
