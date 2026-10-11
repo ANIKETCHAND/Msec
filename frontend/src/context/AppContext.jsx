@@ -53,7 +53,11 @@ export function AppProvider({ children }) {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [openTabs, setOpenTabs] = useState(() => {
     const initPage = getInitialPage();
-    return ['dashboard', initPage !== 'dashboard' ? initPage : null].filter(Boolean);
+    const defaults = ['dashboard', 'devices', 'security-events', 'ml-detection'];
+    if (!defaults.includes(initPage)) {
+      defaults.push(initPage);
+    }
+    return defaults;
   });
   const [selectedDeviceId, setSelectedDeviceId] = useState('DEV-VENT-502');
 

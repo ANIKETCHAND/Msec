@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp, DEMO_USERS } from '../context/AppContext';
 import { PAGE_REGISTRY } from '../utils/pageRegistry';
-import OpenPageTabBar from '../components/stack/OpenPageTabBar';
 import {
   Shield,
   Search,
@@ -310,9 +309,6 @@ export default function WorkspaceShell({ children }) {
           </div>
         ))}
       </nav>
-
-      {/* 3. OPEN-PAGE TAB BAR (Horizontal tabs for all currently open pages) */}
-      <OpenPageTabBar />
 
       {/* Simulation Feedback Notice */}
       {simulationNotice && (
