@@ -51,9 +51,9 @@ def list_devices(
 def create_device(
     payload: DeviceCreate,
     db: Session = Depends(get_db),
-    admin_user: UserModel = Depends(require_admin)
+    user: UserModel = Depends(require_analyst)
 ):
-    """Register a new simulated IoMT device (Administrator role only)."""
+    """Register a new simulated IoMT device (Administrator or Security Analyst)."""
     existing = db.query(DeviceModel).filter(DeviceModel.id == payload.id).first()
     if existing:
         raise HTTPException(
@@ -66,8 +66,8 @@ def create_device(
 
     # Record audit entry
     audit = AuditLogModel(
-        actor=admin_user.email,
-        role=admin_user.role,
+        actor=user.email,
+        role=user.role,
         action="DEVICE_REGISTERED",
         entity_type="Device",
         entity_id=device.id,

@@ -80,6 +80,56 @@ def test_admin_can_list_and_create_device():
     assert len(devices) >= 6
 
 
+def test_analyst_can_create_device_and_authorize_scope():
+    """Verify Security Analyst can register a device and immediately authorize an assessment scope for scanning."""
+    import uuid
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    token = analyst_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Analyst registers new device with unique ID
+    uid = uuid.uuid4().hex[:6].upper()
+    new_device_id = f"DEV-TEST-XRAY-{uid}"
+    new_device_ip = f"192.168.30.{(int(uid, 16) % 150) + 50}"
+    create_resp = client.post("/api/devices", json={
+        "id": new_device_id,
+        "name": f"Portable Test X-Ray {uid}",
+        "device_type": "Radiology Imaging",
+        "ip_address": new_device_ip,
+        "mac_address": "00:1A:2B:77:88:99",
+        "firmware_version": "2.0.1",
+        "network_segment": "RADIOLOGY_VLAN_30",
+        "department": "Radiology",
+        "location": "Suite 4B",
+        "manufacturer": "Siemens",
+        "model": "MobileArt",
+        "owner": "Clinical Engineering",
+        "status": "online",
+        "risk_level": "medium",
+        "security_score": 80.0
+    }, headers=headers)
+    assert create_resp.status_code == 201
+    assert create_resp.json()["id"] == new_device_id
+
+    # 2. Analyst authorizes an assessment scope certificate for the newly registered device
+    scope_resp = client.post("/api/assessments/authorize-scope", json={
+        "device_id": new_device_id,
+        "target_ip": new_device_ip,
+        "assessment_profile": "DEFENSIVE_AUDIT",
+        "selected_tools": ["nmap", "nuclei"],
+        "duration_hours": 4,
+        "justification": "Testing scanning against newly registered clinical asset"
+    }, headers=headers)
+    assert scope_resp.status_code == 201
+    scope_data = scope_resp.json()
+    assert scope_data["device_id"] == new_device_id
+    assert scope_data["target_ip"] == new_device_ip
+    assert scope_data["authorization_status"] == "AUTHORIZED"
+
+
 def test_telemetry_ingestion_and_automated_detection():
     """Verify telemetry ingestion triggers rule engine and generates security event on threshold violation."""
     analyst_login = client.post("/api/auth/login", json={

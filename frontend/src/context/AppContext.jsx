@@ -290,6 +290,65 @@ export function AppProvider({ children }) {
     }));
   };
 
+  const registerDevice = async (deviceData) => {
+    const apiPayload = {
+      id: deviceData.id,
+      name: deviceData.name,
+      device_type: deviceData.deviceType || deviceData.device_type,
+      ip_address: deviceData.ipAddress || deviceData.ip_address,
+      mac_address: deviceData.macAddress || deviceData.mac_address || "00:1A:2B:44:55:66",
+      firmware_version: deviceData.firmwareVersion || deviceData.firmware_version || "1.0.0",
+      network_segment: deviceData.networkSegment || deviceData.network_segment || "ICU_VLAN_10",
+      manufacturer: deviceData.manufacturer || "Generic Medical",
+      model: deviceData.model || "Standard Series",
+      department: deviceData.department || "Clinical",
+      location: deviceData.location || "Hospital Main Ward",
+      owner: deviceData.owner || "Clinical Engineering",
+      status: deviceData.status || "online",
+      risk_level: deviceData.riskLevel || deviceData.risk_level || "low",
+      security_score: deviceData.securityScore ?? 85.0
+    };
+
+    try {
+      await api.createDevice(apiPayload);
+    } catch (err) {
+      console.warn("Backend createDevice notice:", err.message);
+    }
+
+    const newDev = {
+      id: apiPayload.id,
+      name: apiPayload.name,
+      deviceType: apiPayload.device_type,
+      ipAddress: apiPayload.ip_address,
+      macAddress: apiPayload.mac_address,
+      firmwareVersion: apiPayload.firmware_version,
+      networkSegment: apiPayload.network_segment,
+      status: apiPayload.status,
+      riskLevel: apiPayload.risk_level,
+      manufacturer: apiPayload.manufacturer,
+      model: apiPayload.model,
+      location: apiPayload.location,
+      department: apiPayload.department,
+      owner: apiPayload.owner,
+      assessmentStatus: "NOT_ASSESSED",
+      securityScore: apiPayload.security_score,
+      lastSeen: "Just now",
+      lastAssessment: "Never",
+      patientRoom: apiPayload.location,
+      batteryLevel: 100,
+      telemetry: {}
+    };
+
+    setDevices(prev => {
+      const exists = prev.find(d => d.id === newDev.id);
+      if (exists) return prev.map(d => d.id === newDev.id ? newDev : d);
+      return [newDev, ...prev];
+    });
+
+    logAudit('DEVICE_REGISTERED', 'Device', newDev.id, `Registered asset ${newDev.name} (${newDev.ipAddress}) on ${newDev.networkSegment}.`);
+    return newDev;
+  };
+
   // Incident Actions
   const updateIncidentStatus = async (incidentId, newStatus, noteText) => {
     try {
@@ -550,6 +609,7 @@ export function AppProvider({ children }) {
     setSimulationNotice,
     backendOnline,
     toggleDeviceIsolation,
+    registerDevice,
     updateIncidentStatus,
     createIncidentFromEvent,
     tamperRecord,

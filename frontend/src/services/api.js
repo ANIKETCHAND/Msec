@@ -87,6 +87,13 @@ class ApiService {
     return await this.request(`/devices/${id}`);
   }
 
+  async createDevice(deviceData) {
+    return await this.request('/devices', {
+      method: 'POST',
+      body: JSON.stringify(deviceData)
+    });
+  }
+
   async updateDevice(id, updateData) {
     return await this.request(`/devices/${id}`, {
       method: 'PATCH',
