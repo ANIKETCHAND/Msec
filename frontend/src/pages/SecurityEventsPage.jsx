@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import {
   AlertTriangle,
@@ -11,31 +12,68 @@ import {
   CheckCircle2,
   X,
   Clock,
-  Server
+  Server,
+  RefreshCw
 } from 'lucide-react';
 
 export default function SecurityEventsPage() {
   const {
-    securityEvents,
+    securityEvents: contextEvents,
     setSelectedDeviceId,
     setCurrentPage,
     createIncidentFromEvent,
     currentUser
   } = useApp();
 
+  const [events, setEvents] = useState(contextEvents);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const filteredEvents = securityEvents.filter(evt => {
-    const matchSearch =
-      evt.id.toLowerCase().includes(search.toLowerCase()) ||
-      evt.ruleName.toLowerCase().includes(search.toLowerCase()) ||
-      evt.deviceId.toLowerCase().includes(search.toLowerCase());
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getSecurityEvents();
+      if (Array.isArray(data) && data.length > 0) {
+        setEvents(data.map(e => ({
+          id: e.id,
+          timestamp: e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : 'Recent',
+          eventType: e.event_type,
+          ruleId: e.rule_id,
+          ruleName: e.rule_name || e.title || 'Security Alert',
+          deviceId: e.device_id || 'DEV-UNKNOWN',
+          deviceName: e.device_id || 'Medical Device',
+          severity: (e.severity || 'medium').toLowerCase(),
+          status: (e.status || 'open').toLowerCase(),
+          evidence: e.evidence || {},
+          suggestedAction: e.suggested_action || 'Investigate telemetry stream.'
+        })));
+      }
+    } catch (err) {
+      console.warn('[SecurityEvents] Failed to fetch live events:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const matchSev = severityFilter === 'ALL' || evt.severity.toUpperCase() === severityFilter;
-    const matchStat = statusFilter === 'ALL' || evt.status.toUpperCase() === statusFilter;
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const activeEvents = events.length > 0 ? events : contextEvents;
+
+  const filteredEvents = activeEvents.filter(evt => {
+    const matchSearch =
+      (evt.id || '').toLowerCase().includes(search.toLowerCase()) ||
+      (evt.ruleName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (evt.deviceId || '').toLowerCase().includes(search.toLowerCase());
+
+    const evtSev = (evt.severity || '').toUpperCase();
+    const matchSev = severityFilter === 'ALL' || evtSev === severityFilter;
+    const evtStat = (evt.status || '').toUpperCase();
+    const matchStat = statusFilter === 'ALL' || evtStat === statusFilter;
 
     return matchSearch && matchSev && matchStat;
   });
@@ -48,7 +86,7 @@ export default function SecurityEventsPage() {
           <h1 className="text-xl font-semibold text-[#171717] tracking-tight flex items-center gap-2">
             <span>Security Events & IDS Telemetry</span>
             <span className="text-xs font-mono text-[#6B7280] font-normal">
-              ({securityEvents.length} events logged)
+              ({activeEvents.length} events logged)
             </span>
           </h1>
           <p className="text-xs text-[#6B7280] mt-0.5">
@@ -56,9 +94,19 @@ export default function SecurityEventsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-[#6B7280]">
-          <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-          <span>Real-Time Stream Active</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchEvents}
+            disabled={loading}
+            className="p-1.5 rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#6B7280] hover:text-[#171717] transition-swiss"
+            title="Refresh security events"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#1677FF]' : ''}`} />
+          </button>
+          <div className="flex items-center gap-2 text-xs font-mono text-[#6B7280]">
+            <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+            <span>Real-Time Stream Active</span>
+          </div>
         </div>
       </div>
 

@@ -10,58 +10,54 @@
 MediShield provides a single, guided operational workflow designed for clinical security teams:
 
 ```text
-USER OPENS MEDISHIELD
-          │
-          ▼
-     LANDING PAGE
-          │
-          ▼
-        LOGIN (RBAC Authentication)
-          │
-          ▼
-  ASSESSMENT CENTER
-          │
-          ▼
- SELECT REGISTERED IoMT DEVICE
-          │
-          ▼
- VERIFY AUTHORIZATION & SCOPE (Defensive Certificate)
-          │
-          ▼
- CONFIGURE & START ASSESSMENT (Multi-Tool Orchestrator)
-          │
-          ▼
-    RUN SECURITY SCAN (Background Execution & Polling)
-          │
-          ▼
- PARSE & NORMALIZE FINDINGS (CVSS Enrichment)
-          │
-          ▼
- CALCULATE RISK & POSTURE SCORE
-          │
-          ▼
- GENERATE SECURITY REPORT
-       /          \
-      ▼            ▼
-  PDF REPORT    HTML REPORT (ReportLab & Jinja2 with SHA-256 Seal)
-          │
-          ▼
- PERSIST SECURITY EVENTS (Auto-Emission for High/Critical)
-          │
-          ▼
- REVIEW SECURITY EVENTS
-          │
-          ▼
- INVESTIGATE INCIDENT (2-Column Queue & Details)
-          │
-          ▼
- ADD NOTES / TRACK REMEDIATION (POST /api/v1/incidents/{id}/notes)
-          │
-          ▼
- UPDATE INCIDENT STATUS (PATCH /api/v1/incidents/{id}/status)
-          │
-          ▼
- AUDIT TRAIL & HASH-CHAIN VERIFICATION (SHA-256 Chain)
+LANDING PAGE
+     │
+     ▼
+USER LOGIN (RBAC Authentication)
+     │
+     ▼
+SECURITY DASHBOARD (SOC Posture & Primary CTA)
+     │
+     ▼
+ASSESSMENT CENTER
+     │
+     ▼
+SELECT REGISTERED IoMT DEVICE
+     │
+     ▼
+VERIFY AUTHORIZATION & SCOPE (Defensive Certificate)
+     │
+     ▼
+CONFIGURE AND START SCAN (Tool Selection & Profiles)
+     │
+     ▼
+ASSESSMENT EXECUTION AND PROGRESS (Multi-tool Execution)
+     │
+     ▼
+NORMALIZE FINDINGS AND CALCULATE RISK (CVSS & Score)
+     │
+     ▼
+GENERATE SECURITY REPORT
+     ├───► PDF REPORT (ReportLab with SHA-256 Seal)
+     └───► HTML REPORT (Sanitized Jinja2 with SHA-256 Seal)
+     │
+     ▼
+PERSIST SECURITY EVENTS (Auto-Emission for High/Critical)
+     │
+     ▼
+SECURITY EVENTS PAGE (Triage & Evidence Inspection)
+     │
+     ▼
+INCIDENT MANAGEMENT (Queue & Triage)
+     │
+     ▼
+INCIDENT INVESTIGATION (Forensic Evidence & Correlation)
+     │
+     ▼
+ANALYST NOTES AND REMEDIATION (POST /api/v1/incidents/{id}/notes)
+     │
+     ▼
+AUDIT TRAIL AND HISTORY (Cryptographic SHA-256 Hash Chain)
 ```
 
 ---
@@ -119,10 +115,12 @@ MediShield adopts the **Swiss International Style** with a document card stackin
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/v1/auth/login` | `POST` | Authenticate user and issue JWT Bearer token |
+| `/api/v1/dashboard/summary` | `GET` | Authoritative SOC metrics, posture score, distributions |
 | `/api/v1/devices` | `GET`, `POST` | List and register clinical IoMT devices |
 | `/api/v1/assessments/authorize-scope` | `POST` | Authorize defensive scan scope certificate |
 | `/api/v1/assessments/execute` | `POST` | Launch defensive multi-tool assessment |
 | `/api/v1/assessments/{id}` | `GET` | Retrieve assessment status and findings |
+| `/api/v1/assessments/{id}/findings` | `GET` | List normalized vulnerabilities and CVSS scores |
 | `/api/v1/assessments/{id}/cancel` | `POST` | Cancel active/queued assessment |
 | `/api/v1/assessments/{id}/reports` | `POST` | Generate PDF or HTML report for assessment |
 | `/api/v1/reports` | `GET` | List generated security reports |
@@ -133,6 +131,7 @@ MediShield adopts the **Swiss International Style** with a document card stackin
 | `/api/v1/incidents` | `GET`, `POST` | Incident queue tickets |
 | `/api/v1/incidents/{id}/notes` | `POST` | Add persistent analyst investigation note |
 | `/api/v1/incidents/{id}/status` | `PATCH` | Update incident status and resolution notes |
+| `/api/v1/incidents/correlate/{device_id}` | `POST` | Correlate multi-stage attack chains |
 | `/api/v1/audit-logs/verify-chain` | `GET` | Verify unbroken SHA-256 audit hash chain |
 
 *(All endpoints are identically reachable under `/api/...` for full backward compatibility)*
@@ -179,7 +178,7 @@ cd backend
 .\.venv\Scripts\pytest -v
 ```
 **Results**:
-- **22 passed integration tests** covering authentication, RBAC, scope validation, multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, incident notes, assessment cancellation, and audit chaining.
+- **26 passed integration tests** covering authentication, RBAC, scope validation, multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, incident notes, assessment cancellation, authoritative dashboard summary, standardized error envelopes, and audit chaining.
 
 Build the frontend production bundle:
 ```bash

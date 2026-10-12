@@ -375,8 +375,8 @@ class ReportService:
         rep_id = report_id or f"RPT-HTML-{uuid.uuid4().hex[:8].upper()}"
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-        # First pass without hash
-        template = Template(HTML_REPORT_TEMPLATE)
+        # First pass without hash (autoescape enabled to prevent stored XSS)
+        template = Template(HTML_REPORT_TEMPLATE, autoescape=True)
         prelim_html = template.render(
             assessment=assessment,
             device=device,

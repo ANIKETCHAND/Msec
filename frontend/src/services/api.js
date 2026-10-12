@@ -3,7 +3,7 @@
  * Handles authenticated communication with FastAPI backend endpoints.
  */
 
-const API_BASE = '/api';
+const API_BASE = '/api/v1';
 
 class ApiService {
   constructor() {
@@ -43,14 +43,23 @@ class ApiService {
       const res = await fetch(url, config);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Request failed with status ${res.status}`);
+        const errMsg = errorData.error?.message || errorData.detail || `Request failed with status ${res.status}`;
+        const errObj = new Error(errMsg);
+        errObj.code = errorData.error?.code || 'API_ERROR';
+        errObj.requestId = errorData.error?.request_id || res.headers.get('X-Request-ID');
+        errObj.statusCode = res.status;
+        throw errObj;
       }
       return await res.json();
     } catch (err) {
-      // Return null or rethrow based on caller
       console.warn(`[API] ${endpoint} request failed:`, err.message);
       throw err;
     }
+  }
+
+  // Dashboard Summary (Phase 1/3)
+  async getDashboardSummary() {
+    return await this.request('/dashboard/summary');
   }
 
   // Auth Endpoints
@@ -247,6 +256,10 @@ class ApiService {
 
   async getAssessment(assessmentId) {
     return await this.request(`/assessments/${assessmentId}`);
+  }
+
+  async getAssessmentFindings(assessmentId) {
+    return await this.request(`/assessments/${assessmentId}/findings`);
   }
 
   async verifyAuditChain() {

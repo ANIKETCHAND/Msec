@@ -83,3 +83,10 @@ def update_security_event(
     db.commit()
     db.refresh(evt)
     return evt
+
+
+# RESTful /events alias router
+events_router = APIRouter(prefix="/events", tags=["Security Events"])
+events_router.add_api_route("", list_security_events, methods=["GET"], response_model=List[SecurityEventResponse])
+events_router.add_api_route("/{event_id}", get_security_event, methods=["GET"], response_model=SecurityEventResponse)
+events_router.add_api_route("/{event_id}", update_security_event, methods=["PATCH"], response_model=SecurityEventResponse)

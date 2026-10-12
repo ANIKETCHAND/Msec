@@ -12,7 +12,7 @@ from app.api.dashboard import router as dashboard_router
 from app.api.devices import router as devices_router
 from app.api.assessments import assessments_router
 from app.api.reports import router as reports_router
-from app.api.security_events import router as security_events_router
+from app.api.security_events import router as security_events_router, events_router
 from app.api.incidents import router as incidents_router
 from app.api.telemetry import router as telemetry_router
 from app.api.detection import router as detection_router
@@ -31,6 +31,7 @@ api_v1_router.include_router(devices_router)
 api_v1_router.include_router(assessments_router)
 api_v1_router.include_router(reports_router)
 api_v1_router.include_router(security_events_router)
+api_v1_router.include_router(events_router)
 api_v1_router.include_router(incidents_router)
 api_v1_router.include_router(telemetry_router)
 api_v1_router.include_router(detection_router)

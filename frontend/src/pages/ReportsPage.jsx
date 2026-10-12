@@ -87,7 +87,7 @@ export default function ReportsPage() {
       setPreviewModalOpen(true);
     } catch (err) {
       // Fallback open direct url
-      window.open(`/api/reports/${reportId}/html`, '_blank');
+      window.open(api.getReportDownloadUrl(reportId), '_blank');
     }
   };
 
@@ -261,7 +261,7 @@ export default function ReportsPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           {isPdf ? (
                             <a
-                              href={`/api/reports/${rep.id}/download`}
+                              href={api.getReportDownloadUrl(rep.id)}
                               className="px-2.5 py-1 rounded bg-[#F9FAFB] hover:bg-[#F3F4F6] text-[#171717] border border-[#E5E7EB] text-xs font-medium flex items-center gap-1 transition-swiss"
                               download
                             >
@@ -278,7 +278,7 @@ export default function ReportsPage() {
                                 <span>Preview</span>
                               </button>
                               <a
-                                href={`/api/reports/${rep.id}/download`}
+                                href={api.getReportDownloadUrl(rep.id)}
                                 className="p-1 rounded text-[#6B7280] hover:text-[#171717] border border-[#E5E7EB] hover:bg-[#F3F4F6] transition-swiss"
                                 title="Download standalone HTML file"
                                 download

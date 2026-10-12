@@ -10,7 +10,7 @@ class IncidentCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
     description: str = Field(..., min_length=5)
     severity: str = Field(..., pattern="^(low|medium|high|critical)$")
-    status: Optional[str] = Field(default="new", pattern="^(new|investigating|resolved|closed)$")
+    status: Optional[str] = Field(default="new", pattern="^(?i)(new|investigating|contained|resolved|closed|false_positive|accepted_risk)$")
     assigned_to: Optional[str] = None
     device_id: Optional[str] = None
     notes: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
@@ -19,8 +19,8 @@ class IncidentCreate(BaseModel):
 class IncidentUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    severity: Optional[str] = Field(None, pattern="^(low|medium|high|critical)$")
-    status: Optional[str] = Field(None, pattern="^(new|investigating|resolved|closed)$")
+    severity: Optional[str] = Field(None, pattern="^(?i)(low|medium|high|critical)$")
+    status: Optional[str] = Field(None, pattern="^(?i)(new|investigating|contained|resolved|closed|false_positive|accepted_risk)$")
     assigned_to: Optional[str] = None
     resolution_notes: Optional[str] = None
     new_note: Optional[str] = None
@@ -32,7 +32,7 @@ class NoteCreate(BaseModel):
 
 
 class StatusUpdate(BaseModel):
-    status: str = Field(..., pattern="^(new|investigating|resolved|closed)$")
+    status: str = Field(..., pattern="^(?i)(new|investigating|contained|resolved|closed|false_positive|accepted_risk)$")
     resolution_notes: Optional[str] = None
 
 

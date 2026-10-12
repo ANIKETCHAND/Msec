@@ -254,6 +254,39 @@ def get_assessment(
     return res
 
 
+@assessments_router.get(
+    "/{assessment_id}/findings",
+    response_model=List[FindingResponse],
+    summary="Get Assessment Findings"
+)
+def get_assessment_findings(
+    assessment_id: str,
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(get_current_user)
+):
+    """Retrieve normalized vulnerability findings for a specific assessment."""
+    asm = db.query(AssessmentModel).filter(AssessmentModel.id == assessment_id).first()
+    if not asm:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    findings = db.query(FindingModel).filter(FindingModel.assessment_id == assessment_id).all()
+    return [FindingResponse.model_validate(f) for f in findings]
+
+
+@assessments_router.post(
+    "",
+    response_model=AssessmentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create & Launch Assessment"
+)
+def launch_assessment(
+    req: AssessmentLaunchRequest,
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_analyst)
+):
+    """Launch defensive assessment (RESTful collection endpoint)."""
+    return execute_assessment(req=req, db=db, user=user)
+
+
 @assessments_router.post(
     "/{assessment_id}/cancel",
     response_model=AssessmentResponse,

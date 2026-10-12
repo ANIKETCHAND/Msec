@@ -805,7 +805,7 @@ export default function AssessmentCenterPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <a
-                      href={`/api/reports/${lastGeneratedReport.id}/download`}
+                      href={api.getReportDownloadUrl(lastGeneratedReport.id)}
                       className="px-2.5 py-1 rounded bg-white text-[#171717] border border-[#E5E7EB] hover:bg-[#F9FAFB] text-xs font-semibold flex items-center gap-1"
                       download
                     >
