@@ -44,17 +44,32 @@ export function AppProvider({ children }) {
   const getInitialPage = () => {
     try {
       const path = window.location.pathname.replace(/^\//, '');
+      if (path === 'landing') return 'landing';
+      if (path === 'login') return 'login';
       if (PAGE_REGISTRY[path]) return path;
     } catch (e) {}
+    const savedUser = localStorage.getItem('medishield_user');
+    const token = localStorage.getItem('medishield_token');
+    if (!savedUser && !token) {
+      return 'landing';
+    }
     return 'dashboard';
   };
 
-  const [currentUser, setCurrentUser] = useState(DEMO_USERS.analyst);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('medishield_user');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    const token = localStorage.getItem('medishield_token');
+    if (token) return DEMO_USERS.analyst;
+    return DEMO_USERS.analyst;
+  });
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [openTabs, setOpenTabs] = useState(() => {
     const initPage = getInitialPage();
     const defaults = ['dashboard', 'devices', 'security-events', 'ml-detection'];
-    if (!defaults.includes(initPage)) {
+    if (initPage !== 'login' && initPage !== 'landing' && !defaults.includes(initPage)) {
       defaults.push(initPage);
     }
     return defaults;
@@ -63,7 +78,7 @@ export function AppProvider({ children }) {
 
   // Synchronize openTabs and browser URL when currentPage changes
   useEffect(() => {
-    if (currentPage && currentPage !== 'login') {
+    if (currentPage && currentPage !== 'login' && currentPage !== 'landing') {
       setOpenTabs(prev => {
         if (prev.includes(currentPage)) return prev;
         const next = [...prev, currentPage];
@@ -76,6 +91,13 @@ export function AppProvider({ children }) {
 
       try {
         const targetPath = currentPage === 'dashboard' ? '/' : `/${currentPage}`;
+        if (window.location.pathname !== targetPath) {
+          window.history.pushState({ page: currentPage }, '', targetPath);
+        }
+      } catch (e) {}
+    } else if (currentPage === 'landing' || currentPage === 'login') {
+      try {
+        const targetPath = `/${currentPage}`;
         if (window.location.pathname !== targetPath) {
           window.history.pushState({ page: currentPage }, '', targetPath);
         }
@@ -127,6 +149,7 @@ export function AppProvider({ children }) {
 
   // Sync data with backend API
   const syncWithBackend = async () => {
+    if (!currentUser) return;
     try {
       // 1. Authenticate with backend for current demo user
       await api.login(currentUser.email, currentUser.password || "analystpassword123");
@@ -265,6 +288,21 @@ export function AppProvider({ children }) {
       details
     };
     setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch (err) {
+      console.warn("[AppContext] Logout notice:", err.message);
+    }
+    if (currentUser?.email) {
+      logAudit('USER_LOGOUT', 'AuthSession', currentUser.email, 'User successfully logged out.');
+    }
+    localStorage.removeItem('medishield_user');
+    localStorage.removeItem('medishield_token');
+    setCurrentUser(null);
+    setCurrentPage('landing');
   };
 
   // Device Actions
@@ -616,7 +654,8 @@ export function AppProvider({ children }) {
     recomputeAndVerify,
     triggerSimulation,
     resetAllSimulations,
-    logAudit
+    logAudit,
+    logout
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

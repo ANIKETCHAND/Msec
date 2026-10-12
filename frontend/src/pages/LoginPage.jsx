@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp, DEMO_USERS } from '../context/AppContext';
 import { api } from '../services/api';
 import SignIn1 from '@/components/ui/modern-stunning-sign-in';
-import { ShieldCheck, Lock, Mail, ArrowRight, UserCheck, AlertCircle, Info, Loader2, SlidersHorizontal } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, ArrowRight, ArrowLeft, UserCheck, AlertCircle, Info, Loader2, SlidersHorizontal } from 'lucide-react';
 
 export default function LoginPage() {
   const { setCurrentUser, setCurrentPage, logAudit } = useApp();
@@ -50,6 +50,7 @@ export default function LoginPage() {
       };
 
       setCurrentUser(activeUser);
+      localStorage.setItem('medishield_user', JSON.stringify(activeUser));
       logAudit('USER_LOGIN', 'AuthSession', activeUser.email, `User logged in with role ${activeUser.role}.`);
       setCurrentPage('dashboard');
     } catch (err) {
@@ -73,6 +74,21 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen">
+      {/* Back to Landing Page Button */}
+      <div className="fixed top-4 left-4 z-50">
+        <button
+          type="button"
+          onClick={() => setCurrentPage('landing')}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition shadow-lg flex items-center gap-1.5 border backdrop-blur-md cursor-pointer ${
+            themeMode === 'modern'
+              ? 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+              : 'bg-white hover:bg-neutral-50 text-neutral-800 border-neutral-300'
+          }`}
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Landing Page</span>
+        </button>
+      </div>
       {/* View Switcher Toggle */}
       <div className="fixed top-4 right-4 z-50">
         <button

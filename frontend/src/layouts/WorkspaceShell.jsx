@@ -25,13 +25,33 @@ export default function WorkspaceShell({ children }) {
     setSimulationNotice,
     triggerSimulation,
     resetAllSimulations,
-    securityEvents
+    securityEvents,
+    logAudit,
+    logout
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [simulationModalOpen, setSimulationModalOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    setProfileDropdownOpen(false);
+    try {
+      await api.logout();
+    } catch (err) {
+      console.warn('[WorkspaceShell] Logout notice:', err.message);
+    }
+    if (logAudit) {
+      logAudit('USER_LOGOUT', 'AuthSession', currentUser?.email || 'user', 'User signed out from MediShield.');
+    }
+    if (logout) {
+      await logout();
+    } else {
+      setCurrentUser(null);
+      setCurrentPage('landing');
+    }
+  };
 
   // Swiss categorized navigation groups following the primary guided workflow
   const navCategories = [
@@ -192,82 +212,108 @@ export default function WorkspaceShell({ children }) {
 
           <div className="h-4 w-[1px] bg-[#E5E7EB]" />
 
-          {/* User Persona Profile Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="flex items-center gap-2 p-1 rounded hover:bg-[#F3F4F6] transition-swiss"
-            >
-              <div className="w-6 h-6 rounded bg-[#E6F4FF] text-[#1677FF] border border-[#1677FF]/20 flex items-center justify-center font-semibold text-xs">
-                {currentUser.avatar || 'OP'}
-              </div>
-              <div className="text-left hidden md:block">
-                <p className="text-xs font-medium text-[#171717] leading-tight truncate max-w-[120px]">{currentUser.name}</p>
-                <p className="text-[10px] text-[#6B7280] leading-tight font-mono">{currentUser.role.split(' ')[0]}</p>
-              </div>
-              <ChevronDown className="w-3 h-3 text-[#9CA3AF]" />
-            </button>
-
-            {/* Persona Switcher Dropdown */}
-            {profileDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-[#E5E7EB] rounded-lg shadow-md p-3 z-50 text-xs">
-                <div className="pb-2 border-b border-[#E5E7EB]">
-                  <p className="font-semibold text-[#171717]">{currentUser.name}</p>
-                  <p className="text-[11px] text-[#6B7280] font-mono">{currentUser.email}</p>
-                  <span className="mt-1 inline-block px-1.5 py-0.5 rounded bg-[#E6F4FF] text-[#1677FF] font-medium text-[10px]">
-                    {currentUser.role}
-                  </span>
+          {/* User Persona Profile Dropdown & Quick Sign Out */}
+          <div className="flex items-center gap-1.5">
+            <div className="relative">
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 p-1 rounded hover:bg-[#F3F4F6] transition-swiss cursor-pointer"
+              >
+                <div className="w-6 h-6 rounded bg-[#E6F4FF] text-[#1677FF] border border-[#1677FF]/20 flex items-center justify-center font-semibold text-xs">
+                  {currentUser?.avatar || 'OP'}
                 </div>
+                <div className="text-left hidden md:block">
+                  <p className="text-xs font-medium text-[#171717] leading-tight truncate max-w-[120px]">{currentUser?.name || 'Operator'}</p>
+                  <p className="text-[10px] text-[#6B7280] leading-tight font-mono">{currentUser?.role ? currentUser.role.split(' ')[0] : 'User'}</p>
+                </div>
+                <ChevronDown className="w-3 h-3 text-[#9CA3AF]" />
+              </button>
 
-                <div className="py-2">
-                  <p className="text-[10px] uppercase font-mono text-[#9CA3AF] font-semibold mb-1">Switch RBAC Persona:</p>
-                  <div className="space-y-1">
+              {/* Persona Switcher Dropdown */}
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-[#E5E7EB] rounded-lg shadow-lg p-3 z-50 text-xs animate-fadeIn">
+                  <div className="pb-2 border-b border-[#E5E7EB]">
+                    <p className="font-semibold text-[#171717]">{currentUser?.name || 'MediShield Operator'}</p>
+                    <p className="text-[11px] text-[#6B7280] font-mono">{currentUser?.email || 'operator@medishield.local'}</p>
+                    <span className="mt-1 inline-block px-1.5 py-0.5 rounded bg-[#E6F4FF] text-[#1677FF] font-medium text-[10px]">
+                      {currentUser?.role || 'Authenticated'}
+                    </span>
+                  </div>
+
+                  <div className="py-2">
+                    <p className="text-[10px] uppercase font-mono text-[#9CA3AF] font-semibold mb-1">Switch RBAC Persona:</p>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => { setCurrentUser(DEMO_USERS.admin); setProfileDropdownOpen(false); }}
+                        className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between cursor-pointer ${
+                          currentUser?.role === 'Administrator' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
+                        }`}
+                      >
+                        <span>Dr. Marcus Vance (Admin)</span>
+                        {currentUser?.role === 'Administrator' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
+                      </button>
+                      <button
+                        onClick={() => { setCurrentUser(DEMO_USERS.analyst); setProfileDropdownOpen(false); }}
+                        className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between cursor-pointer ${
+                          currentUser?.role === 'Security Analyst' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
+                        }`}
+                      >
+                        <span>Sarah Chen (Analyst)</span>
+                        {currentUser?.role === 'Security Analyst' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
+                      </button>
+                      <button
+                        onClick={() => { setCurrentUser(DEMO_USERS.doctor); setProfileDropdownOpen(false); }}
+                        className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between cursor-pointer ${
+                          currentUser?.role === 'Doctor Demo' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
+                        }`}
+                      >
+                        <span>Dr. Elena Rostova (Doctor)</span>
+                        {currentUser?.role === 'Doctor Demo' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Prominent Sign Out Button & Options */}
+                  <div className="pt-2.5 mt-1 border-t border-[#E5E7EB] space-y-2">
                     <button
-                      onClick={() => { setCurrentUser(DEMO_USERS.admin); setProfileDropdownOpen(false); }}
-                      className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between ${
-                        currentUser.role === 'Administrator' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
-                      }`}
+                      type="button"
+                      onClick={handleSignOut}
+                      className="w-full py-2 px-3 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 hover:border-rose-300 font-semibold text-xs flex items-center justify-center gap-2 transition-swiss cursor-pointer shadow-xs"
                     >
-                      <span>Dr. Marcus Vance (Admin)</span>
-                      {currentUser.role === 'Administrator' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
+                      <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Sign Out</span>
                     </button>
-                    <button
-                      onClick={() => { setCurrentUser(DEMO_USERS.analyst); setProfileDropdownOpen(false); }}
-                      className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between ${
-                        currentUser.role === 'Security Analyst' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
-                      }`}
-                    >
-                      <span>Sarah Chen (Analyst)</span>
-                      {currentUser.role === 'Security Analyst' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
-                    </button>
-                    <button
-                      onClick={() => { setCurrentUser(DEMO_USERS.doctor); setProfileDropdownOpen(false); }}
-                      className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between ${
-                        currentUser.role === 'Doctor Demo' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
-                      }`}
-                    >
-                      <span>Dr. Elena Rostova (Doctor)</span>
-                      {currentUser.role === 'Doctor Demo' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
-                    </button>
+
+                    <div className="flex items-center justify-between pt-1 text-[11px] text-[#6B7280] font-mono">
+                      <button
+                        type="button"
+                        onClick={() => { resetAllSimulations(); setProfileDropdownOpen(false); }}
+                        className="hover:text-[#171717] flex items-center gap-1 transition-swiss cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" /> Reset Demo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setCurrentPage('landing'); setProfileDropdownOpen(false); }}
+                        className="hover:text-[#1677FF] transition-swiss cursor-pointer"
+                      >
+                        Landing Page &rarr;
+                      </button>
+                    </div>
                   </div>
                 </div>
+              )}
+            </div>
 
-                <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between">
-                  <button
-                    onClick={() => { resetAllSimulations(); setProfileDropdownOpen(false); }}
-                    className="text-[11px] text-[#6B7280] hover:text-[#171717] flex items-center gap-1 font-mono"
-                  >
-                    <RefreshCw className="w-3 h-3" /> Reset Demo
-                  </button>
-                  <button
-                    onClick={() => { setCurrentPage('login'); setProfileDropdownOpen(false); }}
-                    className="text-[11px] text-[#EF4444] hover:underline flex items-center gap-1"
-                  >
-                    <LogOut className="w-3 h-3" /> Log Out
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Quick Sign Out Icon in Header */}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              title="Sign Out of MediShield"
+              className="p-1.5 rounded hover:bg-rose-50 text-[#6B7280] hover:text-rose-600 border border-transparent hover:border-rose-200 transition-swiss cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 stroke-[1.75]" />
+            </button>
           </div>
         </div>
       </header>

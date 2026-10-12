@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import WorkspaceShell from './layouts/WorkspaceShell';
 import PageStack from './components/stack/PageStack';
 
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DeviceInventoryPage from './pages/DeviceInventoryPage';
@@ -20,7 +21,11 @@ import NetworkTopologyPage from './pages/NetworkTopologyPage';
 import ResponseSimulatorPage from './pages/ResponseSimulatorPage';
 
 function MainRouter() {
-  const { currentPage } = useApp();
+  const { currentPage, currentUser } = useApp();
+
+  if (currentPage === 'landing' || (!currentUser && currentPage !== 'login')) {
+    return <LandingPage />;
+  }
 
   if (currentPage === 'login') {
     return <LoginPage />;
