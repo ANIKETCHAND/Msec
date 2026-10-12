@@ -6,20 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database.init_db import seed_database
 
-# Import API Routers
-from app.api.health import router as health_router
-from app.api.auth import router as auth_router
-from app.api.devices import router as devices_router
-from app.api.telemetry import router as telemetry_router
-from app.api.security_events import router as security_events_router
-from app.api.incidents import router as incidents_router
-from app.api.detection import router as detection_router
-from app.api.integrity import router as integrity_router
-from app.api.audit_logs import router as audit_logs_router
-from app.api.reports import router as reports_router
-from app.api.simulation import router as simulation_router
-from app.api.settings import router as settings_router
-from app.api.assessments import assessments_router
 
 
 @asynccontextmanager
@@ -57,31 +43,26 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
+import uuid
+from starlette.requests import Request
 from app.core.error_handlers import register_error_handlers
+from app.api.router import api_v1_router
+
+# Correlation ID Middleware for request tracing
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:8]}"
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 # Register Centralized Error Handlers
 register_error_handlers(app)
 
-# Register API Routers under both /api/v1 (primary) and /api (legacy backward-compatibility)
-api_routers = [
-    health_router,
-    auth_router,
-    devices_router,
-    telemetry_router,
-    security_events_router,
-    incidents_router,
-    detection_router,
-    integrity_router,
-    audit_logs_router,
-    reports_router,
-    simulation_router,
-    settings_router,
-    assessments_router,
-]
-
-for r in api_routers:
-    app.include_router(r, prefix="/api/v1")
-    app.include_router(r, prefix="/api")
+# Register Master API Router under /api/v1 (primary) and /api (legacy backward-compatibility)
+app.include_router(api_v1_router, prefix="/api/v1")
+app.include_router(api_v1_router, prefix="/api")
 
 
 @app.get("/", tags=["Root"])
