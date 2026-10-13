@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter
 from app.config import settings
 from app.schemas.health import HealthResponse
+from app.services.ml_service import ml_service
 
 router = APIRouter(tags=["Health"])
 
@@ -19,7 +20,7 @@ async def get_health() -> HealthResponse:
         timestamp=datetime.now(timezone.utc),
         services={
             "api": "operational",
-            "database": "configured" if settings.SUPABASE_URL and "placeholder" not in settings.SUPABASE_URL else "not_configured (phase 1)",
-            "ml_inference": "pending_model_training (phase 6)",
+            "database": "operational (sqlite)",
+            "ml_inference": "operational (model_active)" if ml_service.is_available() else "pending_model_training",
         },
     )
