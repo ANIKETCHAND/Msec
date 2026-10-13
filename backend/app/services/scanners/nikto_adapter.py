@@ -5,37 +5,80 @@ If Nikto is not installed on the system, returns honest NOT_EVALUATED status
 without fabricating results.
 """
 
+import os
 import shutil
 import subprocess
 import time
+import re
 from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone
 
-from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding
+from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding, ToolStatus, ToolCategory
 
 
 class NiktoAdapter(BaseScannerAdapter):
     """Adapter for Nikto web server scanner."""
 
     tool_name = "nikto"
+    display_name = "Nikto Web Server Auditor"
+    category = ToolCategory.WEB_ASSESSMENT
     version = "2.1.6"
+    is_remote = False
+    supported_capabilities = [
+        "WEB_SERVER_AUDIT",
+        "HEADER_EXPOSURE_CHECK",
+        "CONFIGURATION_OBSERVATIONS"
+    ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or shutil.which("nikto") or shutil.which("nikto.pl")
+        self.binary_path = binary_path or os.getenv("NIKTO_PATH") or shutil.which("nikto") or shutil.which("nikto.pl")
+        self._detected_version = None
+
+    def get_version(self) -> str:
+        if self._detected_version:
+            return self._detected_version
+        path = self.binary_path or shutil.which("nikto") or shutil.which("nikto.pl")
+        if path:
+            try:
+                proc = subprocess.run([path, "-Version"], capture_output=True, text=True, timeout=5)
+                output = proc.stdout or proc.stderr or ""
+                match = re.search(r"Nikto\s+v?([0-9\.]+)", output, re.IGNORECASE)
+                if match:
+                    self._detected_version = match.group(1)
+                    return self._detected_version
+            except Exception:
+                pass
+        return self.version
 
     def check_availability(self) -> Dict[str, Any]:
-        path = shutil.which("nikto") or shutil.which("nikto.pl")
+        path = self.binary_path or shutil.which("nikto") or shutil.which("nikto.pl")
         if path:
+            v = self.get_version()
             return {
-                "tool": self.tool_name,
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": v,
+                "status": ToolStatus.AVAILABLE,
                 "available": True,
-                "status": "AVAILABLE",
+                "is_remote": False,
+                "configuration_status": f"Binary detected at {path}",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
                 "path": path,
-                "message": f"Nikto scanner detected at {path}"
+                "message": f"Nikto Web Server Auditor is operational (version {v})."
             }
         return {
-            "tool": self.tool_name,
+            "name": self.tool_name,
+            "display_name": self.display_name,
+            "category": self.category,
+            "version": "unknown",
+            "status": ToolStatus.NOT_INSTALLED,
             "available": False,
-            "status": "NOT_INSTALLED",
+            "is_remote": False,
+            "configuration_status": "Executable not found in system PATH or NIKTO_PATH",
+            "supported_capabilities": self.supported_capabilities,
+            "last_health_check": datetime.now(timezone.utc).isoformat(),
             "path": None,
             "message": "Nikto is not installed or not configured in system PATH."
         }
@@ -59,6 +102,10 @@ class NiktoAdapter(BaseScannerAdapter):
                 findings=[],
                 raw_output="",
                 error_message="Nikto binary is not installed in system PATH. Web server checks were not evaluated.",
+                coverage_limitations=[
+                    "Nikto binary missing from host environment. Web server reconnaissance was not evaluated.",
+                    "Unevaluated status must never be interpreted as proof that target device is secure."
+                ],
                 is_simulated=False,
                 metadata={"reason": "TOOL_NOT_INSTALLED", "limitations": "Binary not found on host."}
             )
@@ -80,7 +127,7 @@ class NiktoAdapter(BaseScannerAdapter):
             findings: List[ScannerFinding] = []
             output = proc.stdout or ""
 
-            # Real output parsing
+            # Real output parsing: treat Nikto output as configuration observations
             if "+ Server:" in output:
                 server_line = [l for l in output.splitlines() if "+ Server:" in l][0]
                 findings.append(ScannerFinding(
@@ -91,6 +138,7 @@ class NiktoAdapter(BaseScannerAdapter):
                     affected_port=int(port),
                     affected_service="HTTP",
                     remediation_guidance="Minimize identifying server header banners in responses.",
+                    verification_status="Observation",
                     raw_evidence={"raw_line": server_line, "source_tool": "nikto", "verification_status": "Observation"}
                 ))
 
@@ -102,22 +150,40 @@ class NiktoAdapter(BaseScannerAdapter):
                     category="CONFIGURATION",
                     affected_port=int(port),
                     affected_service="HTTP",
-                    remediation_guidance="Configure 'X-Frame-Options: SAMEORIGIN' to defend against clickjacking.",
-                    raw_evidence={"source_tool": "nikto", "verification_status": "Observation"}
+                    remediation_guidance="Configure web server to return X-Frame-Options: SAMEORIGIN or DENY.",
+                    verification_status="Observation",
+                    raw_evidence={"header": "X-Frame-Options", "source_tool": "nikto", "verification_status": "Observation"}
                 ))
 
-            status_str = "COMPLETED" if proc.returncode == 0 else "PARTIALLY_COMPLETED"
+            if "+ The X-Content-Type-Options header is not set" in output:
+                findings.append(ScannerFinding(
+                    title="X-Content-Type-Options Header Missing",
+                    description="The X-Content-Type-Options header is not set, allowing MIME sniffing.",
+                    severity="LOW",
+                    category="CONFIGURATION",
+                    affected_port=int(port),
+                    affected_service="HTTP",
+                    remediation_guidance="Set 'X-Content-Type-Options: nosniff' header.",
+                    verification_status="Observation",
+                    raw_evidence={"header": "X-Content-Type-Options", "source_tool": "nikto", "verification_status": "Observation"}
+                ))
+
             return ScannerResult(
                 tool_name=self.tool_name,
-                status=status_str,
+                status="COMPLETED" if proc.returncode == 0 else "PARTIALLY_COMPLETED",
                 target_ip=target_ip,
                 available=True,
                 execution_time_seconds=round(elapsed, 2),
                 findings=findings,
-                raw_output=output,
+                raw_output=output[:4000],
+                exit_code=proc.returncode,
+                coverage_limitations=[
+                    "Nikto scan strictly scoped to non-destructive configuration and header checks (-Tuning 1,2,b) with 30s timeout limit."
+                ],
                 is_simulated=False,
-                metadata={"port": port}
+                metadata={"port": port, "target_ip": target_ip}
             )
+
         except subprocess.TimeoutExpired:
             elapsed = time.time() - start_time
             return ScannerResult(
@@ -142,7 +208,7 @@ class NiktoAdapter(BaseScannerAdapter):
                 execution_time_seconds=round(elapsed, 2),
                 findings=[],
                 raw_output="",
-                error_message=f"Nikto execution error: {str(e)}",
+                error_message=f"Nikto execution exception: {str(e)}",
                 is_simulated=False,
                 metadata={"reason": "EXCEPTION"}
             )

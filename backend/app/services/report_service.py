@@ -704,15 +704,37 @@ class ReportService:
             else:
                 sev_counts["info"] += 1
 
-        # Tool inventory
-        tooling_inventory = [
-            {"name": "native_probe", "version": "1.2.0", "purpose": "Socket connect, TLS inspection, and HTTP headers", "status": tools_status.get("native_probe", {}).get("status", "AVAILABLE")},
-            {"name": "nmap", "version": "7.9x", "purpose": "Defensive port discovery and service banner probing", "status": tools_status.get("nmap", {}).get("status", "NOT_EVALUATED")},
-            {"name": "nuclei", "version": "v3.x", "purpose": "Vulnerability signature and CVE template audit", "status": tools_status.get("nuclei", {}).get("status", "NOT_EVALUATED")},
-            {"name": "nikto", "version": "2.1.6", "purpose": "Web server configuration and header reconnaissance", "status": tools_status.get("nikto", {}).get("status", "NOT_EVALUATED")},
-            {"name": "zap", "version": "2.14.x", "purpose": "OWASP ZAP passive web security audit daemon", "status": tools_status.get("zap", {}).get("status", "NOT_EVALUATED")},
-            {"name": "openvas", "version": "22.4", "purpose": "Greenbone NVT clinical vulnerability tests", "status": tools_status.get("openvas", {}).get("status", "NOT_CONFIGURED")}
-        ]
+        # Complete 14 defensive tools inventory
+        tool_purposes = {
+            "native_probe": ("Native Defensive Probe", "1.2.0", "Socket connect, TLS inspection, and HTTP security headers"),
+            "nmap": ("Nmap Service Scanner", "7.9x", "Defensive port discovery and service banner probing"),
+            "openvas": ("Greenbone OpenVAS", "22.4", "Comprehensive network vulnerability auditing daemon"),
+            "nuclei": ("Nuclei CVE Engine", "v3.x", "Vulnerability signature and CVE template audit"),
+            "zap": ("OWASP ZAP", "2.14.x", "OWASP ZAP passive web security audit daemon"),
+            "nikto": ("Nikto Web Auditor", "2.1.6", "Web server configuration and header reconnaissance"),
+            "suricata": ("Suricata IDS", "7.0.x", "Passive network intrusion detection and EVE JSON stream analysis"),
+            "zeek": ("Zeek Network Monitor", "6.0.x", "Protocol telemetry, cleartext analysis, and behavioral logging"),
+            "tshark": ("TShark Packet Analyzer", "4.x", "Deep packet inspection and IoMT protocol validation (DICOM/HL7)"),
+            "nvd_intel": ("NVD / CVE Intelligence", "API v2.0", "CVE correlation, CVSS v3.1 metrics, and IoMT clinical intelligence"),
+            "trivy": ("Trivy Security Scanner", "0.50.x", "Container image and software package vulnerability auditor"),
+            "lynis": ("Lynis Host Auditor", "3.1.x", "Host OS hardening and security configuration assessment"),
+            "openscap": ("OpenSCAP Compliance Auditor", "1.3.x", "Security baseline and regulatory benchmark compliance (HIPAA/NIST)"),
+            "syft": ("Syft SBOM Generator", "1.0.x", "Software Bill of Materials (SBOM) and package inventory extraction")
+        }
+
+        tooling_inventory = []
+        for t_key, (display_name, default_v, purpose) in tool_purposes.items():
+            t_data = tools_status.get(t_key, {})
+            v = t_data.get("version") or default_v
+            st = t_data.get("status")
+            if not st:
+                st = "NOT_EVALUATED" if (assessment.tools_executed and t_key in assessment.tools_executed) else "NOT_CONFIGURED"
+            tooling_inventory.append({
+                "name": display_name,
+                "version": v,
+                "purpose": purpose,
+                "status": st
+            })
 
         # Target Profile details
         native_meta = tools_status.get("native_probe", {}).get("metadata", {})

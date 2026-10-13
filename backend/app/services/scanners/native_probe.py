@@ -16,25 +16,42 @@ from urllib.parse import urlparse
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 
-from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding
+from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding, ToolStatus, ToolCategory
 
 
 class NativeProbeAdapter(BaseScannerAdapter):
     """Native Python defensive port, TLS, and configuration auditor."""
 
     tool_name = "native_probe"
+    display_name = "Native Defensive Probe"
+    category = ToolCategory.CORE_DISCOVERY
     version = "1.2.0"
+    is_remote = False
+    supported_capabilities = [
+        "TCP_CONNECT_PROBE",
+        "TLS_HANDSHAKE_AUDIT",
+        "HTTP_HEADER_INSPECTION",
+        "ROBOTS_TXT_CHECK",
+        "PERIMETER_EXPOSURE_AUDIT"
+    ]
 
     # Authorized IoMT ports for defensive connection checks
     DEFAULT_PORTS = [80, 443, 8080, 8000, 8443, 502, 2575]
 
     def check_availability(self) -> Dict[str, Any]:
         return {
-            "tool": self.tool_name,
+            "name": self.tool_name,
+            "display_name": self.display_name,
+            "category": self.category,
+            "version": self.version,
+            "status": ToolStatus.AVAILABLE,
             "available": True,
-            "status": "AVAILABLE",
+            "is_remote": False,
+            "configuration_status": "Built-in standard library runtime",
+            "supported_capabilities": self.supported_capabilities,
+            "last_health_check": datetime.now(timezone.utc).isoformat(),
             "path": "built-in (python3.socket.ssl)",
-            "message": "MediShield Native Defensive Network & TLS Prober is operational."
+            "message": "MediShield Native Defensive Network & TLS Prober is operational on this host."
         }
 
     def execute(
@@ -371,6 +388,11 @@ class NativeProbeAdapter(BaseScannerAdapter):
             execution_time_seconds=round(elapsed, 2),
             findings=findings,
             raw_output="\n".join(raw_logs),
+            coverage_limitations=[
+                "Native probe is restricted to non-destructive socket, TLS, and HTTP response inspections.",
+                "Does not perform deep CVE signature matching, web application fuzzing, or memory exploits.",
+                "Absence of open management ports confirms perimeter filtering, not complete firmware immunity."
+            ],
             is_simulated=False,
             metadata={
                 "open_ports": open_ports,

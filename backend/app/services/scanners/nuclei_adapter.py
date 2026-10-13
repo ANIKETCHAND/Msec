@@ -5,38 +5,82 @@ If Nuclei is not installed on the system, returns honest NOT_EVALUATED status
 without fabricating results.
 """
 
+import os
 import shutil
 import subprocess
 import time
 import json
+import re
 from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone
 
-from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding
+from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding, ToolStatus, ToolCategory
 
 
 class NucleiAdapter(BaseScannerAdapter):
     """Adapter for Nuclei vulnerability scanner."""
 
     tool_name = "nuclei"
+    display_name = "Nuclei CVE and Template Scanner"
+    category = ToolCategory.VULNERABILITY_ASSESSMENT
     version = "v3.x"
+    is_remote = False
+    supported_capabilities = [
+        "CVE_DETECTION",
+        "TEMPLATE_AUDITING",
+        "MISCONFIGURATION_CHECKS",
+        "JSONL_PARSING"
+    ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or shutil.which("nuclei")
+        self.binary_path = binary_path or os.getenv("NUCLEI_PATH") or shutil.which("nuclei")
+        self._detected_version = None
+
+    def get_version(self) -> str:
+        if self._detected_version:
+            return self._detected_version
+        path = self.binary_path or shutil.which("nuclei")
+        if path:
+            try:
+                proc = subprocess.run([path, "-version"], capture_output=True, text=True, timeout=5)
+                output = proc.stdout or proc.stderr or ""
+                match = re.search(r"Nuclei Engine Version:\s*v?([0-9\.]+)", output, re.IGNORECASE) or re.search(r"v([0-9\.]+)", output)
+                if match:
+                    self._detected_version = match.group(1)
+                    return self._detected_version
+            except Exception:
+                pass
+        return self.version
 
     def check_availability(self) -> Dict[str, Any]:
-        path = shutil.which("nuclei") if not self.binary_path else self.binary_path
+        path = self.binary_path or shutil.which("nuclei")
         if path:
+            v = self.get_version()
             return {
-                "tool": self.tool_name,
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": v,
+                "status": ToolStatus.AVAILABLE,
                 "available": True,
-                "status": "AVAILABLE",
+                "is_remote": False,
+                "configuration_status": f"Binary detected at {path}",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
                 "path": path,
-                "message": f"Nuclei binary detected at {path}"
+                "message": f"Nuclei CVE and Template Scanner is operational (version {v})."
             }
         return {
-            "tool": self.tool_name,
+            "name": self.tool_name,
+            "display_name": self.display_name,
+            "category": self.category,
+            "version": "unknown",
+            "status": ToolStatus.NOT_INSTALLED,
             "available": False,
-            "status": "NOT_INSTALLED",
+            "is_remote": False,
+            "configuration_status": "Executable not found in system PATH or NUCLEI_PATH",
+            "supported_capabilities": self.supported_capabilities,
+            "last_health_check": datetime.now(timezone.utc).isoformat(),
             "path": None,
             "message": "Nuclei is not installed or not configured in system PATH."
         }
@@ -60,6 +104,10 @@ class NucleiAdapter(BaseScannerAdapter):
                 findings=[],
                 raw_output="",
                 error_message="Nuclei binary is not installed in system PATH. Template-based vulnerability checks were not evaluated.",
+                coverage_limitations=[
+                    "Nuclei binary missing from host environment. Template-based CVE and configuration checks were not evaluated.",
+                    "Unevaluated status must never be interpreted as proof that target device is secure."
+                ],
                 is_simulated=False,
                 metadata={"reason": "TOOL_NOT_INSTALLED", "limitations": "Binary not found on host."}
             )
@@ -95,37 +143,77 @@ class NucleiAdapter(BaseScannerAdapter):
                         item = json.loads(line)
                         info = item.get("info", {})
                         sev = info.get("severity", "info").upper()
+                        classification = info.get("classification", {})
+                        cve_id = classification.get("cve-id")
+                        if isinstance(cve_id, list) and cve_id:
+                            cve_id = cve_id[0]
+
+                        cvss_score = classification.get("cvss-score")
+                        if cvss_score is not None:
+                            try:
+                                cvss_score = float(cvss_score)
+                            except (ValueError, TypeError):
+                                cvss_score = None
+
+                        # Do not interpret a template match as proof of exploitability unless evidence supports it
+                        if sev in ["CRITICAL", "HIGH"] and cve_id:
+                            verification = "Unverified Candidate"
+                        elif sev == "INFO":
+                            verification = "Observation"
+                        else:
+                            verification = "Observation"
+
                         findings.append(ScannerFinding(
                             title=info.get("name", "Vulnerability Detected"),
                             description=info.get("description", "Nuclei template match observed."),
-                            severity=sev if sev in ["CRITICAL", "HIGH", "MEDIUM", "LOW"] else "INFO",
+                            severity=sev if sev in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] else "INFO",
                             category="VULNERABILITY",
-                            cve_id=item.get("template-id"),
-                            cvss_score=float(info.get("classification", {}).get("cvss-score", 5.0)),
-                            affected_port=int(item.get("port", 80)) if item.get("port") else 80,
-                            remediation_guidance=info.get("remediation", "Apply vendor patch and review network isolation."),
+                            cve_id=cve_id,
+                            cvss_score=cvss_score,
+                            affected_port=80,
+                            affected_service="HTTP",
+                            remediation_guidance=info.get("remediation", "Review vendor advisory and update software."),
+                            verification_status=verification,
                             raw_evidence={
-                                "source_tool": "nuclei",
-                                "verification_status": "Confirmed Vulnerability" if sev in ["CRITICAL", "HIGH"] else "Observation",
                                 "template_id": item.get("template-id"),
-                                "matcher_name": item.get("matcher-name"),
-                                "raw_data": item
+                                "matched_at": item.get("matched-at"),
+                                "type": item.get("type"),
+                                "source_tool": "nuclei",
+                                "verification_status": verification
                             }
                         ))
-                    except Exception:
+                    except json.JSONDecodeError:
                         continue
 
-            return ScannerResult(
-                tool_name=self.tool_name,
-                status="COMPLETED" if proc.returncode == 0 else "PARTIALLY_COMPLETED",
-                target_ip=target_ip,
-                available=True,
-                execution_time_seconds=round(elapsed, 2),
-                findings=findings,
-                raw_output=proc.stdout or proc.stderr or "",
-                is_simulated=False,
-                metadata={"target": target_ip, "matches_count": len(findings)}
-            )
+                return ScannerResult(
+                    tool_name=self.tool_name,
+                    status="COMPLETED",
+                    target_ip=target_ip,
+                    available=True,
+                    execution_time_seconds=round(elapsed, 2),
+                    findings=findings,
+                    raw_output=proc.stdout[:4000],
+                    exit_code=proc.returncode,
+                    coverage_limitations=[
+                        "Execution restricted to non-intrusive cve, misconfiguration, and ssl template tags with safe rate-limiting."
+                    ],
+                    is_simulated=False,
+                    metadata={"target_url": target_url, "findings_count": len(findings)}
+                )
+            else:
+                return ScannerResult(
+                    tool_name=self.tool_name,
+                    status="FAILED",
+                    target_ip=target_ip,
+                    available=True,
+                    execution_time_seconds=round(elapsed, 2),
+                    findings=[],
+                    raw_output=proc.stderr or proc.stdout or "",
+                    exit_code=proc.returncode,
+                    error_message=f"Nuclei execution failed (code {proc.returncode}): {proc.stderr.strip() or 'Target unreachable or probe rejected'}",
+                    is_simulated=False,
+                    metadata={"reason": "SCAN_FAILED"}
+                )
 
         except subprocess.TimeoutExpired:
             elapsed = time.time() - start_time
@@ -137,7 +225,7 @@ class NucleiAdapter(BaseScannerAdapter):
                 execution_time_seconds=round(elapsed, 2),
                 findings=[],
                 raw_output="",
-                error_message="Nuclei scan timed out after 45 seconds.",
+                error_message="Nuclei probe timed out after 45 seconds.",
                 is_simulated=False,
                 metadata={"reason": "TIMEOUT"}
             )
@@ -151,7 +239,7 @@ class NucleiAdapter(BaseScannerAdapter):
                 execution_time_seconds=round(elapsed, 2),
                 findings=[],
                 raw_output="",
-                error_message=f"Nuclei execution error: {str(e)}",
+                error_message=f"Nuclei execution exception: {str(e)}",
                 is_simulated=False,
                 metadata={"reason": "EXCEPTION"}
             )

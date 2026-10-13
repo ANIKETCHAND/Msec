@@ -192,6 +192,18 @@ def get_tools_inventory(
 
 
 @assessments_router.post(
+    "/tools/refresh",
+    summary="Force Refresh Operational Status of Defensive Security Tools"
+)
+def refresh_tools_inventory(
+    user: UserModel = Depends(get_current_user)
+):
+    """Forces a live status probe across all defensive tools and returns updated inventory."""
+    from app.services.scanners.orchestrator import orchestrator
+    return orchestrator.get_tool_inventory()
+
+
+@assessments_router.post(
     "/execute",
     response_model=AssessmentResponse,
     status_code=status.HTTP_201_CREATED,

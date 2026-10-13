@@ -18,13 +18,18 @@ from app.models.db_models import DeviceModel, AssessmentScopeModel, UserModel
 ALLOWED_DEFENSIVE_TOOLS = {
     "native_probe",
     "nmap",
+    "openvas",
     "nuclei",
     "zap",
     "nikto",
-    "openvas",
     "suricata",
     "zeek",
     "tshark",
+    "nvd_intel",
+    "trivy",
+    "lynis",
+    "openscap",
+    "syft",
     "rule_engine"
 }
 

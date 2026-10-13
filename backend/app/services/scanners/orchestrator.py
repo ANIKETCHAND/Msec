@@ -20,13 +20,21 @@ from app.models.db_models import (
     AuditLogModel,
     UserModel
 )
-from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding
+from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding, ToolStatus, ToolCategory
 from app.services.scanners.native_probe import NativeProbeAdapter
 from app.services.scanners.nmap_adapter import NmapAdapter
+from app.services.scanners.openvas_adapter import OpenVasAdapter
 from app.services.scanners.nuclei_adapter import NucleiAdapter
 from app.services.scanners.zap_adapter import ZapAdapter
 from app.services.scanners.nikto_adapter import NiktoAdapter
-from app.services.scanners.openvas_adapter import OpenVasAdapter
+from app.services.scanners.suricata_adapter import SuricataAdapter
+from app.services.scanners.zeek_adapter import ZeekAdapter
+from app.services.scanners.tshark_adapter import TSharkAdapter
+from app.services.scanners.nvd_adapter import NvdAdapter
+from app.services.scanners.trivy_adapter import TrivyAdapter
+from app.services.scanners.lynis_adapter import LynisAdapter
+from app.services.scanners.openscap_adapter import OpenSCAPAdapter
+from app.services.scanners.syft_adapter import SyftAdapter
 from app.services.scope_validator import scope_validator
 from app.services.vuln_intel import vuln_intel_service
 from app.services.risk_engine import risk_engine
@@ -39,10 +47,18 @@ class AssessmentOrchestrator:
         self.adapters: Dict[str, BaseScannerAdapter] = {
             "native_probe": NativeProbeAdapter(),
             "nmap": NmapAdapter(),
+            "openvas": OpenVasAdapter(),
             "nuclei": NucleiAdapter(),
             "zap": ZapAdapter(),
             "nikto": NiktoAdapter(),
-            "openvas": OpenVasAdapter()
+            "suricata": SuricataAdapter(),
+            "zeek": ZeekAdapter(),
+            "tshark": TSharkAdapter(),
+            "nvd_intel": NvdAdapter(),
+            "trivy": TrivyAdapter(),
+            "lynis": LynisAdapter(),
+            "openscap": OpenSCAPAdapter(),
+            "syft": SyftAdapter()
         }
 
     def get_tool_inventory(self) -> List[Dict[str, Any]]:
@@ -52,9 +68,15 @@ class AssessmentOrchestrator:
             info = adapter.check_availability()
             inventory.append({
                 "name": name,
-                "version": adapter.version,
-                "status": info.get("status", "NOT_CONFIGURED"),
+                "display_name": getattr(adapter, "display_name", name),
+                "category": getattr(adapter, "category", ToolCategory.CORE_DISCOVERY),
+                "version": info.get("version", getattr(adapter, "version", "unknown")),
+                "status": info.get("status", ToolStatus.NOT_CONFIGURED),
                 "available": info.get("available", False),
+                "is_remote": getattr(adapter, "is_remote", False),
+                "configuration_status": info.get("configuration_status", ""),
+                "supported_capabilities": getattr(adapter, "supported_capabilities", []),
+                "last_health_check": info.get("last_health_check", datetime.now(timezone.utc).isoformat()),
                 "path": info.get("path"),
                 "message": info.get("message", "")
             })

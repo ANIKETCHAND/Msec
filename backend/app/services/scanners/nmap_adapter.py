@@ -1,42 +1,87 @@
 """Nmap Defensive Scanner Adapter for MediShield.
 
-Executes non-destructive, strictly parameterized port and service audits.
-If Nmap is not present on the host system, returns structured fallback diagnostics
-with clear indicators: 'Nmap is not installed/configured on host system'.
+Executes non-destructive, strictly parameterized TCP connect port and service audits.
+If Nmap is not present on the host system, returns honest NOT_EVALUATED status
+without fabricating results.
 """
 
+import os
 import shutil
 import subprocess
 import time
+import re
 import xml.etree.ElementTree as ET
 from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone
 
-from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding
+from app.services.scanners.base import BaseScannerAdapter, ScannerResult, ScannerFinding, ToolStatus, ToolCategory
 
 
 class NmapAdapter(BaseScannerAdapter):
     """Adapter for Nmap defensive service & port auditing."""
 
     tool_name = "nmap"
+    display_name = "Nmap Service Scanner"
+    category = ToolCategory.CORE_DISCOVERY
     version = "7.9x"
+    is_remote = False
+    supported_capabilities = [
+        "HOST_DISCOVERY",
+        "PORT_DISCOVERY",
+        "SERVICE_DETECTION",
+        "VERSION_DETECTION",
+        "EXPOSURE_AUDIT"
+    ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or shutil.which("nmap")
+        self.binary_path = binary_path or os.getenv("NMAP_PATH") or shutil.which("nmap")
+        self._detected_version = None
+
+    def get_version(self) -> str:
+        if self._detected_version:
+            return self._detected_version
+        path = self.binary_path or shutil.which("nmap")
+        if path:
+            try:
+                proc = subprocess.run([path, "-V"], capture_output=True, text=True, timeout=5)
+                if proc.returncode == 0:
+                    match = re.search(r"Nmap version\s+([0-9\.]+)", proc.stdout)
+                    if match:
+                        self._detected_version = match.group(1)
+                        return self._detected_version
+            except Exception:
+                pass
+        return self.version
 
     def check_availability(self) -> Dict[str, Any]:
-        path = shutil.which("nmap") if not self.binary_path else self.binary_path
+        path = self.binary_path or shutil.which("nmap")
         if path:
+            v = self.get_version()
             return {
-                "tool": self.tool_name,
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": v,
+                "status": ToolStatus.AVAILABLE,
                 "available": True,
-                "status": "AVAILABLE",
+                "is_remote": False,
+                "configuration_status": f"Binary detected at {path}",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
                 "path": path,
-                "message": f"Nmap binary detected at {path}"
+                "message": f"Nmap Service Scanner is operational (version {v})."
             }
         return {
-            "tool": self.tool_name,
+            "name": self.tool_name,
+            "display_name": self.display_name,
+            "category": self.category,
+            "version": "unknown",
+            "status": ToolStatus.NOT_INSTALLED,
             "available": False,
-            "status": "NOT_INSTALLED",
+            "is_remote": False,
+            "configuration_status": "Executable not found in system PATH or NMAP_PATH",
+            "supported_capabilities": self.supported_capabilities,
+            "last_health_check": datetime.now(timezone.utc).isoformat(),
             "path": None,
             "message": "Nmap is not installed or not configured in system PATH."
         }
@@ -59,7 +104,11 @@ class NmapAdapter(BaseScannerAdapter):
                 execution_time_seconds=0.0,
                 findings=[],
                 raw_output="",
-                error_message="Nmap is not installed in system PATH. Port auditing was not evaluated.",
+                error_message="Nmap binary is not installed in system PATH. Port auditing was not evaluated.",
+                coverage_limitations=[
+                    "Nmap binary missing from host environment. Defensive port and service discovery was not evaluated.",
+                    "Unevaluated status must never be interpreted as proof that target device is secure."
+                ],
                 is_simulated=False,
                 metadata={"reason": "TOOL_NOT_INSTALLED", "limitations": "Binary not found on host."}
             )
@@ -70,13 +119,13 @@ class NmapAdapter(BaseScannerAdapter):
         # --version-light: minimal intrusive probing
         # -T3: Normal polite timing
         # -p: specific IoMT / web / HL7 / Modbus ports
-        ports = "80,443,502,2575,8080,8443"
+        ports = options.get("ports", "80,443,502,2575,8080,8443") if options else "80,443,502,2575,8080,8443"
         args = [
             self.binary_path or "nmap",
             "-sT",
             "-sV",
             "--version-light",
-            "-p", ports,
+            "-p", str(ports),
             "-T3",
             "--max-retries", "1",
             "--host-timeout", "30s",
@@ -103,9 +152,13 @@ class NmapAdapter(BaseScannerAdapter):
                     available=True,
                     execution_time_seconds=round(elapsed, 2),
                     findings=findings,
-                    raw_output=proc.stdout,
+                    raw_output=proc.stdout[:4000],
+                    exit_code=proc.returncode,
+                    coverage_limitations=[
+                        f"Scan restricted to non-destructive TCP connect ports ({ports}). UDP and unlisted ports were not audited."
+                    ],
                     is_simulated=False,
-                    metadata={"scanned_ports": ports, "target": target_ip}
+                    metadata={"target_ip": target_ip, "open_ports_count": len(findings)}
                 )
             else:
                 return ScannerResult(
@@ -116,6 +169,7 @@ class NmapAdapter(BaseScannerAdapter):
                     execution_time_seconds=round(elapsed, 2),
                     findings=[],
                     raw_output=proc.stderr or proc.stdout or "",
+                    exit_code=proc.returncode,
                     error_message=f"Nmap execution failed (code {proc.returncode}): {proc.stderr.strip() or 'Host unreachable or probe blocked'}",
                     is_simulated=False,
                     metadata={"reason": "SCAN_FAILED"}
@@ -149,13 +203,6 @@ class NmapAdapter(BaseScannerAdapter):
                 is_simulated=False,
                 metadata={"reason": "EXCEPTION"}
             )
-        except Exception as e:
-            return self._generate_simulated_scan_result(
-                target_ip,
-                device_context,
-                start_time,
-                notice=f"Nmap execution error: {str(e)}. Evaluated defensive simulation model."
-            )
 
     def _parse_nmap_xml(self, xml_content: str, target_ip: str) -> List[ScannerFinding]:
         findings = []
@@ -173,137 +220,48 @@ class NmapAdapter(BaseScannerAdapter):
 
                         # Categorize IoMT risk
                         severity = "INFO"
-                        remediation = "Keep service patched."
+                        remediation = "Keep service patched and restricted to authorized management subnets."
+                        ver_status = "Observation"
+
                         if portid == 80:
                             severity = "HIGH"
                             remediation = "Enforce HTTPS encryption (port 443) and redirect plaintext HTTP."
+                            ver_status = "Observation"
                         elif portid == 502:
                             severity = "HIGH"
-                            remediation = "Isolate Modbus protocol on a dedicated microsegment; enforce TLS encapsulation or ACLs."
+                            remediation = "Apply firewall rules restricting Modbus/TCP access solely to authorized central telemetry servers."
+                            ver_status = "Observation"
                         elif portid == 2575:
-                            severity = "MEDIUM"
-                            remediation = "Ensure HL7 MLLP feeds use TLS encryption tunnels (port 2575/TLS) to protect patient health records."
+                            severity = "HIGH"
+                            remediation = "Encapsulate HL7 traffic in TLS (HL7 over TLS) to safeguard patient health information."
+                            ver_status = "Observation"
+                        elif portid in [443, 8443]:
+                            severity = "INFO"
+                            remediation = "Maintain modern TLS ciphers and verify CA certificate renewal."
+                            ver_status = "Positive Control"
+
+                        ver_str = f" {service_version}" if service_version else ""
+                        prod_str = f"{service_product}{ver_str}" if service_product else service_name
 
                         findings.append(ScannerFinding(
-                            title=f"Open Port {portid} ({service_name}) Detected",
-                            description=f"Service '{service_product} {service_version}'. Port is open and responding on {target_ip}.",
+                            title=f"Open Port Observed: {portid}/TCP ({prod_str})",
+                            description=f"Nmap identified open port {portid}/TCP actively running {prod_str} on target {target_ip}.",
                             severity=severity,
                             category="PORT",
                             affected_port=portid,
                             affected_service=service_name,
                             remediation_guidance=remediation,
-                            raw_evidence={"port": portid, "service": service_name, "product": service_product}
+                            verification_status=ver_status,
+                            raw_evidence={
+                                "source_tool": "nmap",
+                                "port": portid,
+                                "protocol": "tcp",
+                                "service": service_name,
+                                "product": service_product,
+                                "version": service_version,
+                                "verification_status": ver_status
+                            }
                         ))
         except Exception:
             pass
         return findings
-
-    def _generate_simulated_scan_result(
-        self,
-        target_ip: str,
-        device_context: Dict[str, Any],
-        start_time: float,
-        notice: Optional[str] = None
-    ) -> ScannerResult:
-        device_type = device_context.get("device_type", "").lower()
-        findings: List[ScannerFinding] = []
-
-        if "infusion" in device_type:
-            findings.extend([
-                ScannerFinding(
-                    title="Plaintext HTTP Management Interface Exposed",
-                    description="Port 80 is serving an unencrypted web configuration interface exposing device state without TLS.",
-                    severity="HIGH",
-                    category="SSL/TLS",
-                    affected_port=80,
-                    affected_service="http",
-                    remediation_guidance="Disable HTTP and enforce HTTPS with HSTS on port 443.",
-                    raw_evidence={"port": 80, "server": "Embedded-Web/2.1", "plaintext_auth": True}
-                ),
-                ScannerFinding(
-                    title="Self-Signed TLS Certificate on Management Port",
-                    description="Port 8443 uses a default vendor self-signed X.509 certificate expiring 2024.",
-                    severity="LOW",
-                    category="CONFIGURATION",
-                    affected_port=8443,
-                    affected_service="https",
-                    remediation_guidance="Deploy hospital enterprise PKI certificate signed by trusted internal CA.",
-                    raw_evidence={"port": 8443, "issuer": "Vendor Self-Signed CA", "valid": False}
-                )
-            ])
-        elif "ventilator" in device_type:
-            findings.extend([
-                ScannerFinding(
-                    title="Industrial Protocol Modbus/TCP Exposed Without Authentication",
-                    description="Port 502 (Modbus/TCP) is open on the clinical network segment without native authentication.",
-                    severity="HIGH",
-                    category="PROTOCOL",
-                    affected_port=502,
-                    affected_service="modbus",
-                    remediation_guidance="Implement strict VLAN microsegmentation and firewall ACLs restricting Modbus access solely to authorized central telemetry servers.",
-                    raw_evidence={"port": 502, "protocol": "Modbus/TCP", "auth_required": False}
-                ),
-                ScannerFinding(
-                    title="Cleartext HL7 Medical Telemetry Broadcast",
-                    description="Port 2575 is actively broadcasting unencrypted HL7 Minimal Lower Layer Protocol (MLLP) frames.",
-                    severity="HIGH",
-                    category="PROTOCOL",
-                    affected_port=2575,
-                    affected_service="hl7-mllp",
-                    remediation_guidance="Upgrade HL7 endpoint to use TLS encapsulation (HL7 over TLS) to safeguard patient physiological metrics.",
-                    raw_evidence={"port": 2575, "protocol": "HL7 v2.5", "tls_enabled": False}
-                )
-            ])
-        elif "ecg" in device_type:
-            findings.extend([
-                ScannerFinding(
-                    title="Unencrypted HL7 Telemetry Stream",
-                    description="Port 2575 is streaming continuous ECG lead telemetry without transport-layer encryption.",
-                    severity="HIGH",
-                    category="PROTOCOL",
-                    affected_port=2575,
-                    affected_service="hl7",
-                    remediation_guidance="Tunnel ECG telemetry through IPsec or TLS-encrypted gateway broker.",
-                    raw_evidence={"port": 2575, "stream": "ECG-Waveform-Feed", "encryption": "none"}
-                ),
-                ScannerFinding(
-                    title="Legacy SSLv3 / TLS 1.0 Negotiation Supported",
-                    description="Port 443 web viewer supports deprecated TLS 1.0 cipher suites susceptible to downgrade attacks.",
-                    severity="MEDIUM",
-                    category="SSL/TLS",
-                    affected_port=443,
-                    affected_service="https",
-                    remediation_guidance="Disable TLS 1.0 and TLS 1.1; enforce TLS 1.2 and TLS 1.3 only.",
-                    raw_evidence={"port": 443, "min_tls": "TLSv1.0"}
-                )
-            ])
-        else:
-            findings.append(ScannerFinding(
-                title="Generic IoMT Discovery Port Open",
-                description="Port 8080 responding to HTTP service requests.",
-                severity="MEDIUM",
-                category="PORT",
-                affected_port=8080,
-                affected_service="http-proxy",
-                remediation_guidance="Restrict access to authorized administrative subnet.",
-                raw_evidence={"port": 8080}
-            ))
-
-        msg = notice or "Nmap is not installed/configured on host system. Simulated IoMT defensive scan telemetry applied."
-
-        return ScannerResult(
-            tool_name=self.tool_name,
-            status="SIMULATED",
-            target_ip=target_ip,
-            available=False,
-            execution_time_seconds=round(time.time() - start_time, 2),
-            findings=findings,
-            raw_output=f"Notice: {msg}",
-            error_message=None,
-            is_simulated=True,
-            metadata={
-                "fallback_reason": msg,
-                "target_device": device_context.get("name", "IoMT Asset"),
-                "scanned_ports": [f.affected_port for f in findings if f.affected_port]
-            }
-        )

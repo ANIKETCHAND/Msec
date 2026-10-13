@@ -98,6 +98,212 @@ const PRESET_DEVICES = [
   }
 ];
 
+const TOOL_CATEGORIES = [
+  'ALL',
+  'Core Discovery',
+  'Vulnerability Assessment',
+  'Web Assessment',
+  'Network Monitoring',
+  'Vulnerability Intelligence',
+  'Host and Software Assessment'
+];
+
+const DEFAULT_TOOLS_SPEC = [
+  {
+    name: 'native_probe',
+    display_name: 'Native Defensive Probe',
+    category: 'Core Discovery',
+    is_remote: false,
+    version: '1.2.0',
+    description: 'Built-in socket connectivity, TLS/SSL certificate validation, and HTTP security headers inspection.',
+    supported_capabilities: ['SOCKET_CONNECTIVITY', 'TLS_CERT_INSPECTION', 'SECURITY_HEADERS', 'SERVICE_AVAILABILITY'],
+    help_text: 'Core native prober. Safe, non-destructive, and always available.'
+  },
+  {
+    name: 'nmap',
+    display_name: 'Nmap Service Scanner',
+    category: 'Core Discovery',
+    is_remote: false,
+    version: '7.9x',
+    description: 'Defensive TCP connect port discovery and service version fingerprinting within authorized bounds.',
+    supported_capabilities: ['TCP_CONNECT_SCAN', 'SERVICE_DETECTION', 'VERSION_PROBING', 'PORT_AUDITING'],
+    help_text: 'Requires local nmap binary in system PATH.'
+  },
+  {
+    name: 'openvas',
+    display_name: 'Greenbone OpenVAS',
+    category: 'Vulnerability Assessment',
+    is_remote: true,
+    version: '22.4',
+    description: 'Greenbone Vulnerability Management engine executing comprehensive clinical network vulnerability tests.',
+    supported_capabilities: ['NVT_TEST_EXECUTION', 'GMP_DAEMON_CONTROL', 'ENTERPRISE_CVE_AUDIT', 'NETWORK_VULNERABILITY_SCAN'],
+    help_text: 'Requires remote GMP daemon (OPENVAS_HOST) and service credentials.'
+  },
+  {
+    name: 'nuclei',
+    display_name: 'Nuclei CVE Engine',
+    category: 'Vulnerability Assessment',
+    is_remote: false,
+    version: 'v3.x',
+    description: 'Targeted YAML-based vulnerability template scanning against documented CVEs and misconfigurations.',
+    supported_capabilities: ['CVE_TEMPLATE_MATCHING', 'MISCONFIGURATION_DETECTION', 'TARGETED_POC_AUDIT', 'ZERO_DAY_SIGNATURES'],
+    help_text: 'Requires nuclei binary and template directory.'
+  },
+  {
+    name: 'zap',
+    display_name: 'OWASP ZAP Scanner',
+    category: 'Web Assessment',
+    is_remote: true,
+    version: '2.14.x',
+    description: 'OWASP Zed Attack Proxy passive web application security auditor for IoMT clinical web dashboards.',
+    supported_capabilities: ['PASSIVE_WEB_AUDIT', 'CWE_RISK_MAPPING', 'HEADER_COMPLIANCE', 'REST_API_CONTROL'],
+    help_text: 'Requires running OWASP ZAP daemon (ZAP_URL) with optional API key.'
+  },
+  {
+    name: 'nikto',
+    display_name: 'Nikto Web Auditor',
+    category: 'Web Assessment',
+    is_remote: false,
+    version: '2.1.6',
+    description: 'Web server security scanner identifying dangerous files, outdated server software, and configuration flaws.',
+    supported_capabilities: ['WEB_SERVER_AUDIT', 'DANGEROUS_FILE_CHECK', 'SERVER_VERSION_FINGERPRINT', 'HTTP_METHOD_PROBING'],
+    help_text: 'Requires nikto or nikto.pl in system PATH.'
+  },
+  {
+    name: 'suricata',
+    display_name: 'Suricata IDS',
+    category: 'Network Monitoring',
+    is_remote: false,
+    version: '7.0.x',
+    description: 'Passive intrusion detection system ingesting EVE JSON network telemetry and signature matching.',
+    supported_capabilities: ['EVE_JSON_INGESTION', 'SIGNATURE_MATCHING', 'NETWORK_INTRUSION_DETECTION', 'SECURITY_EVENT_NORMALIZATION'],
+    help_text: 'Ingests active EVE JSON telemetry (SURICATA_EVE_PATH).'
+  },
+  {
+    name: 'zeek',
+    display_name: 'Zeek Network Monitor',
+    category: 'Network Monitoring',
+    is_remote: false,
+    version: '6.0.x',
+    description: 'Behavioral network security monitor analyzing connection logs, cleartext protocols, and IoMT telemetry.',
+    supported_capabilities: ['CONN_LOG_INGESTION', 'PROTOCOL_ANALYSIS', 'CLEAR_TEXT_TRAFFIC_DETECTION', 'BEHAVIORAL_TELEMETRY'],
+    help_text: 'Ingests Zeek connection/protocol logs (ZEEK_LOG_DIR).'
+  },
+  {
+    name: 'tshark',
+    display_name: 'TShark Packet Analyzer',
+    category: 'Network Monitoring',
+    is_remote: false,
+    version: '4.x',
+    description: 'Deep packet inspection engine validating IoMT protocols including DICOM, HL7, CoAP, and MQTT.',
+    supported_capabilities: ['DEEP_PACKET_INSPECTION', 'IOMT_PROTOCOL_VALIDATION', 'CLEAR_TEXT_PROTOCOL_ANALYSIS', 'PCAP_STREAM_ANALYSIS'],
+    help_text: 'Requires tshark binary and PCAP stream or capture interface.'
+  },
+  {
+    name: 'nvd_intel',
+    display_name: 'NVD / CVE Intelligence',
+    category: 'Vulnerability Intelligence',
+    is_remote: true,
+    version: 'API v2.0',
+    description: 'National Vulnerability Database REST API v2 and curated clinical IoMT threat intelligence feed.',
+    supported_capabilities: ['NVD_REST_API_V2', 'CPE_CORRELATION', 'CVSS_V31_MAPPING', 'IOMT_CLINICAL_INTEL', 'EPSS_METRICS'],
+    help_text: 'Online NVD API v2 with fallback to local IoMT clinical knowledgebase.'
+  },
+  {
+    name: 'trivy',
+    display_name: 'Trivy Security Scanner',
+    category: 'Host and Software Assessment',
+    is_remote: false,
+    version: '0.50.x',
+    description: 'Container image, firmware filesystem, and software dependency vulnerability auditor.',
+    supported_capabilities: ['CONTAINER_IMAGE_SCAN', 'FILESYSTEM_SBOM_AUDIT', 'DEPENDENCY_VULNERABILITY_CHECK', 'MISCONFIGURATION_DETECTION'],
+    help_text: 'Requires trivy binary and target container/filesystem artifact.'
+  },
+  {
+    name: 'lynis',
+    display_name: 'Lynis Host Auditor',
+    category: 'Host and Software Assessment',
+    is_remote: false,
+    version: '3.1.x',
+    description: 'Host-level security auditing and system hardening benchmarking for Linux/Unix medical endpoints.',
+    supported_capabilities: ['OS_HARDENING_AUDIT', 'COMPLIANCE_BENCHMARKING', 'KERNEL_SECURITY_CHECK', 'VULNERABILITY_ASSESSMENT'],
+    help_text: 'Host OS auditor. Requires Linux host or remote SSH target.'
+  },
+  {
+    name: 'openscap',
+    display_name: 'OpenSCAP Compliance Auditor',
+    category: 'Host and Software Assessment',
+    is_remote: false,
+    version: '1.3.x',
+    description: 'Security Content Automation Protocol (SCAP) validator enforcing HIPAA and NIST 800-53 baselines.',
+    supported_capabilities: ['XCCDF_BENCHMARK_EVALUATION', 'HIPAA_SECURITY_COMPLIANCE', 'NIST_800_53_VALIDATION', 'CIS_PROFILE_AUDITING'],
+    help_text: 'Requires oscap binary and SCAP benchmark data streams.'
+  },
+  {
+    name: 'syft',
+    display_name: 'Syft SBOM Generator',
+    category: 'Host and Software Assessment',
+    is_remote: false,
+    version: '1.0.x',
+    description: 'Software Bill of Materials generator cataloging packages, dependencies, and licenses for FDA compliance.',
+    supported_capabilities: ['SPDX_SBOM_GENERATION', 'CYCLONEDX_CATALOGING', 'FIRMWARE_PACKAGE_INVENTORY', 'LICENSE_COMPLIANCE_AUDIT'],
+    help_text: 'Requires syft binary and target firmware/container artifact.'
+  }
+];
+
+const getStatusBadgeConfig = (status) => {
+  switch (status) {
+    case 'AVAILABLE':
+      return {
+        label: 'AVAILABLE',
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        dot: 'bg-emerald-500'
+      };
+    case 'NOT_INSTALLED':
+      return {
+        label: 'NOT INSTALLED',
+        className: 'bg-gray-100 text-gray-700 border-gray-200',
+        dot: 'bg-gray-400'
+      };
+    case 'NOT_CONFIGURED':
+      return {
+        label: 'NOT CONFIGURED',
+        className: 'bg-amber-50 text-amber-700 border-amber-200',
+        dot: 'bg-amber-500'
+      };
+    case 'NOT_AUTHENTICATED':
+      return {
+        label: 'NOT AUTHENTICATED',
+        className: 'bg-orange-50 text-orange-700 border-orange-200',
+        dot: 'bg-orange-500'
+      };
+    case 'UNREACHABLE':
+      return {
+        label: 'UNREACHABLE',
+        className: 'bg-rose-50 text-rose-700 border-rose-200',
+        dot: 'bg-rose-500'
+      };
+    case 'NOT_APPLICABLE':
+      return {
+        label: 'NOT APPLICABLE',
+        className: 'bg-slate-100 text-slate-600 border-slate-200',
+        dot: 'bg-slate-400'
+      };
+    case 'ERROR':
+      return {
+        label: 'ERROR',
+        className: 'bg-red-50 text-red-700 border-red-200',
+        dot: 'bg-red-500'
+      };
+    default:
+      return {
+        label: status || 'UNKNOWN',
+        className: 'bg-gray-100 text-gray-700 border-gray-200',
+        dot: 'bg-gray-400'
+      };
+  }
+};
+
 export default function DevicesScanPage() {
   const {
     devices,
@@ -114,10 +320,11 @@ export default function DevicesScanPage() {
   // Tools Inventory
   const [toolsInventory, setToolsInventory] = useState([]);
   const [loadingTools, setLoadingTools] = useState(false);
+  const [toolCategoryFilter, setToolCategoryFilter] = useState('ALL');
 
   // Scope Authorization Form
   const [scopeProfile, setScopeProfile] = useState('DEFENSIVE_AUDIT');
-  const [selectedTools, setSelectedTools] = useState(['native_probe', 'nmap', 'nuclei']);
+  const [selectedTools, setSelectedTools] = useState(['native_probe', 'nmap', 'nuclei', 'nvd_intel']);
   const [durationHours, setDurationHours] = useState(4);
   const [justification, setJustification] = useState('Routine quarterly clinical IoMT security audit and perimeter verification');
   const [authorizedScope, setAuthorizedScope] = useState(null);
@@ -147,6 +354,47 @@ export default function DevicesScanPage() {
     owner: 'Clinical Engineering'
   });
 
+  const mergedTools = React.useMemo(() => {
+    return DEFAULT_TOOLS_SPEC.map(spec => {
+      const live = toolsInventory.find(t => t.name === spec.name);
+      return {
+        ...spec,
+        display_name: live?.display_name || spec.display_name,
+        category: live?.category || spec.category,
+        version: live?.version && live.version !== 'unknown' ? live.version : spec.version,
+        status: live?.status || 'NOT_CONFIGURED',
+        available: live?.available || false,
+        is_remote: live?.is_remote !== undefined ? live.is_remote : spec.is_remote,
+        configuration_status: live?.configuration_status || '',
+        supported_capabilities: live?.supported_capabilities?.length ? live.supported_capabilities : spec.supported_capabilities,
+        message: live?.message || spec.help_text,
+        path: live?.path || null
+      };
+    });
+  }, [toolsInventory]);
+
+  const filteredTools = React.useMemo(() => {
+    if (toolCategoryFilter === 'ALL') return mergedTools;
+    return mergedTools.filter(t => t.category === toolCategoryFilter);
+  }, [mergedTools, toolCategoryFilter]);
+
+  const statusCounts = React.useMemo(() => {
+    const counts = {
+      total: mergedTools.length,
+      available: 0,
+      not_installed: 0,
+      not_configured: 0,
+      not_applicable: 0
+    };
+    for (const t of mergedTools) {
+      if (t.status === 'AVAILABLE') counts.available++;
+      else if (t.status === 'NOT_INSTALLED') counts.not_installed++;
+      else if (t.status === 'NOT_APPLICABLE') counts.not_applicable++;
+      else counts.not_configured++;
+    }
+    return counts;
+  }, [mergedTools]);
+
   // Load tools inventory and default selected device
   useEffect(() => {
     loadTools();
@@ -155,18 +403,40 @@ export default function DevicesScanPage() {
     }
   }, [devices]);
 
-  const loadTools = async () => {
+  const loadTools = async (forceRefresh = false) => {
     setLoadingTools(true);
     try {
-      const inv = await api.getToolsInventory();
+      const inv = forceRefresh ? await api.refreshToolInventory() : await api.getToolsInventory();
       if (inv && Array.isArray(inv)) {
         setToolsInventory(inv);
+        if (forceRefresh) {
+          setStatusMsg({
+            type: 'success',
+            text: `Tool readiness refreshed: ${inv.filter(t => t.available).length} available of ${inv.length} integrated tools.`
+          });
+        }
       }
     } catch (err) {
       console.warn('[DevicesScan] Tools inventory load warning:', err.message);
+      if (forceRefresh) {
+        setStatusMsg({ type: 'warning', text: `Could not refresh tools: ${err.message}` });
+      }
     } finally {
       setLoadingTools(false);
     }
+  };
+
+  const selectAllAvailable = () => {
+    const avail = mergedTools.filter(t => t.available).map(t => t.name);
+    setSelectedTools(Array.from(new Set(['native_probe', ...avail])));
+  };
+
+  const selectRecommended = () => {
+    setSelectedTools(['native_probe', 'nmap', 'nuclei', 'nvd_intel']);
+  };
+
+  const clearSelection = () => {
+    setSelectedTools(['native_probe']);
   };
 
   const handleSelectDevice = (device) => {
@@ -604,130 +874,198 @@ export default function DevicesScanPage() {
           
           {/* STEP 3: CONFIGURE TOOLS & START SCAN */}
           <div className="bg-white border border-[#E5E7EB] rounded-lg p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#F3F4F6] gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#1677FF] text-white text-xs font-bold flex items-center justify-center">
                   3
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#171717]">
-                  Defensive Tools & Execution
-                </span>
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#171717]">
+                    Defensive Tools & Execution
+                  </span>
+                  <p className="text-[11px] text-[#6B7280]">
+                    Select defensive scanners, monitors, and intelligence feeds ({selectedTools.length} selected)
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={loadTools}
-                title="Refresh tools inventory"
-                className="text-[#6B7280] hover:text-[#171717] cursor-pointer"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingTools ? 'animate-spin' : ''}`} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => loadTools(true)}
+                  disabled={loadingTools}
+                  title="Probe host environment and refresh tool availability"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[#1677FF] bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingTools ? 'animate-spin' : ''}`} />
+                  <span>Refresh Tool Status</span>
+                </button>
+              </div>
             </div>
 
-            {/* Tool Selection Cards */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              
-              {/* Native Probe Card */}
-              <div
-                onClick={() => toggleTool('native_probe')}
-                className={`p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
-                  selectedTools.includes('native_probe')
-                    ? 'border-[#1677FF] bg-blue-50/30'
-                    : 'border-[#E5E7EB] bg-white opacity-60'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#171717]">Native Defensive Prober</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-emerald-100 text-emerald-800">
-                    AVAILABLE
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#6B7280] mt-1">
-                  Built-in socket connect, real TLS certificate audit, and HTTP security header auditor.
-                </p>
-                <div className="mt-2 text-[10px] text-[#1677FF] font-medium flex items-center gap-1">
-                  <Check className="w-3 h-3" /> Core Probe (Required)
-                </div>
+            {/* Inventory Status Summary Bar */}
+            <div className="mt-3.5 flex flex-wrap items-center gap-2 text-[11px] text-[#4B5563] bg-[#F9FAFB] p-2.5 rounded-lg border border-[#E5E7EB]">
+              <span className="font-semibold text-[#171717]">Readiness:</span>
+              <span className="px-2 py-0.5 rounded bg-white border border-[#E5E7EB] font-medium text-[#171717]">
+                Total: <strong>{statusCounts.total}</strong>
+              </span>
+              <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
+                Available: <strong>{statusCounts.available}</strong>
+              </span>
+              <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200 font-medium">
+                Not Installed: <strong>{statusCounts.not_installed}</strong>
+              </span>
+              <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">
+                Not Configured: <strong>{statusCounts.not_configured}</strong>
+              </span>
+              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                Not Applicable: <strong>{statusCounts.not_applicable}</strong>
+              </span>
+            </div>
+
+            {/* Category Filter Pills & Selection Controls */}
+            <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-[#F3F4F6] pb-3">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs max-w-full">
+                {TOOL_CATEGORIES.map(cat => {
+                  const count = cat === 'ALL' ? mergedTools.length : mergedTools.filter(t => t.category === cat).length;
+                  const isAct = toolCategoryFilter === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setToolCategoryFilter(cat)}
+                      className={`px-2 py-1 rounded text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                        isAct
+                          ? 'bg-[#1677FF] text-white shadow-xs'
+                          : 'bg-[#F3F4F6] text-[#4B5563] hover:bg-[#E5E7EB] hover:text-[#171717]'
+                      }`}
+                    >
+                      {cat} ({count})
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Nmap Adapter Card */}
-              <div
-                onClick={() => toggleTool('nmap')}
-                className={`p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
-                  selectedTools.includes('nmap')
-                    ? 'border-[#1677FF] bg-blue-50/30'
-                    : 'border-[#E5E7EB] bg-white opacity-60'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#171717]">Nmap Service Scanner</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
-                    toolsInventory.find(t => t.name === 'nmap')?.available
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {toolsInventory.find(t => t.name === 'nmap')?.available ? 'AVAILABLE' : 'NOT INSTALLED'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#6B7280] mt-1">
-                  Comprehensive port discovery & service banner inspection (honest fallback if missing).
-                </p>
-                <div className="mt-2 text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                  {selectedTools.includes('nmap') ? '✓ Selected' : '+ Click to add'}
-                </div>
+              <div className="flex items-center gap-1.5 text-[11px] shrink-0">
+                <button
+                  onClick={selectAllAvailable}
+                  className="px-2 py-0.5 text-blue-700 hover:text-blue-900 font-medium cursor-pointer"
+                >
+                  All Available
+                </button>
+                <span className="text-gray-300">•</span>
+                <button
+                  onClick={selectRecommended}
+                  className="px-2 py-0.5 text-blue-700 hover:text-blue-900 font-medium cursor-pointer"
+                >
+                  Recommended
+                </button>
+                <span className="text-gray-300">•</span>
+                <button
+                  onClick={clearSelection}
+                  className="px-2 py-0.5 text-gray-500 hover:text-gray-800 font-medium cursor-pointer"
+                >
+                  Core Only
+                </button>
               </div>
+            </div>
 
-              {/* Nuclei Adapter Card */}
-              <div
-                onClick={() => toggleTool('nuclei')}
-                className={`p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
-                  selectedTools.includes('nuclei')
-                    ? 'border-[#1677FF] bg-blue-50/30'
-                    : 'border-[#E5E7EB] bg-white opacity-60'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#171717]">Nuclei CVE Engine</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
-                    toolsInventory.find(t => t.name === 'nuclei')?.available
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {toolsInventory.find(t => t.name === 'nuclei')?.available ? 'AVAILABLE' : 'NOT INSTALLED'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#6B7280] mt-1">
-                  Targeted YAML vulnerability template verification against known CVE signatures.
-                </p>
-                <div className="mt-2 text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                  {selectedTools.includes('nuclei') ? '✓ Selected' : '+ Click to add'}
-                </div>
-              </div>
+            {/* 14 Tool Selection Cards (Responsive 2-column Grid) */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[560px] overflow-y-auto pr-1">
+              {filteredTools.map(tool => {
+                const isSelected = selectedTools.includes(tool.name);
+                const isCore = tool.name === 'native_probe';
+                const badge = getStatusBadgeConfig(tool.status);
 
-              {/* Nikto Adapter Card */}
-              <div
-                onClick={() => toggleTool('nikto')}
-                className={`p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
-                  selectedTools.includes('nikto')
-                    ? 'border-[#1677FF] bg-blue-50/30'
-                    : 'border-[#E5E7EB] bg-white opacity-60'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#171717]">Nikto Web Auditor</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
-                    toolsInventory.find(t => t.name === 'nikto')?.available
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {toolsInventory.find(t => t.name === 'nikto')?.available ? 'AVAILABLE' : 'NOT INSTALLED'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#6B7280] mt-1">
-                  Clinical web interface inspection for outdated server binaries and exposed files.
-                </p>
-                <div className="mt-2 text-[10px] text-gray-500 font-medium flex items-center gap-1">
-                  {selectedTools.includes('nikto') ? '✓ Selected' : '+ Click to add'}
-                </div>
-              </div>
+                return (
+                  <div
+                    key={tool.name}
+                    onClick={() => toggleTool(tool.name)}
+                    className={`p-3 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-[#1677FF] bg-blue-50/25 ring-1 ring-[#1677FF]'
+                        : 'border-[#E5E7EB] bg-white hover:border-[#D1D5DB]'
+                    }`}
+                  >
+                    <div>
+                      {/* Card Header: Title & Badges */}
+                      <div className="flex items-start justify-between gap-1.5">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-semibold text-[#171717]">
+                              {tool.display_name}
+                            </span>
+                            <span className="text-[10px] text-[#6B7280] font-mono">
+                              v{tool.version}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-gray-100 text-[#4B5563] font-medium">
+                              {tool.category}
+                            </span>
+                            <span className="text-[9px] text-[#9CA3AF]">
+                              {tool.is_remote ? 'Remote Service' : 'Local Binary'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded font-mono font-semibold border ${badge.className}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      {/* Card Description */}
+                      <p className="text-[11px] text-[#4B5563] mt-2 line-clamp-2 leading-relaxed">
+                        {tool.description}
+                      </p>
+
+                      {/* Capability Badges */}
+                      {tool.supported_capabilities && tool.supported_capabilities.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {tool.supported_capabilities.slice(0, 3).map(cap => (
+                            <span
+                              key={cap}
+                              className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100"
+                            >
+                              {cap}
+                            </span>
+                          ))}
+                          {tool.supported_capabilities.length > 3 && (
+                            <span className="text-[9px] font-mono px-1 py-0.5 text-gray-500">
+                              +{tool.supported_capabilities.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Operational Hint / Error Message */}
+                      <div className="mt-2 text-[10px] text-[#6B7280] bg-gray-50 p-1.5 rounded border border-gray-100 flex items-start gap-1">
+                        <Info className="w-3 h-3 text-[#9CA3AF] shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{tool.message}</span>
+                      </div>
+                    </div>
+
+                    {/* Card Footer: Selection Status */}
+                    <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                      {isCore ? (
+                        <span className="text-[#1677FF] font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Core Baseline (Always Active)
+                        </span>
+                      ) : isSelected ? (
+                        <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Selected for Scan
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 font-medium hover:text-gray-600">
+                          + Click to Select
+                        </span>
+                      )}
+
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        {tool.name}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Launch Button */}

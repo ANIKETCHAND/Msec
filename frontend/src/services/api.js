@@ -226,6 +226,16 @@ class ApiService {
     return await this.request('/assessments/tools/inventory');
   }
 
+  async getToolsInventory() {
+    return await this.getToolInventory();
+  }
+
+  async refreshToolInventory() {
+    return await this.request('/assessments/tools/refresh', {
+      method: 'POST'
+    });
+  }
+
   async getScopes(deviceId = null) {
     return await this.request(`/assessments/scopes${deviceId ? `?device_id=${deviceId}` : ''}`);
   }
