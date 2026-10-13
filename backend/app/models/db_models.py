@@ -238,6 +238,22 @@ class FindingModel(Base):
 
     assessment = relationship("AssessmentModel", back_populates="findings")
 
+    @property
+    def verification_status(self) -> str:
+        return (self.raw_evidence or {}).get("verification_status", "Observation")
+
+    @property
+    def source_type(self) -> str:
+        return (self.raw_evidence or {}).get("source_type", "Scanner finding")
+
+    @property
+    def impact(self) -> str:
+        return (self.raw_evidence or {}).get("impact", "Configuration observation; review clinical risk posture.")
+
+    @property
+    def finding_status(self) -> str:
+        return (self.raw_evidence or {}).get("finding_status", "Open")
+
 
 class IncidentNoteModel(Base):
     __tablename__ = "incident_notes"

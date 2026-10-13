@@ -12,7 +12,11 @@ import {
   Sparkles,
   X,
   Menu,
-  Layers
+  Layers,
+  LayoutDashboard,
+  ShieldCheck,
+  FileText,
+  MoreHorizontal
 } from 'lucide-react';
 
 export default function WorkspaceShell({ children }) {
@@ -32,6 +36,7 @@ export default function WorkspaceShell({ children }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [secondaryDropdownOpen, setSecondaryDropdownOpen] = useState(false);
   const [simulationModalOpen, setSimulationModalOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -53,24 +58,22 @@ export default function WorkspaceShell({ children }) {
     }
   };
 
-  // Swiss categorized navigation groups following the primary guided workflow
-  const navCategories = [
-    {
-      name: 'ASSESSMENT & REPORTS',
-      items: ['assessment-center', 'reports']
-    },
-    {
-      name: 'MONITORING',
-      items: ['security-events']
-    },
-    {
-      name: 'ASSETS & OPERATIONS',
-      items: ['devices', 'audit-logs', 'dashboard']
-    },
-    {
-      name: 'SECURITY ARCHITECTURE',
-      items: ['tools', 'topology', 'integrity', 'response-simulator', 'settings']
-    }
+  // Priority 1: The 4 Core Application Workspaces
+  const primaryTabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'devices-scan', label: 'Devices & Scan', icon: Shield },
+    { id: 'scan-results', label: 'Scan Results', icon: ShieldCheck },
+    { id: 'reports', label: 'Reports', icon: FileText }
+  ];
+
+  // Secondary Operational & Governance Tools
+  const secondaryPages = [
+    { id: 'devices', label: 'Device Inventory' },
+    { id: 'security-events', label: 'Security Events' },
+    { id: 'audit-logs', label: 'Audit Trail Ledger' },
+    { id: 'tools', label: 'Security Tools' },
+    { id: 'integrity', label: 'Privacy & Integrity' },
+    { id: 'settings', label: 'System Settings' }
   ];
 
   // Search routing handler
@@ -320,38 +323,70 @@ export default function WorkspaceShell({ children }) {
         </div>
       </header>
 
-      {/* 2. COMPACT CATEGORY NAVIGATION STRIP */}
-      <nav className="h-10 bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center gap-6 overflow-x-auto scrollbar-none shrink-0 z-30 select-none">
-        {navCategories.map((cat) => (
-          <div key={cat.name} className="flex items-center gap-1 shrink-0">
-            <span className="text-[10px] font-mono text-[#9CA3AF] font-semibold tracking-wider uppercase mr-1 hidden lg:inline">
-              {cat.name}:
-            </span>
-            {cat.items.map((pageId) => {
-              const meta = PAGE_REGISTRY[pageId];
-              if (!meta) return null;
-              const Icon = meta.icon;
-              const isActive = currentPage === pageId;
+      {/* 2. CORE WORKFLOW NAVIGATION BAR */}
+      <nav className="h-11 bg-white border-b border-[#E5E7EB] px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 select-none">
+        {/* The 4 Main Workspaces */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {primaryTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = currentPage === tab.id || (tab.id === 'devices-scan' && currentPage === 'assessment-center');
 
-              return (
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setCurrentPage(tab.id);
+                  setSecondaryDropdownOpen(false);
+                }}
+                className={`
+                  px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all cursor-pointer
+                  ${isActive
+                    ? 'bg-[#1677FF] text-white font-semibold shadow-xs'
+                    : 'text-[#4B5563] hover:text-[#171717] hover:bg-[#F3F4F6]'
+                  }
+                `}
+              >
+                <Icon className="w-3.5 h-3.5 stroke-[2]" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Secondary Operations Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setSecondaryDropdownOpen(!secondaryDropdownOpen)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#6B7280] hover:text-[#171717] hover:bg-[#F3F4F6] rounded-md transition-swiss cursor-pointer"
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">More Operations</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
+
+          {secondaryDropdownOpen && (
+            <div className="absolute right-0 mt-1 w-52 bg-white border border-[#E5E7EB] rounded-lg shadow-lg py-1.5 z-50 text-xs animate-fadeIn">
+              <div className="px-3 py-1 border-b border-[#E5E7EB] text-[10px] uppercase font-mono text-[#9CA3AF] font-semibold">
+                Platform Operations
+              </div>
+              {secondaryPages.map((sec) => (
                 <button
-                  key={pageId}
-                  onClick={() => setCurrentPage(pageId)}
-                  className={`
-                    px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-swiss
-                    ${isActive
-                      ? 'bg-[#1677FF] text-white font-semibold shadow-xs'
-                      : 'text-[#6B7280] hover:text-[#171717] hover:bg-[#F3F4F6]'
-                    }
-                  `}
+                  key={sec.id}
+                  onClick={() => {
+                    setCurrentPage(sec.id);
+                    setSecondaryDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 flex items-center justify-between transition-swiss hover:bg-[#F9FAFB] cursor-pointer ${
+                    currentPage === sec.id ? 'text-[#1677FF] font-semibold bg-blue-50/50' : 'text-[#374151]'
+                  }`}
                 >
-                  <Icon className="w-3 h-3 stroke-[2]" />
-                  <span>{meta.title}</span>
+                  <span>{sec.label}</span>
+                  {currentPage === sec.id && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
                 </button>
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Simulation Feedback Notice */}

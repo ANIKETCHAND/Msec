@@ -56,6 +56,10 @@ class FindingResponse(BaseModel):
     affected_service: Optional[str] = None
     source_tool: str
     remediation_guidance: Optional[str] = None
+    verification_status: Optional[str] = "Observation"
+    source_type: Optional[str] = "Scanner finding"
+    impact: Optional[str] = None
+    finding_status: Optional[str] = "Open"
     raw_evidence: Optional[Dict[str, Any]] = None
     created_at: datetime
 

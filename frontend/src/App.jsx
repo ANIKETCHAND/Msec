@@ -14,6 +14,8 @@ import AuditLogsPage from './pages/AuditLogsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AssessmentCenterPage from './pages/AssessmentCenterPage';
+import DevicesScanPage from './pages/DevicesScanPage';
+import ScanResultsPage from './pages/ScanResultsPage';
 import ToolsManagementPage from './pages/ToolsManagementPage';
 import NetworkTopologyPage from './pages/NetworkTopologyPage';
 import ResponseSimulatorPage from './pages/ResponseSimulatorPage';
@@ -32,16 +34,18 @@ function MainRouter() {
   // Registry map of all functional pages for stacked workspace
   const pageMap = {
     dashboard: <DashboardPage />,
+    'devices-scan': <DevicesScanPage />,
+    'assessment-center': <DevicesScanPage />,
+    'scan-results': <ScanResultsPage />,
+    reports: <ReportsPage />,
     devices: <DeviceInventoryPage />,
     'device-detail': <DeviceDetailPage />,
-    'assessment-center': <AssessmentCenterPage />,
     topology: <NetworkTopologyPage />,
     tools: <ToolsManagementPage />,
     'response-simulator': <ResponseSimulatorPage />,
     'security-events': <SecurityEventsPage />,
     integrity: <PrivacyIntegrityPage />,
     'audit-logs': <AuditLogsPage />,
-    reports: <ReportsPage />,
     settings: <SettingsPage />,
   };
 

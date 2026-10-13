@@ -16,6 +16,7 @@ from app.models.db_models import DeviceModel, AssessmentScopeModel, UserModel
 
 
 ALLOWED_DEFENSIVE_TOOLS = {
+    "native_probe",
     "nmap",
     "nuclei",
     "zap",
@@ -162,8 +163,9 @@ class ScopeValidator:
 
         # 6. Tools authorized check
         authorized_tools = [t.lower().strip() for t in scope.selected_tools]
+        authorized_tools_set = set(authorized_tools) | {"native_probe"}
         for t in tools:
-            if t.lower().strip() not in authorized_tools:
+            if t.lower().strip() not in authorized_tools_set:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=f"Tool '{t}' was not approved in scope '{scope_id}'. Approved: {authorized_tools}"

@@ -3,6 +3,7 @@ import {
   Server,
   Activity,
   Shield,
+  ShieldCheck,
   Wrench,
   Network,
   SlidersHorizontal,
@@ -40,13 +41,29 @@ export const PAGE_REGISTRY = {
     icon: Activity,
     category: 'ASSET SECURITY'
   },
+  'devices-scan': {
+    id: 'devices-scan',
+    title: 'Devices & Scan',
+    subtitle: 'Authorized Asset Selection & Defensive Assessment',
+    color: '#1677FF',
+    icon: Shield,
+    category: 'CORE WORKFLOW'
+  },
   'assessment-center': {
     id: 'assessment-center',
-    title: 'Assessment Center',
-    subtitle: 'Authorized Vulnerability Scans & CVE Findings',
-    color: '#F59E0B',
+    title: 'Devices & Scan',
+    subtitle: 'Authorized Asset Selection & Defensive Assessment',
+    color: '#1677FF',
     icon: Shield,
-    category: 'ASSET SECURITY'
+    category: 'CORE WORKFLOW'
+  },
+  'scan-results': {
+    id: 'scan-results',
+    title: 'Scan Results',
+    subtitle: 'Verified Findings, Evidence Inspector & Limitations',
+    color: '#10B981',
+    icon: ShieldCheck,
+    category: 'CORE WORKFLOW'
   },
   topology: {
     id: 'topology',

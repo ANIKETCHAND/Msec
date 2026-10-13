@@ -1,4 +1,8 @@
-"""OpenVAS / Greenbone Vulnerability Management (GVM) Adapter for MediShield."""
+"""OpenVAS / Greenbone Vulnerability Management (GVM) Adapter for MediShield.
+
+Integrates with OpenVAS / Greenbone GMP daemon if available.
+If not configured, returns honest NOT_EVALUATED status without generating fake results.
+"""
 
 import os
 import time
@@ -17,7 +21,6 @@ class OpenVasAdapter(BaseScannerAdapter):
         self.gmp_host = gmp_host or os.getenv("OPENVAS_HOST", "127.0.0.1")
 
     def check_availability(self) -> Dict[str, Any]:
-        # OpenVAS daemon is typically a Unix daemon socket or GMP protocol
         return {
             "tool": self.tool_name,
             "available": False,
@@ -32,28 +35,15 @@ class OpenVasAdapter(BaseScannerAdapter):
         device_context: Dict[str, Any],
         options: Optional[Dict[str, Any]] = None
     ) -> ScannerResult:
-        start_time = time.time()
-        findings = [
-            ScannerFinding(
-                title="NVT: Medical Device Telnet / Plaintext Console Access",
-                description="Network Vulnerability Test detected an unencrypted remote maintenance daemon on administrative port.",
-                severity="HIGH",
-                category="NETWORK",
-                affected_port=23,
-                affected_service="telnet",
-                remediation_guidance="Disable Telnet; mandate SSHv2 with certificate authentication.",
-                raw_evidence={"nvt_oid": "1.3.6.1.4.1.25623.1.0.100001"}
-            )
-        ]
-        msg = "OpenVAS is not configured on host system. Simulated IoMT defensive scan telemetry applied."
         return ScannerResult(
             tool_name=self.tool_name,
-            status="SIMULATED",
+            status="NOT_EVALUATED",
             target_ip=target_ip,
             available=False,
-            execution_time_seconds=round(time.time() - start_time, 2),
-            findings=findings,
-            raw_output=f"Notice: {msg}",
-            is_simulated=True,
-            metadata={"fallback_reason": msg}
+            execution_time_seconds=0.0,
+            findings=[],
+            raw_output="",
+            error_message="OpenVAS / Greenbone daemon is not configured. Enterprise NVT vulnerability tests were not evaluated.",
+            is_simulated=False,
+            metadata={"reason": "DAEMON_NOT_CONFIGURED", "limitations": "OpenVAS not deployed."}
         )

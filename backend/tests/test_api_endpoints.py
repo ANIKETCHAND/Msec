@@ -457,7 +457,7 @@ def test_assessment_execution_orchestration_and_findings():
     }, headers=headers)
     assert exec_resp.status_code == 201
     asm_data = exec_resp.json()
-    assert asm_data["status"] == "COMPLETED"
+    assert asm_data["status"] in ["COMPLETED", "PARTIALLY_COMPLETED"]
     assert asm_data["device_id"] == "DEV-VENT-502"
     assert len(asm_data["findings"]) > 0
     assert asm_data["security_score"] <= 100.0

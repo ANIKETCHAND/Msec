@@ -51,8 +51,18 @@ class NmapAdapter(BaseScannerAdapter):
         avail = self.check_availability()
 
         if not avail["available"]:
-            # Provide faithful synthetic IoMT port discovery fallback
-            return self._generate_simulated_scan_result(target_ip, device_context, start_time)
+            return ScannerResult(
+                tool_name=self.tool_name,
+                status="NOT_EVALUATED",
+                target_ip=target_ip,
+                available=False,
+                execution_time_seconds=0.0,
+                findings=[],
+                raw_output="",
+                error_message="Nmap is not installed in system PATH. Port auditing was not evaluated.",
+                is_simulated=False,
+                metadata={"reason": "TOOL_NOT_INSTALLED", "limitations": "Binary not found on host."}
+            )
 
         # Defensive scan arguments only:
         # -sT: TCP connect (unprivileged, non-raw)
@@ -88,7 +98,7 @@ class NmapAdapter(BaseScannerAdapter):
                 findings = self._parse_nmap_xml(proc.stdout, target_ip)
                 return ScannerResult(
                     tool_name=self.tool_name,
-                    status="SUCCESS",
+                    status="COMPLETED",
                     target_ip=target_ip,
                     available=True,
                     execution_time_seconds=round(elapsed, 2),
@@ -98,20 +108,46 @@ class NmapAdapter(BaseScannerAdapter):
                     metadata={"scanned_ports": ports, "target": target_ip}
                 )
             else:
-                # Execution returned non-zero (host down or unroutable synthetic IP in demo environment)
-                return self._generate_simulated_scan_result(
-                    target_ip,
-                    device_context,
-                    start_time,
-                    notice=f"Host unreachable via live Nmap probe ({proc.stderr.strip() or 'Host offline'}). Evaluated defensive simulation model."
+                return ScannerResult(
+                    tool_name=self.tool_name,
+                    status="FAILED",
+                    target_ip=target_ip,
+                    available=True,
+                    execution_time_seconds=round(elapsed, 2),
+                    findings=[],
+                    raw_output=proc.stderr or proc.stdout or "",
+                    error_message=f"Nmap execution failed (code {proc.returncode}): {proc.stderr.strip() or 'Host unreachable or probe blocked'}",
+                    is_simulated=False,
+                    metadata={"reason": "SCAN_FAILED"}
                 )
 
         except subprocess.TimeoutExpired:
-            return self._generate_simulated_scan_result(
-                target_ip,
-                device_context,
-                start_time,
-                notice="Nmap probe timed out. Evaluated defensive simulation model."
+            elapsed = time.time() - start_time
+            return ScannerResult(
+                tool_name=self.tool_name,
+                status="FAILED",
+                target_ip=target_ip,
+                available=True,
+                execution_time_seconds=round(elapsed, 2),
+                findings=[],
+                raw_output="",
+                error_message="Nmap probe timed out after 40 seconds.",
+                is_simulated=False,
+                metadata={"reason": "TIMEOUT"}
+            )
+        except Exception as e:
+            elapsed = time.time() - start_time
+            return ScannerResult(
+                tool_name=self.tool_name,
+                status="FAILED",
+                target_ip=target_ip,
+                available=True,
+                execution_time_seconds=round(elapsed, 2),
+                findings=[],
+                raw_output="",
+                error_message=f"Nmap execution exception: {str(e)}",
+                is_simulated=False,
+                metadata={"reason": "EXCEPTION"}
             )
         except Exception as e:
             return self._generate_simulated_scan_result(

@@ -128,11 +128,11 @@ export default function DashboardPage() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#1677FF]' : ''}`} />
           </button>
           <button
-            onClick={() => setCurrentPage('assessment-center')}
+            onClick={() => setCurrentPage('devices-scan')}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#1677FF] hover:bg-[#125ecc] text-white text-xs font-semibold rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#1677FF]/20 cursor-pointer"
           >
             <Shield className="w-4 h-4" />
-            <span>Start New Assessment</span>
+            <span>Start Device Scan</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -145,28 +145,28 @@ export default function DashboardPage() {
           value={monitoredDevices}
           secondary={`${onlineDevices} online in VLANs`}
           icon={Server}
-          onClick={() => setCurrentPage('devices')}
+          onClick={() => setCurrentPage('devices-scan')}
         />
         <MetricCard
           title="Completed Assessments"
           value={completedAssessments}
           secondary="Audits executed"
           icon={ShieldCheck}
-          onClick={() => setCurrentPage('assessment-center')}
+          onClick={() => setCurrentPage('scan-results')}
         />
         <MetricCard
           title="Critical Findings"
           value={criticalFindings}
-          secondary="CVSS &gt;= 9.0 exploits"
+          secondary="CVSS >= 9.0 exploits"
           icon={AlertTriangle}
-          onClick={() => setCurrentPage('assessment-center')}
+          onClick={() => setCurrentPage('scan-results')}
         />
         <MetricCard
           title="High-Risk Findings"
           value={highFindings}
           secondary="Vulnerabilities identified"
           icon={Activity}
-          onClick={() => setCurrentPage('assessment-center')}
+          onClick={() => setCurrentPage('scan-results')}
         />
         <MetricCard
           title="Open Security Events"
@@ -226,11 +226,11 @@ export default function DashboardPage() {
             </p>
 
             <button
-              onClick={() => setCurrentPage('assessment-center')}
+              onClick={() => setCurrentPage('devices-scan')}
               className="mt-4 w-full py-2 px-3 rounded border border-[#1677FF]/30 hover:border-[#1677FF] bg-[#1677FF]/5 hover:bg-[#1677FF]/10 text-xs font-medium text-[#1677FF] flex items-center justify-center gap-1.5 transition-swiss cursor-pointer"
             >
               <Shield className="w-3.5 h-3.5" />
-              <span>Launch Assessment in Assessment Center</span>
+              <span>Launch Scan in Devices & Scan</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -341,10 +341,10 @@ export default function DashboardPage() {
                 <p className="text-[11px] text-[#9CA3AF] mt-0.5">Vulnerability audit executions and CVE scans</p>
               </div>
               <button
-                onClick={() => setCurrentPage('assessment-center')}
+                onClick={() => setCurrentPage('devices-scan')}
                 className="text-xs text-[#1677FF] hover:underline flex items-center gap-0.5 cursor-pointer"
               >
-                <span>Assessment Center</span>
+                <span>Devices & Scan</span>
                 <ChevronRight className="w-3 h-3" />
               </button>
             </div>
@@ -354,14 +354,14 @@ export default function DashboardPage() {
                 <Shield className="w-8 h-8 mx-auto mb-2 text-[#9CA3AF] stroke-[1.5]" />
                 <p className="text-xs font-medium text-[#374151]">No assessments recorded yet</p>
                 <p className="text-[11px] text-[#9CA3AF] mt-0.5 mb-3">
-                  Select a registered IoMT asset in Assessment Center to perform an authorized defensive scan.
+                  Select a registered IoMT asset in Devices & Scan to perform an authorized defensive scan.
                 </p>
                 <button
-                  onClick={() => setCurrentPage('assessment-center')}
+                  onClick={() => setCurrentPage('devices-scan')}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1677FF] hover:bg-[#125ecc] text-white text-xs font-medium rounded transition-swiss cursor-pointer"
                 >
                   <Shield className="w-3.5 h-3.5" />
-                  <span>Start Assessment</span>
+                  <span>Start Scan</span>
                 </button>
               </div>
             ) : (
@@ -369,7 +369,7 @@ export default function DashboardPage() {
                 {recentAssessments.map((asm) => (
                   <div
                     key={asm.id}
-                    onClick={() => setCurrentPage('assessment-center')}
+                    onClick={() => setCurrentPage('scan-results')}
                     className="py-3 flex items-center justify-between gap-3 hover:bg-[#F9FAFB] px-2 rounded cursor-pointer transition-swiss"
                   >
                     <div className="min-w-0">
