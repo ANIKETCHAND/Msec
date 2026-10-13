@@ -50,7 +50,7 @@ export const PAGE_REGISTRY = {
     category: 'CORE WORKFLOW'
   },
   'assessment-center': {
-    id: 'assessment-center',
+    id: 'devices-scan',
     title: 'Devices & Scan',
     subtitle: 'Authorized Asset Selection & Defensive Assessment',
     color: '#1677FF',

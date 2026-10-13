@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }) {
     { id: 'dashboard', label: 'Security Dashboard', icon: LayoutDashboard },
     { id: 'devices', label: 'Device Inventory', icon: Server },
     { id: 'topology', label: 'Network Topology', icon: Network },
-    { id: 'assessment-center', label: 'Assessment Center', icon: Shield },
+    { id: 'devices-scan', label: 'Devices & Scan', icon: Shield },
     { id: 'tools', label: 'Security Tools', icon: Wrench },
     { id: 'response-simulator', label: 'Response Simulator', icon: SlidersHorizontal },
     { id: 'security-events', label: 'Security Events', icon: AlertTriangle, badge: securityEvents.filter(e => e.status === 'open').length },

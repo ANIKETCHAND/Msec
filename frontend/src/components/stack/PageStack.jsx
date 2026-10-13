@@ -9,8 +9,13 @@ export { PAGE_REGISTRY } from '../../utils/pageRegistry';
 export default function PageStack({ children, pageMap }) {
   const { currentPage, setCurrentPage, openTabs, closeTab } = useApp();
 
-  // Background cards stacked behind the active card (up to 3 background cards)
-  const bgCards = openTabs.filter(id => id !== currentPage).slice(-3);
+  // Background cards stacked behind the active card (up to 3 background cards).
+  // Anchor 'dashboard' as the foundational background card whenever it is not active,
+  // preventing it from ever being pushed off the stack by recent tabs.
+  const otherTabs = openTabs.filter(id => id !== currentPage);
+  const bgCards = otherTabs.includes('dashboard')
+    ? ['dashboard', ...otherTabs.filter(id => id !== 'dashboard').slice(-2)]
+    : otherTabs.slice(-3);
 
   const activeMeta = PAGE_REGISTRY[currentPage] || {
     id: currentPage,

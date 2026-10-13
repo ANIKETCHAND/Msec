@@ -46,6 +46,7 @@ export function AppProvider({ children }) {
       const path = window.location.pathname.replace(/^\//, '');
       if (path === 'landing') return 'landing';
       if (path === 'login') return 'login';
+      if (path === 'assessment-center') return 'devices-scan';
       if (PAGE_REGISTRY[path]) return path;
     } catch (e) {}
     const savedUser = localStorage.getItem('medishield_user');
@@ -65,10 +66,14 @@ export function AppProvider({ children }) {
     if (token) return DEMO_USERS.analyst;
     return DEMO_USERS.analyst;
   });
-  const [currentPage, setCurrentPage] = useState(getInitialPage);
+  const [currentPage, _setCurrentPage] = useState(getInitialPage);
+  const setCurrentPage = (page) => {
+    const target = page === 'assessment-center' ? 'devices-scan' : page;
+    _setCurrentPage(target);
+  };
   const [openTabs, setOpenTabs] = useState(() => {
     const initPage = getInitialPage();
-    const defaults = ['dashboard', 'devices', 'security-events', 'assessment-center'];
+    const defaults = ['dashboard', 'devices-scan', 'scan-results', 'reports'];
     if (initPage !== 'login' && initPage !== 'landing' && !defaults.includes(initPage)) {
       defaults.push(initPage);
     }
@@ -79,11 +84,17 @@ export function AppProvider({ children }) {
   // Synchronize openTabs and browser URL when currentPage changes
   useEffect(() => {
     if (currentPage && currentPage !== 'login' && currentPage !== 'landing') {
+      const pageId = currentPage === 'assessment-center' ? 'devices-scan' : currentPage;
       setOpenTabs(prev => {
-        if (prev.includes(currentPage)) return prev;
-        const next = [...prev, currentPage];
+        // Sanitize legacy aliases, guarantee dashboard is included, and deduplicate
+        const sanitized = Array.from(new Set(prev.map(p => p === 'assessment-center' ? 'devices-scan' : p)));
+        if (!sanitized.includes('dashboard')) {
+          sanitized.unshift('dashboard');
+        }
+        if (sanitized.includes(pageId)) return sanitized;
+        const next = [...sanitized, pageId];
         if (next.length > 8) {
-          const dropIndex = next.findIndex(p => p !== 'dashboard' && p !== currentPage);
+          const dropIndex = next.findIndex(p => p !== 'dashboard' && p !== pageId);
           if (dropIndex !== -1) next.splice(dropIndex, 1);
         }
         return next;

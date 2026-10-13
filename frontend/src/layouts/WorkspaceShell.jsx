@@ -85,7 +85,7 @@ export default function WorkspaceShell({ children }) {
     if (q.includes('dev') || q.includes('pump') || q.includes('vent') || q.includes('ecg')) {
       setCurrentPage('devices');
     } else if (q.includes('cve') || q.includes('scan') || q.includes('assess') || q.includes('nmap')) {
-      setCurrentPage('assessment-center');
+      setCurrentPage('devices-scan');
     } else if (q.includes('topol') || q.includes('vlan') || q.includes('network')) {
       setCurrentPage('topology');
     } else if (q.includes('event') || q.includes('alert') || q.includes('traffic') || q.includes('incident') || q.includes('ticket')) {
