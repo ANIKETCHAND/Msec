@@ -68,7 +68,7 @@ export function AppProvider({ children }) {
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [openTabs, setOpenTabs] = useState(() => {
     const initPage = getInitialPage();
-    const defaults = ['dashboard', 'devices', 'security-events', 'ml-detection'];
+    const defaults = ['dashboard', 'devices', 'security-events', 'assessment-center'];
     if (initPage !== 'login' && initPage !== 'landing' && !defaults.includes(initPage)) {
       defaults.push(initPage);
     }

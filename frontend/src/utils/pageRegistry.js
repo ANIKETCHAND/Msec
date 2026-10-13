@@ -80,22 +80,6 @@ export const PAGE_REGISTRY = {
     icon: AlertTriangle,
     category: 'MONITORING'
   },
-  incidents: {
-    id: 'incidents',
-    title: 'Incident Management',
-    subtitle: 'IoMT Incident Investigation & Response Notes',
-    color: '#E11D48',
-    icon: FileText,
-    category: 'MONITORING'
-  },
-  'ml-detection': {
-    id: 'ml-detection',
-    title: 'ML Threat Engine',
-    subtitle: 'CICIoMT2024 Random Forest Flow Classifier',
-    color: '#8B5CF6',
-    icon: Brain,
-    category: 'MONITORING'
-  },
   reports: {
     id: 'reports',
     title: 'Security Reports',

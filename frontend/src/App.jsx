@@ -9,8 +9,6 @@ import DashboardPage from './pages/DashboardPage';
 import DeviceInventoryPage from './pages/DeviceInventoryPage';
 import DeviceDetailPage from './pages/DeviceDetailPage';
 import SecurityEventsPage from './pages/SecurityEventsPage';
-import IncidentManagementPage from './pages/IncidentManagementPage';
-import MLDetectionPage from './pages/MLDetectionPage';
 import PrivacyIntegrityPage from './pages/PrivacyIntegrityPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import ReportsPage from './pages/ReportsPage';
@@ -41,8 +39,6 @@ function MainRouter() {
     tools: <ToolsManagementPage />,
     'response-simulator': <ResponseSimulatorPage />,
     'security-events': <SecurityEventsPage />,
-    incidents: <IncidentManagementPage />,
-    'ml-detection': <MLDetectionPage />,
     integrity: <PrivacyIntegrityPage />,
     'audit-logs': <AuditLogsPage />,
     reports: <ReportsPage />,

@@ -115,11 +115,11 @@ export default function ReportsPage() {
         securityEvents.map(e =>
           `"${e.id}","${e.timestamp}","${e.ruleId}","${e.ruleName}","${e.deviceId}","${e.deviceName}","${e.severity}","${e.status}"`
         ).join("\n");
-    } else if (reportType === 'incidents') {
-      filename = `medishield-incidents-report-${new Date().toISOString().slice(0, 10)}.csv`;
-      csvContent = "IncidentID,Title,Severity,Status,AssignedTo,DeviceID,CreatedAt\n" +
-        incidents.map(i =>
-          `"${i.id}","${i.title}","${i.severity}","${i.status}","${i.assignedTo}","${i.deviceId}","${i.createdAt}"`
+    } else if (reportType === 'devices') {
+      filename = `medishield-devices-inventory-${new Date().toISOString().slice(0, 10)}.csv`;
+      csvContent = "DeviceID,Name,Type,IPAddress,MACAddress,Firmware,Segment,Status,RiskLevel,SecurityScore\n" +
+        devices.map(d =>
+          `"${d.id}","${d.name}","${d.deviceType || d.type}","${d.ipAddress}","${d.macAddress}","${d.firmwareVersion}","${d.networkSegment}","${d.status}","${d.riskLevel}","${d.securityScore}"`
         ).join("\n");
     } else {
       window.location.href = '/api/reports/assessments.csv';
@@ -346,7 +346,7 @@ export default function ReportsPage() {
                 className="w-full bg-[#FAFAFA] border border-[#E5E7EB] rounded p-2 text-xs text-[#171717] focus:outline-none font-mono"
               >
                 <option value="events">Security Ingress & IDS Events</option>
-                <option value="incidents">Incident Management Tickets</option>
+                <option value="devices">Clinical IoMT Device Inventory</option>
                 <option value="assessments">Multi-Tool Assessment Findings (API Stream)</option>
               </select>
             </div>

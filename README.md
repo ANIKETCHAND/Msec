@@ -1,68 +1,68 @@
 # MediShield — IoMT Security & Privacy Platform (v2.0)
 
-> **Enterprise IoMT Cybersecurity Platform & Research Assessment Suite**  
-> An integrated defensive security operations platform for the Internet of Medical Things (IoMT). Provides real-time asset posture monitoring, explainable rule-based intrusion detection, authentic machine learning attack classification, authorized vulnerability assessment orchestration (Nmap, Nuclei, ZAP, Nikto, OpenVAS), publication-grade ReportLab PDF & standalone Jinja2 HTML report generation with SHA-256 cryptographic seals, persistent incident investigation tickets, and unbroken SHA-256 audit hash chaining.
+> **Enterprise IoMT Cybersecurity Platform & Assessment Suite**  
+> An integrated defensive security operations platform for the Internet of Medical Things (IoMT). Provides real-time asset posture monitoring, explainable rule-based intrusion detection, authorized vulnerability assessment orchestration (Nmap, Nuclei, ZAP, Nikto, OpenVAS), publication-grade ReportLab PDF & standalone Jinja2 HTML report generation with SHA-256 cryptographic seals, real-time security events triage with deep packet forensic evidence, and unbroken SHA-256 audit hash chaining.
 
 ---
 
-## 1. Guided User Workflow
+## 1. Simplified Guided User Workflow
 
-MediShield provides a single, guided operational workflow designed for clinical security teams:
+MediShield is refactored into a clear, single-threaded operational workflow tailored for clinical security analysts:
 
 ```text
 LANDING PAGE
      │
      ▼
-USER LOGIN (RBAC Authentication)
+USER LOGIN (RBAC Authentication & Persona Presets)
      │
      ▼
-SECURITY DASHBOARD (SOC Posture & Primary CTA)
+SECURITY DASHBOARD (Authoritative Backend Metrics & "Start New Assessment" CTA)
      │
      ▼
-ASSESSMENT CENTER
+ASSESSMENT CENTER (Primary Operational Workspace)
      │
      ▼
-SELECT REGISTERED IoMT DEVICE
+SELECT REGISTERED IoMT DEVICE & VERIFY DEFENSIVE SCOPE
      │
      ▼
-VERIFY AUTHORIZATION & SCOPE (Defensive Certificate)
+CONFIGURE AND EXECUTE SECURITY SCAN (Multi-Tool Orchestration)
      │
      ▼
-CONFIGURE AND START SCAN (Tool Selection & Profiles)
+NORMALIZE FINDINGS AND CALCULATE CVSS RISK POSTURE
      │
      ▼
-ASSESSMENT EXECUTION AND PROGRESS (Multi-tool Execution)
+GENERATE CERTIFIED SECURITY REPORT (PDF via ReportLab / HTML via Jinja2)
      │
      ▼
-NORMALIZE FINDINGS AND CALCULATE RISK (CVSS & Score)
+SECURITY EVENTS (Two-Column Queue & Forensic Deep-Dive)
      │
      ▼
-GENERATE SECURITY REPORT
-     ├───► PDF REPORT (ReportLab with SHA-256 Seal)
-     └───► HTML REPORT (Sanitized Jinja2 with SHA-256 Seal)
-     │
-     ▼
-PERSIST SECURITY EVENTS (Auto-Emission for High/Critical)
-     │
-     ▼
-SECURITY EVENTS PAGE (Triage & Evidence Inspection)
-     │
-     ▼
-INCIDENT MANAGEMENT (Queue & Triage)
-     │
-     ▼
-INCIDENT INVESTIGATION (Forensic Evidence & Correlation)
-     │
-     ▼
-ANALYST NOTES AND REMEDIATION (POST /api/v1/incidents/{id}/notes)
-     │
-     ▼
-AUDIT TRAIL AND HISTORY (Cryptographic SHA-256 Hash Chain)
+EVENT DESCRIPTION & EVIDENCE (Packet Payloads, Clinical Context, Triage Actions)
 ```
+
+The user navigates directly through this cycle to audit clinical assets, inspect security findings, produce signed compliance reports, and triage real-time telemetry anomalies without friction.
 
 ---
 
-## 2. Defensive Security & Ethical Safety Mandate
+## 2. User-Facing Navigation Structure
+
+The simplified interface focuses strictly on operational workspaces:
+
+- **Dashboard**: High-level SOC view with authoritative backend metrics (Monitored Devices, Completed Assessments, Critical Findings, High Findings, Open Events, Reports), posture score, and recent assessment executions.
+- **Assessment Center**: Primary operational workspace for defensive scan authorization, tool configuration, execution progress, and normalized CVE findings.
+- **Security Reports**: Archive of generated PDF and HTML reports with SHA-256 seal verification and direct downloads.
+- **Security Events**: Two-column investigation workspace featuring an interactive event queue and a deep-dive event panel with raw packet payloads, clinical impact context, and triage actions.
+- **Device Inventory**: Registry of 64 clinical assets with IP, MAC, VLAN segment, status, and diagnostic drill-downs.
+- **Security Tools**: Operational status of defensive engines (Nmap, Nuclei, OWASP ZAP, Nikto, OpenVAS, Suricata).
+- **Audit Logs**: Cryptographic SHA-256 hash-chain ledger tracking every operational event and login.
+- **Privacy & Integrity**: Deterministic AES-256-GCM encryption and SHA-256 payload integrity verification.
+- **Settings**: Defense-in-depth detection thresholds, heartbeat timeouts, and platform configuration.
+
+*(Note: Legacy Incident Management and ML Threat Engine overview pages have been removed from user-facing navigation; their backend services, correlation logic, and telemetry pipelines remain active internally for background event detection and audit history).*
+
+---
+
+## 3. Defensive Security & Ethical Safety Mandate
 
 MediShield is strictly a **DEFENSIVE SECURITY PLATFORM** designed for hospital IoMT asset protection:
 - **Authorized Bounded Scope**: Security tools and assessments operate **only** against devices explicitly registered in MediShield inventory within operator-signed, time-limited scope certificates. Arbitrary internet scanning is strictly blocked at the backend.
@@ -72,9 +72,9 @@ MediShield is strictly a **DEFENSIVE SECURITY PLATFORM** designed for hospital I
 
 ---
 
-## 3. UI/UX Architecture: Swiss International Stacked-Page Workspace
+## 4. UI/UX Architecture: Swiss International Stacked-Page Workspace
 
-MediShield adopts the **Swiss International Style** with a document card stacking workspace inspired by physical document decks:
+MediShield adopts the **Swiss International Style** with a document card stacking workspace:
 - **Stacked Card Geometry**: Open pages are layered one behind another. Each page exhibits a visible header strip with title, category, and status indicator.
 - **Top Tab Placement**: Document switching tabs are positioned cleanly at the top of the workspace.
 - **Focused Foreground Card**: Clicking any visible stacked card brings it instantly to the front into the active workspace, preserving state across transitions.
@@ -86,17 +86,18 @@ MediShield adopts the **Swiss International Style** with a document card stackin
 
 ---
 
-## 4. Technology Stack & Scalable Architecture
+## 5. Technology Stack & Architecture
 
 - **Frontend Tier**:
   - React 18 SPA built with Vite
   - Tailwind CSS with Swiss International minimalist styling
   - Recharts for live time-series vitals & vulnerability distributions
   - Lucide React iconography
-  - Centralized `apiClient` with automatic Bearer token management
+  - Centralized `api` client with automatic Bearer token management
 - **Backend API Gateway (FastAPI)**:
   - Dual Router Mounting: Routes mounted primarily under `/api/v1` and secondarily under `/api` for 100% backward compatibility
-  - Centralized Exception Handling: Structured domain exceptions (`MediShieldException`, `ResourceNotFoundException`, `InvalidAssessmentScopeException`) with standardized error envelopes
+  - Standardized JSON Error Envelopes: All errors return `{ error: { code, message, request_id, timestamp }, detail }`
+  - Request ID Middleware: Generates and propagates `X-Request-ID` across all requests
   - Server-enforced Role-Based Access Control (`Administrator`, `Security Analyst`, `Doctor Demo`)
 - **Report Generation**:
   - Publication-grade PDF Reports via **ReportLab** (executive summary, risk scores, finding catalogs, and cryptographic seals)
@@ -104,18 +105,18 @@ MediShield adopts the **Swiss International Style** with a document card stackin
   - SHA-256 hash computation for tamper-evident report verification
 - **Persistence Tier**:
   - Relational PostgreSQL / Supabase schema (with automatic local SQLite fallback for offline execution)
-  - SQLAlchemy 2.0 ORM with 13 relational models (`DeviceModel`, `AssessmentModel`, `FindingModel`, `ReportModel`, `IncidentModel`, `IncidentNoteModel`, `SecurityEventModel`, `AuditLogModel`, etc.)
-- **Machine Learning Subsystem**:
-  - scikit-learn (Random Forest classifier trained on UNB CICIoMT2024 dataset)
+  - SQLAlchemy 2.0 ORM with relational models (`DeviceModel`, `AssessmentModel`, `FindingModel`, `ReportModel`, `SecurityEventModel`, `AuditLogModel`, etc.)
+- **Detection & Machine Learning**:
+  - Heuristic IDS rules and internal scikit-learn Random Forest classifier trained on UNB CICIoMT2024 dataset
 
 ---
 
-## 5. API Reference Summary
+## 6. API Reference Summary
 
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/v1/auth/login` | `POST` | Authenticate user and issue JWT Bearer token |
-| `/api/v1/dashboard/summary` | `GET` | Authoritative SOC metrics, posture score, distributions |
+| `/api/v1/dashboard/summary` | `GET` | Authoritative SOC metrics, posture score, completed assessments, reports count |
 | `/api/v1/devices` | `GET`, `POST` | List and register clinical IoMT devices |
 | `/api/v1/assessments/authorize-scope` | `POST` | Authorize defensive scan scope certificate |
 | `/api/v1/assessments/execute` | `POST` | Launch defensive multi-tool assessment |
@@ -128,17 +129,13 @@ MediShield adopts the **Swiss International Style** with a document card stackin
 | `/api/v1/reports/{id}/pdf` | `GET` | Stream PDF document |
 | `/api/v1/reports/{id}/html` | `GET` | Stream HTML audit page |
 | `/api/v1/security-events` | `GET`, `PATCH` | List and triage security events |
-| `/api/v1/incidents` | `GET`, `POST` | Incident queue tickets |
-| `/api/v1/incidents/{id}/notes` | `POST` | Add persistent analyst investigation note |
-| `/api/v1/incidents/{id}/status` | `PATCH` | Update incident status and resolution notes |
-| `/api/v1/incidents/correlate/{device_id}` | `POST` | Correlate multi-stage attack chains |
 | `/api/v1/audit-logs/verify-chain` | `GET` | Verify unbroken SHA-256 audit hash chain |
 
 *(All endpoints are identically reachable under `/api/...` for full backward compatibility)*
 
 ---
 
-## 6. Local Setup & Execution Instructions
+## 7. Local Setup & Execution Instructions
 
 ### Prerequisites
 - Python 3.11+
@@ -150,7 +147,7 @@ cd backend
 python -m venv .venv
 .\.venv\Scripts\activate  # On Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --host 127.0.0.1 --port 8000
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 - API Documentation (Swagger UI): `http://127.0.0.1:8000/docs`
 - Health check: `http://127.0.0.1:8000/api/v1/health`
@@ -165,12 +162,12 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 ### Demo Credentials (Role-Based Access Control)
 - **Administrator**: `admin@medishield.local` / `adminpassword123` (Full system access, device registration)
-- **Security Analyst**: `analyst@medishield.local` / `analystpassword123` (Assessment scope creation, scan execution, report generation, incident triage)
+- **Security Analyst**: `analyst@medishield.local` / `analystpassword123` (Assessment scope creation, scan execution, report generation, event triage)
 - **Doctor Demo**: `doctor@medishield.local` / `doctorpassword123` (Read-only clinical vitals; restricted from security operations)
 
 ---
 
-## 7. Automated Testing & Verification
+## 8. Automated Testing & Verification
 
 Run the complete backend integration test suite:
 ```bash
@@ -178,7 +175,7 @@ cd backend
 .\.venv\Scripts\pytest -v
 ```
 **Results**:
-- **26 passed integration tests** covering authentication, RBAC, scope validation, multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, incident notes, assessment cancellation, authoritative dashboard summary, standardized error envelopes, and audit chaining.
+- **26 passed integration tests** covering authentication, RBAC, scope validation, multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, assessment cancellation, authoritative dashboard summary, standardized error envelopes, and audit chaining.
 
 Build the frontend production bundle:
 ```bash

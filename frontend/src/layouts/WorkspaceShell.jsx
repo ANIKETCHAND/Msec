@@ -60,8 +60,8 @@ export default function WorkspaceShell({ children }) {
       items: ['assessment-center', 'reports']
     },
     {
-      name: 'MONITORING & INCIDENTS',
-      items: ['security-events', 'incidents']
+      name: 'MONITORING',
+      items: ['security-events']
     },
     {
       name: 'ASSETS & OPERATIONS',
@@ -69,7 +69,7 @@ export default function WorkspaceShell({ children }) {
     },
     {
       name: 'SECURITY ARCHITECTURE',
-      items: ['topology', 'ml-detection', 'integrity', 'tools', 'response-simulator', 'settings']
+      items: ['tools', 'topology', 'integrity', 'response-simulator', 'settings']
     }
   ];
 
@@ -85,14 +85,16 @@ export default function WorkspaceShell({ children }) {
       setCurrentPage('assessment-center');
     } else if (q.includes('topol') || q.includes('vlan') || q.includes('network')) {
       setCurrentPage('topology');
-    } else if (q.includes('event') || q.includes('alert') || q.includes('traffic')) {
+    } else if (q.includes('event') || q.includes('alert') || q.includes('traffic') || q.includes('incident') || q.includes('ticket')) {
       setCurrentPage('security-events');
-    } else if (q.includes('incident') || q.includes('ticket')) {
-      setCurrentPage('incidents');
+    } else if (q.includes('tool') || q.includes('sensor') || q.includes('snort')) {
+      setCurrentPage('tools');
     } else if (q.includes('audit') || q.includes('hash') || q.includes('chain')) {
       setCurrentPage('audit-logs');
     } else if (q.includes('report') || q.includes('csv') || q.includes('pdf')) {
       setCurrentPage('reports');
+    } else if (q.includes('integrity') || q.includes('aes') || q.includes('crypto')) {
+      setCurrentPage('integrity');
     } else {
       setCurrentPage('security-events');
     }
@@ -141,7 +143,7 @@ export default function WorkspaceShell({ children }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search assets, CVEs, VLANs, incidents..."
+              placeholder="Search assets, CVEs, VLANs, security events..."
               className="w-full bg-[#F9FAFB] hover:bg-white focus:bg-white text-xs text-[#171717] placeholder-[#9CA3AF] pl-8 pr-3 py-1.5 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none focus:ring-1 focus:ring-[#1677FF]/20 transition-swiss font-mono"
             />
           </div>

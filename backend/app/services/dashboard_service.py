@@ -14,6 +14,7 @@ from app.models.db_models import (
     FindingModel,
     SecurityEventModel,
     IncidentModel,
+    ReportModel,
 )
 from app.schemas.dashboard import (
     DashboardSummaryResponse,
@@ -42,6 +43,11 @@ class DashboardService:
         assessed_devices = db.query(DeviceModel).filter(
             DeviceModel.assessment_status.in_(["ASSESSED", "REMEDIATION_REQUIRED"])
         ).count()
+
+        completed_assessments = db.query(AssessmentModel).filter(
+            AssessmentModel.status == "COMPLETED"
+        ).count()
+        generated_reports = db.query(ReportModel).count()
 
         # Risk distribution across devices
         low_risk = db.query(DeviceModel).filter(DeviceModel.risk_level == "low").count()
@@ -89,6 +95,8 @@ class DashboardService:
         return DashboardSummaryResponse(
             monitored_devices=total_devices,
             assessed_devices=assessed_devices,
+            completed_assessments=completed_assessments,
+            generated_reports=generated_reports,
             critical_findings=critical_findings,
             high_findings=high_findings,
             active_security_events=active_events,

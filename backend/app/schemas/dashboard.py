@@ -55,6 +55,8 @@ class RecentIncidentItem(BaseModel):
 class DashboardSummaryResponse(BaseModel):
     monitored_devices: int
     assessed_devices: int
+    completed_assessments: int = 0
+    generated_reports: int = 0
     critical_findings: int
     high_findings: int
     active_security_events: int

@@ -859,22 +859,21 @@ export default function AssessmentCenterPage() {
               <span className="text-[#6B7280]">
                 High &amp; Critical findings have been automatically emitted into the Security Events pipeline.
               </span>
-              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setCurrentPage('reports')}
+                  className="px-3 py-1.5 rounded bg-white border border-[#E5E7EB] hover:bg-[#F3F4F6] text-[#171717] font-medium flex items-center gap-1.5 transition-swiss"
+                >
+                  <FileText className="w-3.5 h-3.5 text-[#1677FF]" />
+                  <span>View Security Reports</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
                 <button
                   onClick={() => setCurrentPage('security-events')}
-                  className="px-3 py-1.5 rounded bg-white border border-[#E5E7EB] hover:bg-[#F3F4F6] text-[#171717] font-medium flex items-center gap-1.5 transition-swiss"
+                  className="px-3 py-1.5 rounded bg-[#1677FF] text-white hover:bg-[#0958D9] font-medium flex items-center gap-1.5 transition-swiss"
                 >
                   <span>Review Security Events</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
-                <button
-                  onClick={() => setCurrentPage('incidents')}
-                  className="px-3 py-1.5 rounded bg-[#1677FF] text-white hover:bg-[#0958D9] font-medium flex items-center gap-1.5 transition-swiss"
-                >
-                  <span>Investigate Incidents</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
             </div>
           </div>
         )}

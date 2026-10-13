@@ -27,6 +27,8 @@ def test_dashboard_summary_authenticated():
     assert "monitored_devices" in data
     assert data["monitored_devices"] >= 6
     assert "assessed_devices" in data
+    assert "completed_assessments" in data
+    assert "generated_reports" in data
     assert "critical_findings" in data
     assert "high_findings" in data
     assert "active_security_events" in data
