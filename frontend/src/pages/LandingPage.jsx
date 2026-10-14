@@ -20,8 +20,11 @@ import {
   Check,
   Terminal,
   FileCheck,
-  HeartPulse
+  HeartPulse,
+  Eye,
+  Zap
 } from 'lucide-react';
+import CyberFace3D from '../components/landing/CyberFace3D';
 
 export default function LandingPage() {
   const { setCurrentUser, setCurrentPage, logAudit } = useApp();
@@ -143,71 +146,103 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 2. HERO SECTION */}
-      <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 border-b border-[#E5E7EB] bg-gradient-to-b from-white to-[#F5F6F8]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          {/* Compliance Pill */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium bg-[#E6F4FF] text-[#1677FF] border border-[#1677FF]/20 shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#1677FF]" />
-            <span>NIST SP 800-61 • FDA IoMT Premarket/Postmarket Mandate</span>
+      {/* 2. HERO SECTION WITH THREE.JS 3D FACE INTERACTIVE SENTINEL */}
+      <section className="relative pt-8 pb-16 sm:pt-14 sm:pb-20 border-b border-[#E5E7EB] bg-gradient-to-b from-white via-[#F8FAFC] to-[#F1F5F9] overflow-hidden">
+        {/* Ambient subtle cyber grid background lines */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            
+            {/* Left Column (7 cols): Hero Typography & Action CTAs */}
+            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+              {/* Compliance Pill */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-medium bg-[#E6F4FF] text-[#1677FF] border border-[#1677FF]/20 shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#1677FF]" />
+                <span>NIST SP 800-61 • FDA IoMT Premarket/Postmarket Mandate</span>
+              </div>
+
+              {/* Main Title */}
+              <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-bold tracking-tight text-[#171717] leading-[1.12]">
+                Defensive Security &amp; Privacy for Connected Medical Devices
+              </h1>
+
+              {/* Subtitle */}
+              <p className="max-w-2xl mx-auto lg:mx-0 text-sm sm:text-base text-[#4B5563] leading-relaxed">
+                MediShield safeguards clinical healthcare environments with authorized vulnerability scanning, ML-driven intrusion detection, continuous IoMT telemetry monitoring, and cryptographically sealed audit reporting.
+              </p>
+
+              {/* CTA Group */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+                <button
+                  onClick={() => setCurrentPage('login')}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#1677FF] hover:bg-[#125ecc] text-white text-sm font-semibold shadow-md transition-all cursor-pointer"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Log In to Operations Center</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => handleQuickLogin('analyst')}
+                  disabled={loggingInRole !== null}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] text-neutral-800 text-sm font-medium transition-swiss shadow-xs cursor-pointer"
+                >
+                  <UserCheck className="w-4 h-4 text-[#10B981]" />
+                  <span>Explore as Security Analyst</span>
+                </button>
+              </div>
+
+              {/* Clinical Guardrail Chips */}
+              <div className="pt-3 flex flex-wrap items-center justify-center lg:justify-start gap-2.5 text-[11px] font-mono text-[#6B7280]">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E5E7EB] shadow-2xs">
+                  <HeartPulse className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Zero Patient Care Disruption</span>
+                </span>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E5E7EB] shadow-2xs">
+                  <Shield className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Bounded Scope Verification</span>
+                </span>
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E5E7EB] shadow-2xs">
+                  <Terminal className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>14 Integrated Defensive Engines</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Right Column (5 cols): Interactive 3D Cyber Face Sentinel */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-center">
+              <CyberFace3D />
+            </div>
+
           </div>
 
-          {/* Main Title */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#171717] leading-[1.15]">
-            Defensive Security &amp; Privacy for Connected Medical Devices
-          </h1>
-
-          {/* Subtitle */}
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-[#4B5563] leading-relaxed">
-            MediShield safeguards clinical healthcare environments with authorized vulnerability scanning, ML-driven intrusion detection, continuous IoMT telemetry monitoring, and cryptographically sealed audit reporting.
-          </p>
-
-          {/* CTA Group */}
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => setCurrentPage('login')}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#1677FF] hover:bg-[#125ecc] text-white text-sm font-semibold shadow-md transition-all cursor-pointer"
-            >
-              <Lock className="w-4 h-4" />
-              <span>Log In to Operations Center</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => handleQuickLogin('analyst')}
-              disabled={loggingInRole !== null}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] text-neutral-800 text-sm font-medium transition-swiss shadow-xs cursor-pointer"
-            >
-              <UserCheck className="w-4 h-4 text-[#10B981]" />
-              <span>Explore as Security Analyst</span>
-            </button>
-          </div>
-
-          {/* Live Telemetry Highlights Strip */}
-          <div className="pt-10 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs">
+          {/* Live Telemetry Highlights Strip (Full width beneath 2-column hero) */}
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
+            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs hover:border-[#1677FF]/40 transition-swiss">
               <p className="text-[11px] font-mono uppercase text-[#6B7280]">Monitored Assets</p>
               <p className="text-2xl font-bold text-[#171717] mt-1 tabular-nums">64 Devices</p>
               <p className="text-[11px] text-[#10B981] flex items-center gap-1 mt-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> ICU, OR, Ward VLANs
               </p>
             </div>
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs">
+            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs hover:border-[#1677FF]/40 transition-swiss">
               <p className="text-[11px] font-mono uppercase text-[#6B7280]">ML Threat Detection</p>
               <p className="text-2xl font-bold text-[#171717] mt-1 tabular-nums">99.8% Acc.</p>
               <p className="text-[11px] text-[#6B7280] mt-1">UNB CICIoMT2024</p>
             </div>
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs">
+            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs hover:border-[#1677FF]/40 transition-swiss">
               <p className="text-[11px] font-mono uppercase text-[#6B7280]">Scanner Engines</p>
-              <p className="text-2xl font-bold text-[#171717] mt-1">5 Tools</p>
-              <p className="text-[11px] text-[#6B7280] mt-1">Nmap • OpenVAS • Nuclei</p>
+              <p className="text-2xl font-bold text-[#171717] mt-1">14 Tools</p>
+              <p className="text-[11px] text-[#6B7280] mt-1">Nmap • OpenVAS • Nuclei • ZAP</p>
             </div>
-            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs">
+            <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs hover:border-[#1677FF]/40 transition-swiss">
               <p className="text-[11px] font-mono uppercase text-[#6B7280]">Audit Chain</p>
               <p className="text-2xl font-bold text-[#171717] mt-1">SHA-256</p>
               <p className="text-[11px] text-[#1677FF] mt-1">Tamper-evident sealed</p>
             </div>
           </div>
+
         </div>
       </section>
 
