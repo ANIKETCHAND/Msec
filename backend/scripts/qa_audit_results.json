@@ -1,0 +1,275 @@
+{
+  "phases": {
+    "Phase 1": [
+      {
+        "check": "Backend Health Endpoint",
+        "status": "PASS",
+        "details": "Status: healthy, Services: {'api': 'operational', 'database': 'operational (sqlite)', 'ml_inference': 'operational (model_active)'}"
+      }
+    ],
+    "Phase 2": [
+      {
+        "check": "Login ADMIN",
+        "status": "PASS",
+        "details": "Received JWT bearer token for admin@medishield.local"
+      },
+      {
+        "check": "Login ANALYST",
+        "status": "PASS",
+        "details": "Received JWT bearer token for analyst@medishield.local"
+      },
+      {
+        "check": "Login DOCTOR",
+        "status": "PASS",
+        "details": "Received JWT bearer token for doctor@medishield.local"
+      },
+      {
+        "check": "Invalid Password Rejection",
+        "status": "PASS",
+        "details": "Safely returned HTTP 401"
+      },
+      {
+        "check": "Protected Route Rejects Unauthenticated",
+        "status": "PASS",
+        "details": "HTTP 401 on missing token"
+      },
+      {
+        "check": "RBAC Policy Enforcement (Doctor -> Admin)",
+        "status": "PASS",
+        "details": "HTTP 403 Forbidden"
+      }
+    ],
+    "Phase 3": [
+      {
+        "check": "Dashboard Summary Endpoint",
+        "status": "PASS",
+        "details": "Monitored: 22, Online: 20, Posture: 82/100"
+      },
+      {
+        "check": "Device Inventory Listing",
+        "status": "PASS",
+        "details": "Retrieved 22 registered clinical devices"
+      },
+      {
+        "check": "Device Validation (Invalid IP/Name)",
+        "status": "PASS",
+        "details": "Rejected with HTTP 422"
+      }
+    ],
+    "Phase 4": [
+      {
+        "check": "Scope Certificate Authorization",
+        "status": "PASS",
+        "details": "Certificate: SCOPE-91D42193 valid for 4h"
+      },
+      {
+        "check": "Assessment Execution",
+        "status": "PASS",
+        "details": "ID: ASM-F9EF08E5, Status: PARTIALLY_COMPLETED, Score: 100.0"
+      },
+      {
+        "check": "Scope Validator Enforces Target IP Match",
+        "status": "PASS",
+        "details": "HTTP 400 Target IP mismatch rejected"
+      }
+    ],
+    "Phase 6": [
+      {
+        "check": "Assessment Findings Persistence",
+        "status": "PASS",
+        "details": "Retrieved 2 persisted findings for ASM-F9EF08E5"
+      },
+      {
+        "check": "Verification Tiers Assigned",
+        "status": "PASS",
+        "details": "Identified tiers: {'Observation', 'Positive Control'}"
+      }
+    ],
+    "Phase 7": [
+      {
+        "check": "ML Model Artifact Loaded",
+        "status": "PASS",
+        "details": "Trained Random Forest bundle loaded from iomt_rf_model.joblib"
+      },
+      {
+        "check": "ML Live Inference",
+        "status": "PASS",
+        "details": "Predicted: Benign, Confidence: 1.0000, Anomaly: False"
+      },
+      {
+        "check": "ML Evaluation Provenance",
+        "status": "PASS",
+        "details": "Dataset: UNB CICIoMT2024, Accuracy: 1.0, F1: 1.0"
+      }
+    ],
+    "Phase 8": [
+      {
+        "check": "PDF Report Generation",
+        "status": "PASS",
+        "details": "Report ID: RPT-PDF-8E47FE89, Size: 10853 bytes, SHA256: dbac4c0d485362a8..."
+      },
+      {
+        "check": "PDF Binary Header Verification",
+        "status": "PASS",
+        "details": "Valid %PDF binary stream delivered"
+      },
+      {
+        "check": "HTML Report Generation",
+        "status": "PASS",
+        "details": "Report ID: RPT-HTML-E22A4C91, Size: 34868 bytes, SHA256: 826a589f1e3c088a..."
+      },
+      {
+        "check": "HTML Standalone Content Verification",
+        "status": "PASS",
+        "details": "Valid <!DOCTYPE html> document delivered"
+      }
+    ],
+    "Phase 9": [
+      {
+        "check": "Cryptographic Hash Chain Verification",
+        "status": "PASS",
+        "details": "Status: None, Records checked: 1900"
+      },
+      {
+        "check": "Baseline Record Cryptographic Integrity",
+        "status": "WARN",
+        "details": "Status: {\"record_id\":\"REC-ICU-001\",\"status\":\"TAMPERED\",\"expected_hash\":\"1642f75d0bca549bcaa4f0a86c64b6630f0e584493f2b959977ec89d9db77ced\",\"computed_hash\":\"a9822b81c1da0a278967660f576d0ebb57302811cf5d2a72975401c9b1af6b18\",\"is_match\":false,\"verified_at\":\"2026-10-22T10:54:32.554896\",\"message\":\"INTEGRITY MISMATCH DETECTED: Computed digest differs from stored digest. Record has been altered!\"}"
+      },
+      {
+        "check": "Tamper Detection Integrity Test",
+        "status": "PASS",
+        "details": "Single-byte mutation immediately flagged as TAMPERED"
+      }
+    ]
+  },
+  "tools": {
+    "native_probe": {
+      "display_name": "Native Defensive Probe",
+      "category": "Core Discovery",
+      "version": "1.2.0",
+      "outcome": "PASS",
+      "raw_status": "AVAILABLE",
+      "is_remote": false,
+      "evidence": "Executed successfully (7.84s), findings: 1"
+    },
+    "nmap": {
+      "display_name": "Nmap Service Scanner",
+      "category": "Core Discovery",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    },
+    "openvas": {
+      "display_name": "Greenbone OpenVAS Scanner",
+      "category": "Vulnerability Assessment",
+      "version": "22.4",
+      "outcome": "NOT CONFIGURED",
+      "raw_status": "NOT_CONFIGURED",
+      "is_remote": true,
+      "evidence": "Configuration status: Missing OPENVAS_HOST or OPENVAS_SOCKET environment settings; returned NOT_EVALUATED"
+    },
+    "nuclei": {
+      "display_name": "Nuclei CVE and Template Scanner",
+      "category": "Vulnerability Assessment",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    },
+    "zap": {
+      "display_name": "OWASP ZAP Web Scanner",
+      "category": "Web Assessment",
+      "version": "unknown",
+      "outcome": "NOT CONFIGURED",
+      "raw_status": "NOT_CONFIGURED",
+      "is_remote": true,
+      "evidence": "Configuration status: Daemon not reachable at http://127.0.0.1:8080; returned NOT_EVALUATED"
+    },
+    "nikto": {
+      "display_name": "Nikto Web Server Auditor",
+      "category": "Web Assessment",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    },
+    "suricata": {
+      "display_name": "Suricata IDS",
+      "category": "Network Monitoring",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    },
+    "zeek": {
+      "display_name": "Zeek Network Monitor",
+      "category": "Network Monitoring",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    },
+    "tshark": {
+      "display_name": "TShark Packet Analyzer",
+      "category": "Network Monitoring",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    },
+    "nvd_intel": {
+      "display_name": "NVD / CVE Intelligence",
+      "category": "Vulnerability Intelligence",
+      "version": "API v2.0",
+      "outcome": "PASS",
+      "raw_status": "AVAILABLE",
+      "is_remote": true,
+      "evidence": "Executed successfully (0.0s), findings: 1"
+    },
+    "trivy": {
+      "display_name": "Trivy Container & Dependency Auditor",
+      "category": "Host and Software Assessment",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    },
+    "lynis": {
+      "display_name": "Lynis Host Auditor",
+      "category": "Host and Software Assessment",
+      "version": "unknown",
+      "outcome": "NOT APPLICABLE",
+      "raw_status": "NOT_APPLICABLE",
+      "is_remote": false,
+      "evidence": "Environment constraint: Lynis requires a Linux/Unix environment; host is running Windows without LYNIS_SSH_TARGET"
+    },
+    "openscap": {
+      "display_name": "OpenSCAP Compliance Auditor",
+      "category": "Host and Software Assessment",
+      "version": "unknown",
+      "outcome": "NOT APPLICABLE",
+      "raw_status": "NOT_APPLICABLE",
+      "is_remote": false,
+      "evidence": "Environment constraint: OpenSCAP is natively designed for Linux/Unix environments; not found on Windows host"
+    },
+    "syft": {
+      "display_name": "Syft SBOM Generator",
+      "category": "Host and Software Assessment",
+      "version": "unknown",
+      "outcome": "NOT INSTALLED",
+      "raw_status": "NOT_INSTALLED",
+      "is_remote": false,
+      "evidence": "Verified binary missing from PATH/config; returned NOT_EVALUATED without fake findings"
+    }
+  },
+  "defects": [],
+  "fixes": []
+}

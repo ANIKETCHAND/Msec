@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp, DEMO_USERS } from '../context/AppContext';
+import { api } from '../services/api';
 import { PAGE_REGISTRY } from '../utils/pageRegistry';
 import {
   Shield,
