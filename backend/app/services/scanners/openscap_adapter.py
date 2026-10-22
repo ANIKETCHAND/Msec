@@ -39,13 +39,21 @@ class OpenSCAPAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or os.getenv("OPENSCAP_PATH") or shutil.which("oscap")
+        self.binary_path = binary_path
         self._detected_version = None
+
+    def _resolve_binary(self) -> Optional[str]:
+        candidate = self.binary_path or os.getenv("OPENSCAP_PATH")
+        if candidate:
+            if os.path.isfile(candidate) or shutil.which(candidate):
+                return candidate
+            return None
+        return shutil.which("oscap")
 
     def get_version(self) -> str:
         if self._detected_version:
             return self._detected_version
-        path = self.binary_path or shutil.which("oscap")
+        path = self._resolve_binary()
         if path:
             try:
                 proc = subprocess.run([path, "-V"], capture_output=True, text=True, timeout=5)
@@ -61,7 +69,7 @@ class OpenSCAPAdapter(BaseScannerAdapter):
     def check_availability(self) -> Dict[str, Any]:
         """Probes OpenSCAP executable status."""
         is_windows = sys.platform.startswith("win")
-        binary = self.binary_path or shutil.which("oscap")
+        binary = self._resolve_binary()
 
         if is_windows and not binary:
             return {

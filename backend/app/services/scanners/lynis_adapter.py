@@ -38,14 +38,22 @@ class LynisAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, binary_path: Optional[str] = None, ssh_target: Optional[str] = None):
-        self.binary_path = binary_path or os.getenv("LYNIS_PATH") or shutil.which("lynis")
+        self.binary_path = binary_path
         self.ssh_target = ssh_target or os.getenv("LYNIS_SSH_TARGET")
         self._detected_version = None
+
+    def _resolve_binary(self) -> Optional[str]:
+        candidate = self.binary_path or os.getenv("LYNIS_PATH")
+        if candidate:
+            if os.path.isfile(candidate) or shutil.which(candidate):
+                return candidate
+            return None
+        return shutil.which("lynis")
 
     def get_version(self) -> str:
         if self._detected_version:
             return self._detected_version
-        path = self.binary_path or shutil.which("lynis")
+        path = self._resolve_binary()
         if path:
             try:
                 proc = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
@@ -61,7 +69,7 @@ class LynisAdapter(BaseScannerAdapter):
     def check_availability(self) -> Dict[str, Any]:
         """Probes Lynis executable and host OS applicability."""
         is_windows = sys.platform.startswith("win")
-        binary = self.binary_path or shutil.which("lynis")
+        binary = self._resolve_binary()
 
         if is_windows and not self.ssh_target:
             return {

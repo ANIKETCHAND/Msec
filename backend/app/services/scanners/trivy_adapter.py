@@ -39,13 +39,21 @@ class TrivyAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or os.getenv("TRIVY_PATH") or shutil.which("trivy")
+        self.binary_path = binary_path
         self._detected_version = None
+
+    def _resolve_binary(self) -> Optional[str]:
+        candidate = self.binary_path or os.getenv("TRIVY_PATH")
+        if candidate:
+            if os.path.isfile(candidate) or shutil.which(candidate):
+                return candidate
+            return None
+        return shutil.which("trivy")
 
     def get_version(self) -> str:
         if self._detected_version:
             return self._detected_version
-        path = self.binary_path or shutil.which("trivy")
+        path = self._resolve_binary()
         if path:
             try:
                 proc = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
@@ -60,7 +68,7 @@ class TrivyAdapter(BaseScannerAdapter):
 
     def check_availability(self) -> Dict[str, Any]:
         """Probes Trivy executable status."""
-        binary = self.binary_path or shutil.which("trivy")
+        binary = self._resolve_binary()
         if not binary:
             return {
                 "name": self.tool_name,

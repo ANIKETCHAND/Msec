@@ -10,6 +10,11 @@ from app.main import app
 from app.services.scanners.orchestrator import orchestrator
 from app.services.scanners.base import ToolStatus, ToolCategory
 from app.services.scope_validator import ALLOWED_DEFENSIVE_TOOLS
+from app.services.scanners.nmap_adapter import NmapAdapter
+from app.services.scanners.nuclei_adapter import NucleiAdapter
+from app.services.scanners.nikto_adapter import NiktoAdapter
+from app.services.scanners.openvas_adapter import OpenVasAdapter
+from app.services.scanners.zap_adapter import ZapAdapter
 from app.services.scanners.suricata_adapter import SuricataAdapter
 from app.services.scanners.zeek_adapter import ZeekAdapter
 from app.services.scanners.tshark_adapter import TSharkAdapter
@@ -18,6 +23,7 @@ from app.services.scanners.trivy_adapter import TrivyAdapter
 from app.services.scanners.lynis_adapter import LynisAdapter
 from app.services.scanners.openscap_adapter import OpenSCAPAdapter
 from app.services.scanners.syft_adapter import SyftAdapter
+from app.services.ml_service import ml_service
 
 
 client = TestClient(app)
@@ -190,3 +196,105 @@ def test_tools_refresh_api_endpoint():
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 14
+
+
+def test_nmap_adapter_uninstalled_returns_not_evaluated():
+    """Verifies that an uninstalled Nmap returns NOT_EVALUATED and zero synthetic findings."""
+    adapter = NmapAdapter(binary_path="/usr/bin/nonexistent_nmap_binary_xyz")
+    avail = adapter.check_availability()
+    assert avail["status"] == ToolStatus.NOT_INSTALLED
+    assert avail["available"] is False
+
+    result = adapter.execute(
+        target_ip="192.168.10.100",
+        device_context={"id": "DEV-TEST", "name": "Infusion Pump", "device_type": "Infusion Pump"}
+    )
+    assert result.status == "NOT_EVALUATED"
+    assert result.available is False
+    assert result.findings == []
+    assert result.is_simulated is False
+    assert "not installed" in result.error_message.lower()
+
+
+def test_nuclei_adapter_uninstalled_returns_not_evaluated():
+    """Verifies that an uninstalled Nuclei returns NOT_EVALUATED and zero synthetic findings."""
+    adapter = NucleiAdapter(binary_path="/usr/bin/nonexistent_nuclei_binary_xyz")
+    avail = adapter.check_availability()
+    assert avail["status"] == ToolStatus.NOT_INSTALLED
+    assert avail["available"] is False
+
+    result = adapter.execute(
+        target_ip="192.168.10.100",
+        device_context={"id": "DEV-TEST", "name": "Infusion Pump", "device_type": "Infusion Pump"}
+    )
+    assert result.status == "NOT_EVALUATED"
+    assert result.available is False
+    assert result.findings == []
+    assert result.is_simulated is False
+
+
+def test_nikto_adapter_uninstalled_returns_not_evaluated():
+    """Verifies that an uninstalled Nikto returns NOT_EVALUATED and zero synthetic findings."""
+    adapter = NiktoAdapter(binary_path="/usr/bin/nonexistent_nikto_binary_xyz")
+    avail = adapter.check_availability()
+    assert avail["status"] == ToolStatus.NOT_INSTALLED
+    assert avail["available"] is False
+
+    result = adapter.execute(
+        target_ip="192.168.10.100",
+        device_context={"id": "DEV-TEST", "name": "Infusion Pump", "device_type": "Infusion Pump"}
+    )
+    assert result.status == "NOT_EVALUATED"
+    assert result.available is False
+    assert result.findings == []
+    assert result.is_simulated is False
+
+
+def test_openvas_unconfigured_returns_not_configured():
+    """Verifies that unconfigured OpenVAS GMP host returns NOT_CONFIGURED and never fakes local install."""
+    adapter = OpenVasAdapter(gmp_host="", socket_path="")
+    avail = adapter.check_availability()
+    assert avail["status"] == ToolStatus.NOT_CONFIGURED
+    assert avail["available"] is False
+    assert avail["is_remote"] is True
+
+    result = adapter.execute(
+        target_ip="192.168.10.100",
+        device_context={"id": "DEV-TEST", "name": "Infusion Pump", "device_type": "Infusion Pump"}
+    )
+    assert result.status == "NOT_EVALUATED"
+    assert result.available is False
+    assert result.findings == []
+    assert result.is_simulated is False
+
+
+def test_zap_unconfigured_returns_unreachable_or_not_configured():
+    """Verifies that uncontactable OWASP ZAP API daemon returns NOT_CONFIGURED or UNREACHABLE."""
+    adapter = ZapAdapter(zap_url="http://127.0.0.1:29999")
+    avail = adapter.check_availability()
+    assert avail["available"] is False
+    assert avail["is_remote"] is True
+
+    result = adapter.execute(
+        target_ip="192.168.10.100",
+        device_context={"id": "DEV-TEST", "name": "Infusion Pump", "device_type": "Infusion Pump"}
+    )
+    assert result.status == "NOT_EVALUATED"
+    assert result.available is False
+    assert result.findings == []
+    assert result.is_simulated is False
+
+
+def test_ml_service_real_inference_and_availability():
+    """Verifies genuine trained Random Forest model is available and produces valid predictions."""
+    assert ml_service.is_available() is True
+    pred_class, confidence, is_anomaly = ml_service.predict({
+        "packet_rate": 120.0,
+        "packet_size": 480.0,
+        "syn_ratio": 0.02,
+        "port_entropy": 0.95
+    })
+    assert isinstance(pred_class, str)
+    assert 0.0 <= confidence <= 1.0
+    assert isinstance(is_anomaly, bool)
+

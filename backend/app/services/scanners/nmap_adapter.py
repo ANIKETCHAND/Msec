@@ -34,13 +34,21 @@ class NmapAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or os.getenv("NMAP_PATH") or shutil.which("nmap")
+        self.binary_path = binary_path
         self._detected_version = None
+
+    def _resolve_binary(self) -> Optional[str]:
+        candidate = self.binary_path or os.getenv("NMAP_PATH")
+        if candidate:
+            if os.path.isfile(candidate) or shutil.which(candidate):
+                return candidate
+            return None
+        return shutil.which("nmap")
 
     def get_version(self) -> str:
         if self._detected_version:
             return self._detected_version
-        path = self.binary_path or shutil.which("nmap")
+        path = self._resolve_binary()
         if path:
             try:
                 proc = subprocess.run([path, "-V"], capture_output=True, text=True, timeout=5)
@@ -54,7 +62,7 @@ class NmapAdapter(BaseScannerAdapter):
         return self.version
 
     def check_availability(self) -> Dict[str, Any]:
-        path = self.binary_path or shutil.which("nmap")
+        path = self._resolve_binary()
         if path:
             v = self.get_version()
             return {
@@ -120,8 +128,9 @@ class NmapAdapter(BaseScannerAdapter):
         # -T3: Normal polite timing
         # -p: specific IoMT / web / HL7 / Modbus ports
         ports = options.get("ports", "80,443,502,2575,8080,8443") if options else "80,443,502,2575,8080,8443"
+        binary_exec = avail.get("path") or "nmap"
         args = [
-            self.binary_path or "nmap",
+            binary_exec,
             "-sT",
             "-sV",
             "--version-light",

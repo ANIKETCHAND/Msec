@@ -37,8 +37,8 @@ def trigger_scenario(
             event_type="AUTH_FAILURE_SPIKE",
             severity="high",
             rule_id="RULE-AUTH-002",
-            rule_name="Repeated Failed Authentication Attempts",
-            evidence={"failed_attempts": 12, "window_seconds": 20, "source_ip": "192.168.10.198"},
+            rule_name="Repeated Failed Authentication Attempts [TEST DATA]",
+            evidence={"failed_attempts": 12, "window_seconds": 20, "source_ip": "192.168.10.198", "is_simulated": True, "data_source": "SIMULATION_TEST_DATA"},
             suggested_action="Enforce gateway quarantine on attacking host 192.168.10.198.",
             status="open"
         )
@@ -74,8 +74,8 @@ def trigger_scenario(
             event_type="UNUSUAL_TRAFFIC_VOLUME",
             severity="high",
             rule_id="RULE-NET-003",
-            rule_name="Unusual Simulated Traffic Volume Spike (Potential DoS)",
-            evidence={"observed_rate_pps": 1450, "syn_ratio": 0.82, "threshold": 600},
+            rule_name="Unusual Simulated Traffic Volume Spike [TEST DATA]",
+            evidence={"observed_rate_pps": 1450, "syn_ratio": 0.82, "threshold": 600, "is_simulated": True, "data_source": "SIMULATION_TEST_DATA"},
             suggested_action="Throttle switch port on ICU VLAN 10.",
             status="open"
         )
@@ -114,8 +114,8 @@ def trigger_scenario(
             event_type="DEVICE_OFFLINE_UNEXPECTED",
             severity="medium",
             rule_id="RULE-STAT-004",
-            rule_name="Clinical Device Unexpectedly Offline",
-            evidence={"missed_heartbeats": 4, "last_reported": "Just now"},
+            rule_name="Clinical Device Unexpectedly Offline [TEST DATA]",
+            evidence={"missed_heartbeats": 4, "last_reported": "Just now", "is_simulated": True, "data_source": "SIMULATION_TEST_DATA"},
             suggested_action="Check battery or Bluetooth gateway coverage in Ward Bed 214.",
             status="open"
         )
@@ -152,8 +152,8 @@ def trigger_scenario(
             event_type="UNKNOWN_DEVICE_DISCOVERY",
             severity="high",
             rule_id="RULE-DEV-001",
-            rule_name="Rogue IoMT Device Detected on Critical VLAN",
-            evidence={"mac": "00:09:B0:88:AA:11", "vlan": "ICU_VLAN_10"},
+            rule_name="Rogue IoMT Device Detected on Critical VLAN [TEST DATA]",
+            evidence={"mac": "00:09:B0:88:AA:11", "vlan": "ICU_VLAN_10", "is_simulated": True, "data_source": "SIMULATION_TEST_DATA"},
             suggested_action="Physically locate device and revoke switch port.",
             status="open"
         )

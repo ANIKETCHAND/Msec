@@ -489,7 +489,11 @@ export default function DevicesScanPage() {
         });
       }
 
-      const localDevice = createdDevice ? {
+      if (!createdDevice) {
+        throw new Error('Device registration did not return a valid persistent record from the server.');
+      }
+
+      const localDevice = {
         id: createdDevice.id,
         name: createdDevice.name,
         deviceType: createdDevice.device_type,
@@ -501,18 +505,6 @@ export default function DevicesScanPage() {
         riskLevel: createdDevice.risk_level || 'medium',
         status: createdDevice.status || 'online',
         securityScore: createdDevice.security_score || 85.0
-      } : {
-        id: `DEV-MANUAL-${Date.now().toString().slice(-4)}`,
-        name: newDevice.name.trim(),
-        deviceType: newDevice.deviceType,
-        ipAddress: newDevice.ipAddress.trim(),
-        macAddress: newDevice.macAddress.trim() || '00:1A:2B:00:11:22',
-        firmwareVersion: newDevice.firmwareVersion.trim() || '1.0.0',
-        networkSegment: newDevice.networkSegment,
-        department: newDevice.department,
-        riskLevel: 'medium',
-        status: 'online',
-        securityScore: 85.0
       };
 
       if (addDevice) {

@@ -39,15 +39,23 @@ class TSharkAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, binary_path: Optional[str] = None, pcap_path: Optional[str] = None, capture_interface: Optional[str] = None):
-        self.binary_path = binary_path or os.getenv("TSHARK_PATH") or shutil.which("tshark")
+        self.binary_path = binary_path
         self.pcap_path = pcap_path or os.getenv("PCAP_PATH")
         self.capture_interface = capture_interface or os.getenv("CAPTURE_INTERFACE")
         self._detected_version = None
 
+    def _resolve_binary(self) -> Optional[str]:
+        candidate = self.binary_path or os.getenv("TSHARK_PATH")
+        if candidate:
+            if os.path.isfile(candidate) or shutil.which(candidate):
+                return candidate
+            return None
+        return shutil.which("tshark")
+
     def get_version(self) -> str:
         if self._detected_version:
             return self._detected_version
-        path = self.binary_path or shutil.which("tshark")
+        path = self._resolve_binary()
         if path:
             try:
                 proc = subprocess.run([path, "-v"], capture_output=True, text=True, timeout=5)
@@ -62,7 +70,7 @@ class TSharkAdapter(BaseScannerAdapter):
 
     def check_availability(self) -> Dict[str, Any]:
         """Probes TShark executable and packet capture sources."""
-        binary = self.binary_path or shutil.which("tshark")
+        binary = self._resolve_binary()
         if not binary:
             return {
                 "name": self.tool_name,

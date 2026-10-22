@@ -33,13 +33,21 @@ class NucleiAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or os.getenv("NUCLEI_PATH") or shutil.which("nuclei")
+        self.binary_path = binary_path
         self._detected_version = None
+
+    def _resolve_binary(self) -> Optional[str]:
+        candidate = self.binary_path or os.getenv("NUCLEI_PATH")
+        if candidate:
+            if os.path.isfile(candidate) or shutil.which(candidate):
+                return candidate
+            return None
+        return shutil.which("nuclei")
 
     def get_version(self) -> str:
         if self._detected_version:
             return self._detected_version
-        path = self.binary_path or shutil.which("nuclei")
+        path = self._resolve_binary()
         if path:
             try:
                 proc = subprocess.run([path, "-version"], capture_output=True, text=True, timeout=5)
@@ -53,7 +61,7 @@ class NucleiAdapter(BaseScannerAdapter):
         return self.version
 
     def check_availability(self) -> Dict[str, Any]:
-        path = self.binary_path or shutil.which("nuclei")
+        path = self._resolve_binary()
         if path:
             v = self.get_version()
             return {
@@ -114,8 +122,9 @@ class NucleiAdapter(BaseScannerAdapter):
 
         # Defensive scan: safe informational templates, rate limited (-rl 10)
         target_url = f"http://{target_ip}"
+        binary_exec = avail.get("path") or "nuclei"
         args = [
-            self.binary_path or "nuclei",
+            binary_exec,
             "-target", target_url,
             "-tags", "cve,misconfiguration,ssl",
             "-rate-limit", "10",

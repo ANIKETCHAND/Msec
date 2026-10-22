@@ -31,13 +31,21 @@ class NiktoAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, binary_path: Optional[str] = None):
-        self.binary_path = binary_path or os.getenv("NIKTO_PATH") or shutil.which("nikto") or shutil.which("nikto.pl")
+        self.binary_path = binary_path
         self._detected_version = None
+
+    def _resolve_binary(self) -> Optional[str]:
+        candidate = self.binary_path or os.getenv("NIKTO_PATH")
+        if candidate:
+            if os.path.isfile(candidate) or shutil.which(candidate):
+                return candidate
+            return None
+        return shutil.which("nikto") or shutil.which("nikto.pl")
 
     def get_version(self) -> str:
         if self._detected_version:
             return self._detected_version
-        path = self.binary_path or shutil.which("nikto") or shutil.which("nikto.pl")
+        path = self._resolve_binary()
         if path:
             try:
                 proc = subprocess.run([path, "-Version"], capture_output=True, text=True, timeout=5)
@@ -51,7 +59,7 @@ class NiktoAdapter(BaseScannerAdapter):
         return self.version
 
     def check_availability(self) -> Dict[str, Any]:
-        path = self.binary_path or shutil.which("nikto") or shutil.which("nikto.pl")
+        path = self._resolve_binary()
         if path:
             v = self.get_version()
             return {
@@ -112,8 +120,9 @@ class NiktoAdapter(BaseScannerAdapter):
 
         # Defensive scan: target port 80/443, fast check
         port = str(options.get("port", 80)) if options else "80"
+        binary_exec = avail.get("path") or "nikto"
         args = [
-            self.binary_path or "nikto",
+            binary_exec,
             "-host", target_ip,
             "-port", port,
             "-Tuning", "1,2,b",

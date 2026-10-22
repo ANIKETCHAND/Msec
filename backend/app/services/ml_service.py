@@ -124,20 +124,9 @@ class MLInferenceService:
             except Exception as e:
                 print(f"[ML Service] Inference fallback due to error: {e}")
 
-        # Deterministic heuristic fallback if model artifact is unavailable
-        syn = float(features.get("syn_ratio", 0.0))
-        rate = float(features.get("packet_rate", 0.0))
-        entropy = float(features.get("port_entropy", 0.0))
-        size = float(features.get("packet_size", 500.0))
-
-        if syn > 0.6 or rate > 800:
-            return "DoS_SYN_Flood", 0.0, True
-        elif entropy > 3.0:
-            return "Port_Scan", 0.0, True
-        elif rate > 400 and size < 200:
-            return "Brute_Force", 0.0, True
-        else:
-            return "Benign", 0.0, False
+        # If model artifact is unavailable or execution failed, report NOT_EVALUATED
+        # Never fabricate predictions or attack labels without real model inference
+        return "NOT_EVALUATED", 0.0, False
 
 
 ml_service = MLInferenceService()

@@ -90,6 +90,19 @@ def evaluate_flow(
             evaluated_at=datetime.now(timezone.utc)
         )
 
+    if ml_class == "NOT_EVALUATED":
+        return DetectionEvaluateResponse(
+            is_anomaly=False,
+            detection_type="Rule Baseline (ML Engine Not Evaluated)",
+            rule_triggered=None,
+            predicted_class="NOT_EVALUATED",
+            confidence=0.0,
+            model_version=ml_service.model_metadata.get("version", "1.0.0"),
+            severity="low",
+            suggested_action="Rule baseline passed. ML model inference artifact is unavailable for flow scoring.",
+            evaluated_at=datetime.now(timezone.utc)
+        )
+
     return DetectionEvaluateResponse(
         is_anomaly=False,
         detection_type="Normal Baseline",
