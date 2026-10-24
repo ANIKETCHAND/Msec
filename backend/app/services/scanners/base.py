@@ -1,3 +1,5 @@
+import os
+import shutil
 """Base Scanner Adapter Architecture for MediShield Defensive Assessment Tools.
 
 Provides a unified interface for operational readiness detection, version probing,
@@ -68,6 +70,16 @@ class ScannerResult:
 
 
 class BaseScannerAdapter(ABC):
+    @classmethod
+    def resolve_project_binary(cls, binary_name: str) -> Optional[str]:
+        """Resolves binary from backend/tools/bin or system PATH."""
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        tools_bin = os.path.join(base_dir, "tools", "bin")
+        for ext in ["", ".exe", ".bat", ".cmd", ".pl"]:
+            candidate = os.path.join(tools_bin, f"{binary_name}{ext}")
+            if os.path.isfile(candidate):
+                return candidate
+        return shutil.which(binary_name)
     """Abstract base class for all MediShield security tool integrations."""
 
     tool_name: str = "base"

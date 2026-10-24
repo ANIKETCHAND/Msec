@@ -43,7 +43,7 @@ class NmapAdapter(BaseScannerAdapter):
             if os.path.isfile(candidate) or shutil.which(candidate):
                 return candidate
             return None
-        return shutil.which("nmap")
+        return self.resolve_project_binary("nmap")
 
     def get_version(self) -> str:
         if self._detected_version:

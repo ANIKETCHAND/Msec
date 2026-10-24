@@ -48,7 +48,7 @@ class TrivyAdapter(BaseScannerAdapter):
             if os.path.isfile(candidate) or shutil.which(candidate):
                 return candidate
             return None
-        return shutil.which("trivy")
+        return self.resolve_project_binary("trivy")
 
     def get_version(self) -> str:
         if self._detected_version:

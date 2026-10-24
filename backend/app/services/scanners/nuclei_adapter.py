@@ -42,7 +42,7 @@ class NucleiAdapter(BaseScannerAdapter):
             if os.path.isfile(candidate) or shutil.which(candidate):
                 return candidate
             return None
-        return shutil.which("nuclei")
+        return self.resolve_project_binary("nuclei")
 
     def get_version(self) -> str:
         if self._detected_version:

@@ -87,3 +87,9 @@ Desktop.ini
 # Generated Security Reports Storage
 backend/app/reports_storage/*
 !backend/app/reports_storage/.gitkeep
+
+# Local Security Tool Binaries & Cloned Scanner Repos
+backend/tools/bin/*
+backend/tools/nmap/
+backend/tools/nikto/
+!backend/tools/bin/.gitkeep
