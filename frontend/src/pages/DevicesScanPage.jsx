@@ -522,6 +522,13 @@ export default function DevicesScanPage() {
     }
   };
 
+  const scopeOutOfSync = React.useMemo(() => {
+    if (!authorizedScope) return false;
+    if (authorizedScope.device_id !== selectedDevice?.id) return true;
+    const approvedTools = new Set((authorizedScope.selected_tools || []).map(t => t.toLowerCase().trim()));
+    return selectedTools.some(t => !approvedTools.has(t.toLowerCase().trim()));
+  }, [authorizedScope, selectedTools, selectedDevice]);
+
   const handleAuthorizeScope = async () => {
     if (!selectedDevice) return;
     setAuthorizing(true);
@@ -549,21 +556,52 @@ export default function DevicesScanPage() {
   };
 
   const handleStartScan = async () => {
-    if (!authorizedScope || !selectedDevice) return;
+    if (!selectedDevice) {
+      setStatusMsg({ type: 'error', text: 'Please select a registered device asset before launching an assessment.' });
+      return;
+    }
     setScanning(true);
-    setScanProgress(10);
-    setScanStatusText('Initializing defensive scanning harness...');
-    setExecutionTimeline([
-      { event: 'Execution Initialized', timestamp: new Date().toLocaleTimeString(), source: 'MediShield Orchestrator' },
-      { event: `Scope Verified: ${authorizedScope.id}`, timestamp: new Date().toLocaleTimeString(), source: 'Scope Validator' }
-    ]);
+    setStatusMsg(null);
+    setScanProgress(5);
+    setScanStatusText('Verifying defensive scope certificate...');
 
     try {
+      let activeScope = authorizedScope;
+
+      // Reconcile scope certificate if absent, targeting wrong device, or missing newly selected tools
+      const approvedTools = new Set((activeScope?.selected_tools || []).map(t => t.toLowerCase().trim()));
+      const isDeviceMismatch = activeScope && activeScope.device_id !== selectedDevice.id;
+      const isToolsMismatch = !activeScope || selectedTools.some(t => !approvedTools.has(t.toLowerCase().trim()));
+
+      if (isDeviceMismatch || isToolsMismatch) {
+        setScanStatusText('Authorizing updated defensive scope certificate for selected tools...');
+        const scopeData = {
+          device_id: selectedDevice.id,
+          target_ip: selectedDevice.ipAddress,
+          assessment_profile: scopeProfile,
+          selected_tools: selectedTools,
+          duration_hours: parseInt(durationHours, 10),
+          justification: justification || 'Authorized IoMT defensive security assessment'
+        };
+        activeScope = await api.authorizeScope(scopeData);
+        setAuthorizedScope(activeScope);
+        if (logAudit) {
+          logAudit('ASSESSMENT_SCOPE_AUTHORIZED', 'AssessmentScope', activeScope.id, `Scope authorized for ${selectedTools.length} tools on ${selectedDevice.id}`);
+        }
+      }
+
+      setScanProgress(15);
+      setScanStatusText('Initializing defensive scanning harness...');
+      setExecutionTimeline([
+        { event: 'Execution Initialized', timestamp: new Date().toLocaleTimeString(), source: 'MediShield Orchestrator' },
+        { event: `Scope Verified: ${activeScope.id}`, timestamp: new Date().toLocaleTimeString(), source: 'Scope Validator' }
+      ]);
+
       setScanProgress(30);
       setScanStatusText('Executing defensive socket and service probes...');
 
       const asm = await api.executeAssessment({
-        scope_id: authorizedScope.id,
+        scope_id: activeScope.id,
         device_id: selectedDevice.id,
         profile: scopeProfile,
         tools: selectedTools
@@ -843,6 +881,28 @@ export default function DevicesScanPage() {
                   )}
                   <span>Authorize Scope Certificate</span>
                 </button>
+              ) : scopeOutOfSync ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-semibold text-amber-900">Certificate {authorizedScope.id} (Tools Updated)</span>
+                    <p className="text-[11px] text-amber-700">Scope will automatically update on scan launch.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleAuthorizeScope}
+                      disabled={authorizing}
+                      className="text-[#1677FF] hover:text-[#125ecc] text-xs font-semibold cursor-pointer"
+                    >
+                      {authorizing ? 'Updating...' : 'Update'}
+                    </button>
+                    <button
+                      onClick={() => setAuthorizedScope(null)}
+                      className="text-gray-500 hover:text-gray-700 text-xs font-medium cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs">
                   <div>
@@ -1064,7 +1124,7 @@ export default function DevicesScanPage() {
             <div className="mt-5">
               <button
                 onClick={handleStartScan}
-                disabled={scanning || !authorizedScope}
+                disabled={scanning || !selectedDevice}
                 className="w-full py-3 px-4 bg-[#1677FF] hover:bg-[#125ecc] text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {scanning ? (
@@ -1075,9 +1135,7 @@ export default function DevicesScanPage() {
                 <span>
                   {scanning
                     ? 'Assessment In Progress...'
-                    : authorizedScope
-                    ? `Start Security Assessment on ${selectedDevice?.name}`
-                    : 'Authorize Scope Above First'}
+                    : `Start Security Assessment on ${selectedDevice?.name || 'Device'}`}
                 </span>
               </button>
             </div>
