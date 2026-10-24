@@ -231,19 +231,44 @@ def download_report(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    """Download generated PDF or HTML report file with verified filename."""
+    """Download generated PDF or HTML report file with verified filename and auto-regeneration fallback."""
     rep = db.query(ReportModel).filter(ReportModel.id == report_id).first()
-    if not rep or not rep.file_path or not os.path.exists(rep.file_path):
-        raise HTTPException(status_code=404, detail=f"Report file for '{report_id}' not found.")
+    if not rep:
+        raise HTTPException(status_code=404, detail=f"Report record '{report_id}' not found in database.")
+
+    file_path = rep.file_path
+    if not file_path or not os.path.exists(file_path):
+        ext_check = "pdf" if rep.report_type == "PDF" else "html"
+        alt_path = os.path.join(report_service.REPORTS_DIR, f"{rep.id}.{ext_check}")
+        if os.path.exists(alt_path):
+            file_path = alt_path
+            rep.file_path = alt_path
+            db.commit()
+        else:
+            try:
+                rep_new = report_service.create_assessment_report(
+                    db=db,
+                    assessment_id=rep.assessment_id,
+                    report_type=rep.report_type,
+                    user=current_user
+                )
+                file_path = rep_new.file_path
+                rep.file_path = file_path
+                rep.sha256_hash = rep_new.sha256_hash
+                rep.file_size_bytes = rep_new.file_size_bytes
+                db.commit()
+            except Exception as e:
+                raise HTTPException(status_code=404, detail=f"Report file for '{report_id}' could not be located or regenerated: {str(e)}")
 
     ext = "pdf" if rep.report_type == "PDF" else "html"
     media_type = "application/pdf" if rep.report_type == "PDF" else "text/html; charset=utf-8"
     filename = f"medishield-report-{rep.id}.{ext}"
 
     return FileResponse(
-        path=rep.file_path,
+        path=file_path,
         media_type=media_type,
-        filename=filename
+        filename=filename,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
 
@@ -259,13 +284,35 @@ def get_report_pdf(
         raise HTTPException(status_code=404, detail=f"Report '{report_id}' not found.")
     if rep.report_type != "PDF":
         raise HTTPException(status_code=400, detail="Report format is not PDF.")
-    if not rep.file_path or not os.path.exists(rep.file_path):
-        raise HTTPException(status_code=404, detail="PDF report file not found on disk.")
+
+    file_path = rep.file_path
+    if not file_path or not os.path.exists(file_path):
+        alt_path = os.path.join(report_service.REPORTS_DIR, f"{rep.id}.pdf")
+        if os.path.exists(alt_path):
+            file_path = alt_path
+            rep.file_path = alt_path
+            db.commit()
+        else:
+            try:
+                rep_new = report_service.create_assessment_report(
+                    db=db,
+                    assessment_id=rep.assessment_id,
+                    report_type="PDF",
+                    user=current_user
+                )
+                file_path = rep_new.file_path
+                rep.file_path = file_path
+                rep.sha256_hash = rep_new.sha256_hash
+                rep.file_size_bytes = rep_new.file_size_bytes
+                db.commit()
+            except Exception as e:
+                raise HTTPException(status_code=404, detail=f"PDF report file for '{report_id}' could not be located or regenerated: {str(e)}")
 
     return FileResponse(
-        path=rep.file_path,
+        path=file_path,
         media_type="application/pdf",
-        filename=f"medishield-{rep.id}.pdf"
+        filename=f"medishield-{rep.id}.pdf",
+        headers={"Content-Disposition": f'attachment; filename="medishield-{rep.id}.pdf"'}
     )
 
 

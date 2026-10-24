@@ -1,7 +1,7 @@
 """Role-Based Access Control (RBAC) Dependency and Middleware."""
 
 from typing import List, Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database.session import get_db
@@ -13,17 +13,24 @@ security_bearer = HTTPBearer(auto_error=False)
 
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    token: Optional[str] = Query(None, description="Optional JWT bearer token via query parameter for direct browser download links"),
     db: Session = Depends(get_db)
 ) -> UserModel:
     """Extracts and verifies Bearer token, returning the authenticated user model."""
-    if not credentials:
+    raw_token = None
+    if credentials and credentials.credentials:
+        raw_token = credentials.credentials
+    elif token:
+        raw_token = token
+
+    if not raw_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing Bearer authentication token. Please log in.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    payload = auth_service.decode_token(credentials.credentials)
+    payload = auth_service.decode_token(raw_token)
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

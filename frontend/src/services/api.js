@@ -311,11 +311,56 @@ class ApiService {
   }
 
   getReportDownloadUrl(reportId) {
-    return `${API_BASE}/reports/${reportId}/download`;
+    const token = this.token || localStorage.getItem('medishield_token');
+    const q = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${API_BASE}/reports/${reportId}/download${q}`;
   }
 
   getReportPdfUrl(reportId) {
-    return `${API_BASE}/reports/${reportId}/pdf`;
+    const token = this.token || localStorage.getItem('medishield_token');
+    const q = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${API_BASE}/reports/${reportId}/pdf${q}`;
+  }
+
+  async downloadReportFile(reportId, preferredFilename = null) {
+    const rep = await this.getReport(reportId).catch(() => null);
+    const ext = (rep?.report_type || 'PDF').toLowerCase();
+    const finalFilename = preferredFilename || `medishield-report-${reportId}.${ext}`;
+    const url = `${API_BASE}/reports/${reportId}/download`;
+    const res = await fetch(url, { headers: this.getHeaders() });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.message || `Download failed with status ${res.status}`);
+    }
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = finalFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+    return true;
+  }
+
+  async downloadCsvFile(endpoint, filename) {
+    const url = `${API_BASE}${endpoint}`;
+    const res = await fetch(url, { headers: this.getHeaders() });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.message || `Export failed with status ${res.status}`);
+    }
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+    return true;
   }
 
   async getReportHtml(reportId) {

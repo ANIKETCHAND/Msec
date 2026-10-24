@@ -39,6 +39,7 @@ export default function ReportsPage() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [copiedHash, setCopiedHash] = useState(null);
   const [statusMsg, setStatusMsg] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     loadReportsData();
@@ -77,6 +78,25 @@ export default function ReportsPage() {
       setStatusMsg({ type: 'error', text: err.message || 'Report generation failed.' });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleDownloadReport = async (rep) => {
+    setDownloadingId(rep.id);
+    try {
+      await api.downloadReportFile(rep.id);
+      logAudit('REPORT_DOWNLOADED', 'Report', rep.id, `Downloaded ${rep.report_type} report ${rep.id}.`);
+    } catch (err) {
+      console.warn("Direct blob download failed, falling back to direct URL:", err.message);
+      const url = api.getReportDownloadUrl(rep.id);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `medishield-report-${rep.id}.${rep.report_type.toLowerCase()}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -122,7 +142,10 @@ export default function ReportsPage() {
           `"${d.id}","${d.name}","${d.deviceType || d.type}","${d.ipAddress}","${d.macAddress}","${d.firmwareVersion}","${d.networkSegment}","${d.status}","${d.riskLevel}","${d.securityScore}"`
         ).join("\n");
     } else {
-      window.location.href = '/api/reports/assessments.csv';
+      filename = `medishield-findings-${new Date().toISOString().slice(0, 10)}.csv`;
+      api.downloadCsvFile('/reports/assessments.csv', filename).catch(err => {
+        console.error("CSV download failed:", err.message);
+      });
       logAudit('REPORT_EXPORT', 'SecurityReport', 'assessments.csv', 'Exported assessment findings CSV report.');
       return;
     }
@@ -260,31 +283,32 @@ export default function ReportsPage() {
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {isPdf ? (
-                            <a
-                              href={api.getReportDownloadUrl(rep.id)}
-                              className="px-2.5 py-1 rounded bg-[#F9FAFB] hover:bg-[#F3F4F6] text-[#171717] border border-[#E5E7EB] text-xs font-medium flex items-center gap-1 transition-swiss"
-                              download
+                            <button
+                              onClick={() => handleDownloadReport(rep)}
+                              disabled={downloadingId === rep.id}
+                              className="px-2.5 py-1 rounded bg-[#F9FAFB] hover:bg-[#F3F4F6] text-[#171717] border border-[#E5E7EB] text-xs font-medium flex items-center gap-1 transition-swiss cursor-pointer disabled:opacity-50"
+                              title="Download ReportLab PDF"
                             >
-                              <Download className="w-3 h-3 text-[#1677FF]" />
-                              <span>PDF</span>
-                            </a>
+                              <Download className={`w-3 h-3 text-[#1677FF] ${downloadingId === rep.id ? 'animate-spin' : ''}`} />
+                              <span>{downloadingId === rep.id ? 'Saving...' : 'PDF'}</span>
+                            </button>
                           ) : (
                             <>
                               <button
                                 onClick={() => handleViewHtml(rep.id)}
-                                className="px-2.5 py-1 rounded bg-[#F9FAFB] hover:bg-[#F3F4F6] text-[#171717] border border-[#E5E7EB] text-xs font-medium flex items-center gap-1 transition-swiss"
+                                className="px-2.5 py-1 rounded bg-[#F9FAFB] hover:bg-[#F3F4F6] text-[#171717] border border-[#E5E7EB] text-xs font-medium flex items-center gap-1 transition-swiss cursor-pointer"
                               >
                                 <Eye className="w-3 h-3 text-[#1677FF]" />
                                 <span>Preview</span>
                               </button>
-                              <a
-                                href={api.getReportDownloadUrl(rep.id)}
-                                className="p-1 rounded text-[#6B7280] hover:text-[#171717] border border-[#E5E7EB] hover:bg-[#F3F4F6] transition-swiss"
+                              <button
+                                onClick={() => handleDownloadReport(rep)}
+                                disabled={downloadingId === rep.id}
+                                className="p-1 rounded text-[#6B7280] hover:text-[#171717] border border-[#E5E7EB] hover:bg-[#F3F4F6] transition-swiss cursor-pointer disabled:opacity-50"
                                 title="Download standalone HTML file"
-                                download
                               >
-                                <Download className="w-3.5 h-3.5" />
-                              </a>
+                                <Download className={`w-3.5 h-3.5 ${downloadingId === rep.id ? 'animate-spin' : ''}`} />
+                              </button>
                             </>
                           )}
                         </div>
