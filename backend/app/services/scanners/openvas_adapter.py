@@ -50,6 +50,24 @@ class OpenVasAdapter(BaseScannerAdapter):
         """Probes the configured Greenbone OpenVAS GMP server or unix socket."""
         # 1. Check if configuration exists
         if not self.gmp_host and not self.socket_path:
+            repo_info = self.get_repo_git_info("openvas")
+            if repo_info.get("cloned"):
+                self._last_status = ToolStatus.NOT_CONFIGURED
+                self._last_error = f"OpenVAS repository integrated (commit {repo_info['commit']}). Connect to Greenbone GMP daemon via OPENVAS_HOST to perform compliance scans."
+                return {
+                    "name": self.tool_name,
+                    "display_name": self.display_name,
+                    "category": self.category,
+                    "version": self.version,
+                    "status": ToolStatus.NOT_CONFIGURED,
+                    "available": False,
+                    "is_remote": True,
+                    "configuration_status": f"OpenVAS scanner repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}). GMP daemon endpoint not configured.",
+                    "supported_capabilities": self.supported_capabilities,
+                    "last_health_check": datetime.now(timezone.utc).isoformat(),
+                    "path": repo_info["repo_path"],
+                    "message": self._last_error
+                }
             self._last_status = ToolStatus.NOT_CONFIGURED
             self._last_error = "OpenVAS host or socket path is not configured. Set OPENVAS_HOST in environment."
             return {

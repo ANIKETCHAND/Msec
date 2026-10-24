@@ -89,7 +89,9 @@ backend/app/reports_storage/*
 !backend/app/reports_storage/.gitkeep
 
 # Local Security Tool Binaries & Cloned Scanner Repos
+backend/tools/*
 backend/tools/bin/*
-backend/tools/nmap/
-backend/tools/nikto/
+!backend/tools/bin/
+backend/tools/bin/*
 !backend/tools/bin/.gitkeep
+!backend/tools/setup_tools.py

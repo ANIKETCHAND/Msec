@@ -71,20 +71,22 @@ class LynisAdapter(BaseScannerAdapter):
         is_windows = sys.platform.startswith("win")
         binary = self._resolve_binary()
 
+        repo_info = self.get_repo_git_info("lynis")
         if is_windows and not self.ssh_target:
+            conf_msg = f"Lynis repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}). Host is Windows; configure LYNIS_SSH_TARGET for remote Linux auditing." if repo_info.get("cloned") else "Lynis requires a Linux/Unix environment; host is running Windows without LYNIS_SSH_TARGET"
             return {
                 "name": self.tool_name,
                 "display_name": self.display_name,
                 "category": self.category,
-                "version": "unknown",
+                "version": self.version if repo_info.get("cloned") else "unknown",
                 "status": ToolStatus.NOT_APPLICABLE,
                 "available": False,
                 "is_remote": False,
-                "configuration_status": "Lynis requires a Linux/Unix environment; host is running Windows without LYNIS_SSH_TARGET",
+                "configuration_status": conf_msg,
                 "supported_capabilities": self.supported_capabilities,
                 "last_health_check": datetime.now(timezone.utc).isoformat(),
-                "path": None,
-                "message": "Lynis OS auditor is only applicable to Linux/Unix systems or via remote SSH execution."
+                "path": os.path.join(repo_info["repo_path"], "lynis") if repo_info.get("cloned") else None,
+                "message": f"Lynis repository integrated (commit {repo_info['commit']}). Linux host or remote SSH target required." if repo_info.get("cloned") else "Lynis OS auditor is only applicable to Linux/Unix systems or via remote SSH execution."
             }
 
         if not binary and not self.ssh_target:

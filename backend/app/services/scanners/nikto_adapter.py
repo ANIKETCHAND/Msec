@@ -76,6 +76,38 @@ class NiktoAdapter(BaseScannerAdapter):
                 "path": path,
                 "message": f"Nikto Web Server Auditor is operational (version {v})."
             }
+        if self.binary_path:
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": "unknown",
+                "status": ToolStatus.NOT_INSTALLED,
+                "available": False,
+                "is_remote": False,
+                "configuration_status": f"Specified binary not found at {self.binary_path}",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": None,
+                "message": f"Specified Nikto binary not found at {self.binary_path}."
+            }
+        repo_info = self.get_repo_git_info("nikto")
+        if repo_info.get("cloned"):
+            script_path = os.path.join(repo_info["repo_path"], "program", "nikto.pl")
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": self.version,
+                "status": ToolStatus.NOT_INSTALLED,
+                "available": False,
+                "is_remote": False,
+                "configuration_status": f"Repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}). Requires Strawberry Perl runtime.",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": script_path,
+                "message": f"Nikto repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']})."
+            }
         return {
             "name": self.tool_name,
             "display_name": self.display_name,

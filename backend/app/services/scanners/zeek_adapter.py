@@ -105,6 +105,22 @@ class ZeekAdapter(BaseScannerAdapter):
                 "message": f"Zeek binary installed ({v}), but ZEEK_LOG_DIR contains no active logs."
             }
 
+        repo_info = self.get_repo_git_info("zeek")
+        if repo_info.get("cloned"):
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": self.version,
+                "status": ToolStatus.NOT_CONFIGURED,
+                "available": False,
+                "is_remote": False,
+                "configuration_status": f"Zeek repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}). Log telemetry directory not found at {self.log_dir}.",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": repo_info["repo_path"],
+                "message": f"Zeek Network Monitor repository integrated (commit {repo_info['commit']}). Set ZEEK_LOG_DIR to active Zeek log folder."
+            }
         return {
             "name": self.tool_name,
             "display_name": self.display_name,

@@ -1,11 +1,12 @@
-import os
-import shutil
 """Base Scanner Adapter Architecture for MediShield Defensive Assessment Tools.
 
 Provides a unified interface for operational readiness detection, version probing,
 defensive execution boundaries, structured result parsing, and standardized error handling.
 """
 
+import os
+import shutil
+import subprocess
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
@@ -70,6 +71,15 @@ class ScannerResult:
 
 
 class BaseScannerAdapter(ABC):
+    """Abstract base class for all MediShield security tool integrations."""
+
+    tool_name: str = "base"
+    display_name: str = "Base Security Tool"
+    category: str = ToolCategory.CORE_DISCOVERY
+    version: str = "1.0.0"
+    is_remote: bool = False
+    supported_capabilities: List[str] = []
+
     @classmethod
     def resolve_project_binary(cls, binary_name: str) -> Optional[str]:
         """Resolves binary from backend/tools/bin or system PATH."""
@@ -80,14 +90,58 @@ class BaseScannerAdapter(ABC):
             if os.path.isfile(candidate):
                 return candidate
         return shutil.which(binary_name)
-    """Abstract base class for all MediShield security tool integrations."""
 
-    tool_name: str = "base"
-    display_name: str = "Base Security Tool"
-    category: str = ToolCategory.CORE_DISCOVERY
-    version: str = "1.0.0"
-    is_remote: bool = False
-    supported_capabilities: List[str] = []
+    @classmethod
+    def resolve_tool_repo(cls, repo_name: str) -> Optional[str]:
+        """Resolves tool repository directory in backend/tools/<repo_name>."""
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        repo_path = os.path.join(base_dir, "tools", repo_name)
+        if os.path.isdir(repo_path):
+            return repo_path
+        return None
+
+    @classmethod
+    def get_repo_git_info(cls, repo_name: str) -> Dict[str, Any]:
+        """Extracts commit, branch, and remote origin URL from a cloned tool repository."""
+        repo_path = cls.resolve_tool_repo(repo_name)
+        if not repo_path or not os.path.isdir(os.path.join(repo_path, ".git")):
+            return {
+                "cloned": False,
+                "repo_path": None,
+                "commit": None,
+                "branch": None,
+                "origin": None
+            }
+
+        info = {
+            "cloned": True,
+            "repo_path": repo_path,
+            "commit": None,
+            "branch": None,
+            "origin": None
+        }
+        try:
+            res = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=repo_path, capture_output=True, text=True, timeout=3)
+            if res.returncode == 0:
+                info["commit"] = res.stdout.strip()
+        except Exception:
+            pass
+
+        try:
+            res = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_path, capture_output=True, text=True, timeout=3)
+            if res.returncode == 0:
+                info["branch"] = res.stdout.strip()
+        except Exception:
+            pass
+
+        try:
+            res = subprocess.run(["git", "config", "--get", "remote.origin.url"], cwd=repo_path, capture_output=True, text=True, timeout=3)
+            if res.returncode == 0:
+                info["origin"] = res.stdout.strip()
+        except Exception:
+            pass
+
+        return info
 
     @abstractmethod
     def check_availability(self) -> Dict[str, Any]:

@@ -50,6 +50,12 @@ class TSharkAdapter(BaseScannerAdapter):
             if os.path.isfile(candidate) or shutil.which(candidate):
                 return candidate
             return None
+        proj = self.resolve_project_binary("tshark")
+        if proj:
+            return proj
+        for p in [r"C:\Program Files\Wireshark\tshark.exe", r"C:\Program Files (x86)\Wireshark\tshark.exe"]:
+            if os.path.isfile(p):
+                return p
         return shutil.which("tshark")
 
     def get_version(self) -> str:
@@ -72,6 +78,22 @@ class TSharkAdapter(BaseScannerAdapter):
         """Probes TShark executable and packet capture sources."""
         binary = self._resolve_binary()
         if not binary:
+            repo_info = self.get_repo_git_info("wireshark")
+            if repo_info.get("cloned"):
+                return {
+                    "name": self.tool_name,
+                    "display_name": self.display_name,
+                    "category": self.category,
+                    "version": self.version,
+                    "status": ToolStatus.NOT_CONFIGURED,
+                    "available": False,
+                    "is_remote": False,
+                    "configuration_status": f"Wireshark/TShark repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}).",
+                    "supported_capabilities": self.supported_capabilities,
+                    "last_health_check": datetime.now(timezone.utc).isoformat(),
+                    "path": repo_info["repo_path"],
+                    "message": f"Wireshark source repository integrated ({repo_info['commit']}). Install Wireshark binary to activate live capture."
+                }
             return {
                 "name": self.tool_name,
                 "display_name": self.display_name,

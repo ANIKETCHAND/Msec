@@ -64,9 +64,27 @@ class AssessmentOrchestrator:
     def get_tool_inventory(self) -> List[Dict[str, Any]]:
         """Returns the operational status and installation availability of all defensive tools."""
         inventory = []
+        repo_mapping = {
+            "nmap": "nmap_repo",
+            "nuclei": "nuclei",
+            "trivy": "trivy",
+            "syft": "syft",
+            "zap": "zap",
+            "tshark": "wireshark",
+            "suricata": "suricata",
+            "zeek": "zeek",
+            "lynis": "lynis",
+            "openscap": "openscap",
+            "openvas": "openvas",
+            "nikto": "nikto"
+        }
+
         for name, adapter in self.adapters.items():
             info = adapter.check_availability()
-            inventory.append({
+            repo_name = repo_mapping.get(name)
+            repo_info = BaseScannerAdapter.get_repo_git_info(repo_name) if repo_name else None
+
+            item = {
                 "name": name,
                 "display_name": getattr(adapter, "display_name", name),
                 "category": getattr(adapter, "category", ToolCategory.CORE_DISCOVERY),
@@ -79,7 +97,20 @@ class AssessmentOrchestrator:
                 "last_health_check": info.get("last_health_check", datetime.now(timezone.utc).isoformat()),
                 "path": info.get("path"),
                 "message": info.get("message", "")
-            })
+            }
+
+            if repo_info and repo_info.get("cloned"):
+                item["repository_integrated"] = True
+                item["repository_path"] = repo_info.get("repo_path")
+                item["git_commit"] = repo_info.get("commit")
+                item["git_branch"] = repo_info.get("branch")
+                item["git_origin"] = repo_info.get("origin")
+                if repo_info.get("commit"):
+                    extra = f" [Git Repo: {repo_info.get('commit')} ({repo_info.get('branch')})]"
+                    if extra not in item["configuration_status"]:
+                        item["configuration_status"] = (item["configuration_status"] + extra).strip()
+
+            inventory.append(item)
         return inventory
 
     def execute_assessment(

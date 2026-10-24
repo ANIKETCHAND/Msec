@@ -71,20 +71,22 @@ class OpenSCAPAdapter(BaseScannerAdapter):
         is_windows = sys.platform.startswith("win")
         binary = self._resolve_binary()
 
+        repo_info = self.get_repo_git_info("openscap")
         if is_windows and not binary:
+            conf_msg = f"OpenSCAP repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}). OpenSCAP is natively designed for Linux/Unix systems." if repo_info.get("cloned") else "OpenSCAP is natively designed for Linux/Unix environments; not found on Windows host"
             return {
                 "name": self.tool_name,
                 "display_name": self.display_name,
                 "category": self.category,
-                "version": "unknown",
+                "version": self.version if repo_info.get("cloned") else "unknown",
                 "status": ToolStatus.NOT_APPLICABLE,
                 "available": False,
                 "is_remote": False,
-                "configuration_status": "OpenSCAP is natively designed for Linux/Unix environments; not found on Windows host",
+                "configuration_status": conf_msg,
                 "supported_capabilities": self.supported_capabilities,
                 "last_health_check": datetime.now(timezone.utc).isoformat(),
-                "path": None,
-                "message": "OpenSCAP is not installed or natively supported on this Windows host."
+                "path": repo_info.get("repo_path"),
+                "message": f"OpenSCAP compliance auditor repository integrated (commit {repo_info['commit']})." if repo_info.get("cloned") else "OpenSCAP is not installed or natively supported on this Windows host."
             }
 
         if not binary:

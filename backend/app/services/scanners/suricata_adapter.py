@@ -92,6 +92,22 @@ class SuricataAdapter(BaseScannerAdapter):
                 "message": f"Suricata binary is installed ({v}), but EVE JSON stream is not running. Configure SURICATA_EVE_PATH."
             }
 
+        repo_info = self.get_repo_git_info("suricata")
+        if repo_info.get("cloned"):
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": self.version,
+                "status": ToolStatus.NOT_CONFIGURED,
+                "available": False,
+                "is_remote": False,
+                "configuration_status": f"Suricata repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}). EVE log not found at {self.eve_path}.",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": repo_info["repo_path"],
+                "message": f"Suricata IDS repository integrated (commit {repo_info['commit']}). Start Suricata engine or configure SURICATA_EVE_PATH to stream alerts."
+            }
         return {
             "name": self.tool_name,
             "display_name": self.display_name,

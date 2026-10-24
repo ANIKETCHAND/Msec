@@ -83,6 +83,22 @@ class ZapAdapter(BaseScannerAdapter):
         except Exception as e:
             pass
 
+        repo_info = self.get_repo_git_info("zap")
+        if repo_info.get("cloned"):
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": self.version,
+                "status": ToolStatus.NOT_CONFIGURED,
+                "available": False,
+                "is_remote": True,
+                "configuration_status": f"OWASP ZAP repository integrated at {repo_info['repo_path']} (commit {repo_info['commit']}). Daemon not running on {self.zap_url}.",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": repo_info["repo_path"],
+                "message": f"OWASP ZAP git repository integrated (commit {repo_info['commit']}). Start daemon with zap.bat -daemon to enable live API assessment."
+            }
         return {
             "name": self.tool_name,
             "display_name": self.display_name,
