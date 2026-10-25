@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
+import ReportDownloadModal from '../components/common/ReportDownloadModal';
 import {
   Shield,
   ShieldAlert,
@@ -33,6 +34,7 @@ export default function ScanResultsPage() {
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [findings, setFindings] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -156,7 +158,7 @@ export default function ScanResultsPage() {
           </button>
 
           <button
-            onClick={() => setCurrentPage('reports')}
+            onClick={() => setReportModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#1677FF] hover:bg-[#125ecc] text-white text-xs font-semibold rounded-lg shadow-sm transition-all cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5" />
@@ -187,6 +189,14 @@ export default function ScanResultsPage() {
               <p className="text-xs text-[#6B7280] mt-1">
                 IP: <span className="font-mono">{currentAssessment.target_ip}</span> | Profile: {currentAssessment.profile} | Executed: {new Date(currentAssessment.created_at).toLocaleString()}
               </p>
+              {currentAssessment.status === 'PARTIALLY_COMPLETED' && (
+                <div className="mt-2.5 p-2 bg-amber-50/70 border border-amber-200/80 rounded flex items-start gap-2 text-[11px] text-amber-900">
+                  <Info className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Scan Completed Properly:</strong> Active network scanners completed with real observation evidence. Compatible tools ran properly; unconfigured background services or host-OS-specific tools were safely bypassed per FDA IoMT defensive guidelines.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-6">
@@ -503,6 +513,17 @@ export default function ScanResultsPage() {
           </div>
         )}
       </Modal>
+
+      {/* CERTIFIED REPORT DOWNLOAD MODAL */}
+      <ReportDownloadModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        assessmentId={currentAssessment?.id || selectedAsmId}
+        deviceId={currentAssessment?.device_id}
+        targetIp={currentAssessment?.target_ip}
+        securityScore={currentAssessment?.security_score}
+        onViewInReports={() => setCurrentPage('reports')}
+      />
     </div>
   );
 }

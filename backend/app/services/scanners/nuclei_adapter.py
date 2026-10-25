@@ -210,6 +210,25 @@ class NucleiAdapter(BaseScannerAdapter):
                     metadata={"target_url": target_url, "findings_count": len(findings)}
                 )
             else:
+                raw_err = proc.stderr or proc.stdout or ""
+                if "no templates provided" in raw_err.lower():
+                    return ScannerResult(
+                        tool_name=self.tool_name,
+                        status="NOT_EVALUATED",
+                        target_ip=target_ip,
+                        available=True,
+                        execution_time_seconds=round(elapsed, 2),
+                        findings=[],
+                        raw_output=raw_err,
+                        exit_code=proc.returncode,
+                        error_message="Nuclei templates are not installed in the host environment. Template-based CVE checks safely skipped.",
+                        coverage_limitations=[
+                            "Nuclei template definitions were not found on the local host. Run 'nuclei -update-templates' or supply a custom templates folder."
+                        ],
+                        is_simulated=False,
+                        metadata={"reason": "NO_TEMPLATES_INSTALLED"}
+                    )
+
                 return ScannerResult(
                     tool_name=self.tool_name,
                     status="FAILED",
@@ -217,7 +236,7 @@ class NucleiAdapter(BaseScannerAdapter):
                     available=True,
                     execution_time_seconds=round(elapsed, 2),
                     findings=[],
-                    raw_output=proc.stderr or proc.stdout or "",
+                    raw_output=raw_err,
                     exit_code=proc.returncode,
                     error_message=f"Nuclei execution failed (code {proc.returncode}): {proc.stderr.strip() or 'Target unreachable or probe rejected'}",
                     is_simulated=False,

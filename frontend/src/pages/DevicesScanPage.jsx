@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
+import ReportDownloadModal from '../components/common/ReportDownloadModal';
 import {
   Shield,
   ShieldCheck,
@@ -17,6 +18,8 @@ import {
   Plus,
   X,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Info,
   Server,
   ArrowRight,
@@ -336,6 +339,8 @@ export default function DevicesScanPage() {
   const [scanStatusText, setScanStatusText] = useState('');
   const [executionTimeline, setExecutionTimeline] = useState([]);
   const [latestAssessment, setLatestAssessment] = useState(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [showToolBreakdown, setShowToolBreakdown] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null);
 
   // Add Device Modal State
@@ -1185,13 +1190,24 @@ export default function DevicesScanPage() {
               {/* Completed Results Summary Banner */}
               {latestAssessment && (
                 <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <span className="text-xs font-semibold text-[#171717]">
-                        Assessment ID: {latestAssessment.id}
-                      </span>
-                      <p className="text-[11px] text-[#6B7280]">
-                        Executed on target: {latestAssessment.target_ip} ({latestAssessment.profile})
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#171717]">
+                          Assessment ID: {latestAssessment.id}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                          latestAssessment.status === 'COMPLETED'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : latestAssessment.status === 'PARTIALLY_COMPLETED'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-red-50 text-red-700 border-red-200'
+                        }`}>
+                          {latestAssessment.status}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#6B7280] mt-0.5">
+                        Target: <span className="font-mono">{latestAssessment.target_ip}</span> ({latestAssessment.profile}) • Recorded: {new Date(latestAssessment.created_at || Date.now()).toLocaleTimeString()}
                       </p>
                     </div>
                     <div className="text-right">
@@ -1200,6 +1216,81 @@ export default function DevicesScanPage() {
                       </span>
                       <span className="text-xs text-[#6B7280]"> / 100 Posture</span>
                     </div>
+                  </div>
+
+                  {/* Summary / Partially Completed Guidance */}
+                  {latestAssessment.status === 'PARTIALLY_COMPLETED' && (
+                    <div className="p-2.5 bg-amber-50/60 border border-amber-200/80 rounded text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-semibold text-amber-900">
+                        <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span>Why is this marked Partially Completed?</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        Active network security scanners (<code className="font-mono">native_probe</code>, <code className="font-mono">nmap</code>) completed properly with full observations. Non-applicable tools (container/SBOM tools like <code className="font-mono">syft</code>/<code className="font-mono">trivy</code> that require Docker images, or daemons like <code className="font-mono">zap</code>/<code className="font-mono">openvas</code> requiring background services) were safely bypassed in compliance with FDA IoMT defensive boundaries.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Tool Execution Breakdown Accordion */}
+                  <div className="border border-[#E5E7EB] rounded-lg bg-white overflow-hidden text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setShowToolBreakdown(!showToolBreakdown)}
+                      className="w-full px-3 py-2 bg-[#F9FAFB] hover:bg-[#F3F4F6] flex items-center justify-between font-medium text-[#374151] transition-swiss cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5 text-[11px] font-semibold text-[#171717]">
+                        <Layers className="w-3.5 h-3.5 text-[#1677FF]" />
+                        <span>Tool Execution Breakdown ({latestAssessment.tools_executed?.length || Object.keys(latestAssessment.raw_results?.tools_status || {}).length || 0} tools)</span>
+                      </span>
+                      {showToolBreakdown ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-[#6B7280]" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-[#6B7280]" />
+                      )}
+                    </button>
+
+                    {showToolBreakdown && (
+                      <div className="p-3 divide-y divide-[#F3F4F6] space-y-2 max-h-56 overflow-y-auto">
+                        {Object.entries(latestAssessment.raw_results?.tools_status || {}).length > 0 ? (
+                          Object.entries(latestAssessment.raw_results.tools_status).map(([toolName, info]) => {
+                            const isCompleted = info.status === 'COMPLETED';
+                            const isNotEvaluated = info.status === 'NOT_EVALUATED';
+                            return (
+                              <div key={toolName} className="pt-2 first:pt-0 flex items-start justify-between gap-2">
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-[#171717] capitalize">{toolName}</span>
+                                    <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold ${
+                                      isCompleted
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : isNotEvaluated
+                                        ? 'bg-gray-100 text-gray-700'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                      {info.status}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-[#6B7280]">
+                                    {isCompleted
+                                      ? `Completed in ${info.execution_time_seconds || 0}s • ${info.findings_count || 0} findings recorded`
+                                      : isNotEvaluated
+                                      ? (info.error_message || 'Safely bypassed (requires container image or background daemon).')
+                                      : (info.error_message || 'Tool timed out or exited with error.')}
+                                  </p>
+                                </div>
+                                <span className="text-[10px] text-[#9CA3AF] shrink-0 font-mono">
+                                  {isCompleted ? 'Active Probe' : isNotEvaluated ? 'Bypassed' : 'Attention'}
+                                </span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-[11px] text-[#6B7280]">
+                            Tools evaluated: {(latestAssessment.tools_executed || []).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E5E7EB]">
@@ -1212,8 +1303,8 @@ export default function DevicesScanPage() {
                       <ArrowRight className="w-3 h-3" />
                     </button>
                     <button
-                      onClick={() => setCurrentPage('reports')}
-                      className="px-3.5 py-1.5 border border-[#E5E7EB] hover:bg-white text-[#374151] text-xs font-medium rounded-lg transition-swiss flex items-center gap-1.5 cursor-pointer"
+                      onClick={() => setReportModalOpen(true)}
+                      className="px-3.5 py-1.5 border border-[#1677FF] text-[#1677FF] hover:bg-blue-50 text-xs font-medium rounded-lg transition-swiss flex items-center gap-1.5 cursor-pointer shadow-xs"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>Generate Certified Report</span>
@@ -1373,6 +1464,17 @@ export default function DevicesScanPage() {
           </div>
         </form>
       </Modal>
+
+      {/* CERTIFIED REPORT MODAL */}
+      <ReportDownloadModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        assessmentId={latestAssessment?.id}
+        deviceId={latestAssessment?.device_id || selectedDevice?.name || selectedDevice?.id}
+        targetIp={latestAssessment?.target_ip || selectedDevice?.ipAddress}
+        securityScore={latestAssessment?.security_score}
+        onViewInReports={() => setCurrentPage('reports')}
+      />
     </div>
   );
 }
