@@ -32,15 +32,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Narrow CORS configuration for prototype security
+# Permissive local CORS for development and cross-origin dashboard access
 origins = settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0|192\.168\.[0-9]+\.[0-9]+)(:[0-9]+)?$",
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 import uuid
