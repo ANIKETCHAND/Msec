@@ -232,6 +232,11 @@ class AssessmentOrchestrator:
             else:
                 failed_count += 1
 
+            for f in result.findings:
+                if not getattr(f, "source_tool", None):
+                    setattr(f, "source_tool", tool_clean)
+                if not f.raw_evidence.get("source_tool"):
+                    f.raw_evidence["source_tool"] = tool_clean
             all_findings.extend(result.findings)
 
         # 4. Determine Overall Assessment Status
@@ -308,7 +313,7 @@ class AssessmentOrchestrator:
                 cvss_score=enriched.get("cvss_score"),
                 affected_port=sf.affected_port,
                 affected_service=sf.affected_service or "HTTP",
-                source_tool=evidence.get("source_tool", effective_tools[0]),
+                source_tool=getattr(sf, "source_tool", None) or evidence.get("source_tool") or evidence.get("tool") or "native_probe",
                 remediation_guidance=enriched.get("remediation_guidance"),
                 raw_evidence=evidence,
                 created_at=datetime.now(timezone.utc)

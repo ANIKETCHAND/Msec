@@ -127,17 +127,18 @@ class NmapAdapter(BaseScannerAdapter):
         # --version-light: minimal intrusive probing
         # -T3: Normal polite timing
         # -p: specific IoMT / web / HL7 / Modbus ports
-        ports = options.get("ports", "80,443,502,2575,8080,8443") if options else "80,443,502,2575,8080,8443"
+        ports = options.get("ports", "80,443,502,2575,8000,8080,8090,8443,5173") if options else "80,443,502,2575,8000,8080,8090,8443,5173"
         binary_exec = avail.get("path") or "nmap"
         args = [
             binary_exec,
             "-sT",
             "-sV",
             "--version-light",
+            "-n",
             "-p", str(ports),
-            "-T3",
+            "-T4",
             "--max-retries", "1",
-            "--host-timeout", "30s",
+            "--host-timeout", "15s",
             "-oX", "-",
             target_ip
         ]
