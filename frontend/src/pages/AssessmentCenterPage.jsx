@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
+import ReportDownloadModal from '../components/common/ReportDownloadModal';
 import {
   Shield,
   ShieldCheck,
@@ -109,6 +110,7 @@ export default function AssessmentCenterPage() {
   const [lastGeneratedReport, setLastGeneratedReport] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   // 8-Step Focused Workflow State
   const [currentStep, setCurrentStep] = useState(1);
@@ -768,26 +770,17 @@ export default function AssessmentCenterPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-[#171717]">Generate Certified Audit Report</h4>
-                  <p className="text-[11px] text-[#6B7280]">Export report with SHA-256 seal, executive summary, and remediation guidance.</p>
+                  <p className="text-[11px] text-[#6B7280]">Export report with SHA-256 seal, executive summary, and remediation guidance in PDF or HTML.</p>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={() => handleGenerateReport('PDF')}
-                    disabled={reportGenerating || !selectedAssessment}
-                    className="px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium flex items-center gap-1.5 transition-swiss disabled:opacity-50"
+                    onClick={() => setReportModalOpen(true)}
+                    disabled={executing || !selectedAssessment}
+                    className="px-3.5 py-1.5 rounded bg-[#1677FF] hover:bg-[#125ecc] text-white text-xs font-semibold flex items-center gap-1.5 transition-swiss disabled:opacity-50 cursor-pointer shadow-xs"
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Generate PDF</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleGenerateReport('HTML')}
-                    disabled={reportGenerating || !selectedAssessment}
-                    className="px-3 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss disabled:opacity-50"
-                  >
-                    <FileCode className="w-3.5 h-3.5" />
-                    <span>Generate HTML</span>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Generate & Download Report</span>
                   </button>
                 </div>
               </div>
@@ -800,7 +793,7 @@ export default function AssessmentCenterPage() {
                       Report {lastGeneratedReport.id} ({lastGeneratedReport.report_type}) Ready
                     </span>
                     <span className="font-mono text-[10px] text-emerald-700">
-                      SHA-256: {lastGeneratedReport.sha256_hash.slice(0, 16)}...
+                      SHA-256: {lastGeneratedReport.sha256_hash?.slice(0, 16)}...
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -811,10 +804,10 @@ export default function AssessmentCenterPage() {
                       <Download className="w-3 h-3 text-[#1677FF]" /> Download
                     </button>
                     <button
-                      onClick={() => setCurrentPage('reports')}
-                      className="text-xs text-[#1677FF] hover:underline font-medium"
+                      onClick={() => setReportModalOpen(true)}
+                      className="text-xs text-[#1677FF] hover:underline font-medium cursor-pointer"
                     >
-                      View in Reports &rarr;
+                      Report Options &rarr;
                     </button>
                   </div>
                 </div>
@@ -859,11 +852,11 @@ export default function AssessmentCenterPage() {
                 High &amp; Critical findings have been automatically emitted into the Security Events pipeline.
               </span>
                 <button
-                  onClick={() => setCurrentPage('reports')}
-                  className="px-3 py-1.5 rounded bg-white border border-[#E5E7EB] hover:bg-[#F3F4F6] text-[#171717] font-medium flex items-center gap-1.5 transition-swiss"
+                  onClick={() => setReportModalOpen(true)}
+                  className="px-3 py-1.5 rounded bg-white border border-[#E5E7EB] hover:bg-[#F3F4F6] text-[#171717] font-medium flex items-center gap-1.5 transition-swiss cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-[#1677FF]" />
-                  <span>View Security Reports</span>
+                  <span>Download Scan Report</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
                 <button
@@ -1133,6 +1126,17 @@ export default function AssessmentCenterPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Certified Report Download Modal */}
+      <ReportDownloadModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        assessmentId={selectedAssessment?.id}
+        deviceId={selectedAssessment?.device_id || targetDevice?.id}
+        targetIp={selectedAssessment?.target_ip || targetDevice?.ipAddress}
+        securityScore={selectedAssessment?.security_score}
+        onViewInReports={() => setCurrentPage('reports')}
+      />
     </div>
   );
 }

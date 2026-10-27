@@ -33,6 +33,7 @@ export default function ScanResultsPage() {
   const [selectedAsmId, setSelectedAsmId] = useState('');
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [findings, setFindings] = useState([]);
+  const [assessmentReports, setAssessmentReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
 
@@ -70,9 +71,13 @@ export default function ScanResultsPage() {
   const loadAssessmentDetails = async (asmId) => {
     setLoading(true);
     try {
-      const asm = await api.getAssessmentById(asmId);
+      const [asm, reps] = await Promise.all([
+        api.getAssessmentById(asmId),
+        api.getReports({ assessment_id: asmId }).catch(() => [])
+      ]);
       setCurrentAssessment(asm);
       setFindings(asm.findings || []);
+      setAssessmentReports(reps || []);
     } catch (err) {
       console.warn('[ScanResults] Assessment detail fetch failed:', err.message);
     } finally {
@@ -248,6 +253,69 @@ export default function ScanResultsPage() {
           </div>
         </div>
       )}
+
+      {/* Generated Reports & Download Archive for Current Scan */}
+      <div className="bg-white border border-[#E5E7EB] rounded-lg p-4 space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-[#F3F4F6]">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-[#1677FF]" />
+            <span className="text-xs font-semibold text-[#171717] uppercase tracking-wider">
+              Generated Audit Reports & Downloads ({assessmentReports.length})
+            </span>
+          </div>
+          <button
+            onClick={() => setReportModalOpen(true)}
+            className="text-xs text-[#1677FF] hover:text-[#125ecc] font-medium flex items-center gap-1 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Generate New Report</span>
+          </button>
+        </div>
+
+        {assessmentReports.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {assessmentReports.map((rep) => (
+              <div key={rep.id} className="p-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg flex items-center justify-between gap-3 text-xs">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-[#171717]">{rep.id}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                      rep.report_type === 'PDF' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {rep.report_type}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#6B7280]">
+                    Generated {new Date(rep.created_at).toLocaleString()}
+                  </p>
+                  <p className="font-mono text-[10px] text-gray-500 truncate" title={rep.sha256_hash}>
+                    SHA-256: {rep.sha256_hash ? `${rep.sha256_hash.slice(0, 16)}...` : 'N/A'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => api.downloadReportFile(rep.id)}
+                    className="px-2.5 py-1.5 bg-[#1677FF] hover:bg-[#125ecc] text-white rounded text-xs font-medium flex items-center gap-1 cursor-pointer transition-swiss"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-3 text-center text-xs text-[#6B7280] bg-[#F9FAFB] rounded border border-dashed border-[#E5E7EB] flex items-center justify-center gap-2">
+            <span>No reports generated yet for this scan.</span>
+            <button
+              onClick={() => setReportModalOpen(true)}
+              className="text-[#1677FF] font-semibold hover:underline cursor-pointer"
+            >
+              Generate & Download Now &rarr;
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* 3. Explicit Assessment Limitations & Tool Operational Status */}
       <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg p-4 space-y-3">
@@ -517,7 +585,12 @@ export default function ScanResultsPage() {
       {/* CERTIFIED REPORT DOWNLOAD MODAL */}
       <ReportDownloadModal
         isOpen={reportModalOpen}
-        onClose={() => setReportModalOpen(false)}
+        onClose={() => {
+          setReportModalOpen(false);
+          if (selectedAsmId) {
+            loadAssessmentDetails(selectedAsmId);
+          }
+        }}
         assessmentId={currentAssessment?.id || selectedAsmId}
         deviceId={currentAssessment?.device_id}
         targetIp={currentAssessment?.target_ip}

@@ -60,8 +60,32 @@ class TSharkAdapter(BaseScannerAdapter):
         return shutil.which("tshark")
 
     def check_availability(self) -> Dict[str, Any]:
-        """Probes TShark executable and packet capture sources."""
+        """Probes TShark executable and container sources."""
         binary = self._resolve_binary()
+        has_docker_tshark = False
+        try:
+            res = subprocess.run(["docker", "image", "inspect", "medishield-tshark:latest"], capture_output=True, text=True, timeout=3)
+            if res.returncode == 0:
+                has_docker_tshark = True
+        except Exception:
+            pass
+
+        if has_docker_tshark:
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": "4.2.5",
+                "status": ToolStatus.AVAILABLE,
+                "available": True,
+                "is_remote": False,
+                "configuration_status": "TShark 4.2.5 containerized packet analysis engine active (medishield-tshark)",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": "docker:medishield-tshark:latest",
+                "message": "TShark Packet Analyzer is operational in Docker (version 4.2.5)."
+            }
+
         repo_info = self.get_repo_git_info("wireshark")
         v = "4.2.x" if not binary else "4.x"
         return {

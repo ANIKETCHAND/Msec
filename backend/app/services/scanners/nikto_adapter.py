@@ -37,6 +37,30 @@ class NiktoAdapter(BaseScannerAdapter):
         self._detected_version = None
 
     def check_availability(self) -> Dict[str, Any]:
+        has_docker_nikto = False
+        try:
+            res = subprocess.run(["docker", "image", "inspect", "medishield-nikto:latest"], capture_output=True, text=True, timeout=3)
+            if res.returncode == 0:
+                has_docker_nikto = True
+        except Exception:
+            pass
+
+        if has_docker_nikto:
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": "2.6.1",
+                "status": ToolStatus.AVAILABLE,
+                "available": True,
+                "is_remote": False,
+                "configuration_status": "Nikto 2.6.1 containerized execution engine operational (medishield-nikto)",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": "docker:medishield-nikto:latest",
+                "message": "Nikto Web Server Auditor is operational in Docker."
+            }
+
         repo_info = self.get_repo_git_info("nikto")
         return {
             "name": self.tool_name,
@@ -64,6 +88,7 @@ class NiktoAdapter(BaseScannerAdapter):
         tested_ports = [80, 443, 8080]
         active_web_port = None
         headers_observed = {}
+        raw_output_text = ""
 
         # 1. Quick probe to discover if target has active web port
         for port in tested_ports:
@@ -78,7 +103,45 @@ class NiktoAdapter(BaseScannerAdapter):
             except Exception:
                 pass
 
-        if active_web_port:
+        # 2. Execute containerized Nikto if available
+        docker_target = "host.docker.internal" if target_ip in ["127.0.0.1", "localhost", "0.0.0.0"] else target_ip
+        port_arg = active_web_port or 80
+        try:
+            cmd = [
+                "docker", "run", "--rm", "medishield-nikto",
+                "-h", f"http://{docker_target}:{port_arg}",
+                "-Tuning", "1,2,3",
+                "-maxtime", "8s",
+                "-nointeractive"
+            ]
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            raw_output_text = proc.stdout or proc.stderr or ""
+            if proc.stdout:
+                for line in proc.stdout.split("\n"):
+                    line_s = line.strip()
+                    if line_s.startswith("+") and not any(kw in line_s for kw in ["Target IP:", "Target Hostname:", "Target Port:", "Start Time:", "End Time:", "host(s) tested", "Platform:"]):
+                        clean_msg = line_s.lstrip("+").strip()
+                        # Categorize severity
+                        sev = "LOW"
+                        if any(kw in clean_msg.lower() for kw in ["vulnerability", "leak", "exploit", "cve"]):
+                            sev = "MEDIUM"
+                        findings.append(ScannerFinding(
+                            title=f"Nikto: {clean_msg[:75]}",
+                            description=clean_msg,
+                            severity=sev,
+                            category="CONFIGURATION",
+                            affected_port=port_arg,
+                            affected_service="HTTP",
+                            remediation_guidance="Harden web server headers and restrict administrative endpoint exposure.",
+                            verification_status="Observation",
+                            raw_evidence={"tool": "nikto", "line": clean_msg, "target": target_ip}
+                        ))
+        except Exception as e:
+            if not raw_output_text:
+                raw_output_text = f"Containerized Nikto note: {str(e)}"
+
+        # 3. Direct HTTP header evaluation if ports responded
+        if active_web_port and not findings:
             scheme = "https" if active_web_port in [443, 8443] else "http"
             url = f"{scheme}://{target_ip}:{active_web_port}/"
             try:
@@ -90,7 +153,6 @@ class NiktoAdapter(BaseScannerAdapter):
             except Exception:
                 pass
 
-            # Analyze headers
             server = headers_observed.get("Server") or headers_observed.get("server")
             if server:
                 findings.append(ScannerFinding(
@@ -152,10 +214,10 @@ class NiktoAdapter(BaseScannerAdapter):
             available=True,
             execution_time_seconds=round(max(elapsed, 0.45), 2),
             findings=findings,
-            raw_output=f"Nikto Web Server Auditor completed assessment on {target_ip}.\nRecorded {len(findings)} observations.",
+            raw_output=raw_output_text or f"Nikto Web Server Auditor completed assessment on {target_ip}.\nRecorded {len(findings)} observations.",
             coverage_limitations=[
                 "Nikto scan strictly scoped to non-destructive configuration and header checks with safe timeouts."
             ],
             is_simulated=False,
-            metadata={"tested_ports": tested_ports, "target_ip": target_ip}
+            metadata={"tested_ports": tested_ports, "target_ip": target_ip, "findings_count": len(findings)}
         )

@@ -43,7 +43,31 @@ class LynisAdapter(BaseScannerAdapter):
         self._detected_version = None
 
     def check_availability(self) -> Dict[str, Any]:
-        """Probes Lynis executable or integrated host hardening auditor."""
+        """Probes Lynis executable or containerized host hardening auditor."""
+        has_docker_lynis = False
+        try:
+            res = subprocess.run(["docker", "image", "inspect", "medishield-lynis:latest"], capture_output=True, text=True, timeout=3)
+            if res.returncode == 0:
+                has_docker_lynis = True
+        except Exception:
+            pass
+
+        if has_docker_lynis:
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": "3.1.8",
+                "status": ToolStatus.AVAILABLE,
+                "available": True,
+                "is_remote": False,
+                "configuration_status": "Lynis 3.1.8 containerized OS hardening auditor operational (medishield-lynis)",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": "docker:medishield-lynis:latest",
+                "message": "Lynis Host Auditor is operational in Docker (version 3.1.8)."
+            }
+
         repo_info = self.get_repo_git_info("lynis")
         return {
             "name": self.tool_name,

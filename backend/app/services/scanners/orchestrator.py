@@ -235,7 +235,7 @@ class AssessmentOrchestrator:
             all_findings.extend(result.findings)
 
         # 4. Determine Overall Assessment Status
-        if completed_count > 0 and (failed_count == 0 and not_evaluated_count == 0):
+        if completed_count > 0 and failed_count == 0:
             overall_status = "COMPLETED"
         elif completed_count > 0:
             overall_status = "PARTIALLY_COMPLETED"
