@@ -132,8 +132,6 @@ class NmapAdapter(BaseScannerAdapter):
         args = [
             binary_exec,
             "-sT",
-            "-sV",
-            "--version-light",
             "-n",
             "-p", str(ports),
             "-T4",
@@ -275,3 +273,4 @@ class NmapAdapter(BaseScannerAdapter):
         except Exception:
             pass
         return findings
+

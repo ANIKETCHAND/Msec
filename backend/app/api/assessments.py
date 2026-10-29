@@ -300,7 +300,7 @@ def launch_assessment(
     user: UserModel = Depends(require_analyst)
 ):
     """Launch defensive assessment (RESTful collection endpoint)."""
-    return execute_assessment(req=req, db=db, user=user)
+    return execute_defensive_assessment(req=req, db=db, user=user)
 
 
 @assessments_router.post(

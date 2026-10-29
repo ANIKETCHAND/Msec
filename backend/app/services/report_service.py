@@ -816,7 +816,9 @@ class ReportService:
         content_hash = hashlib.sha256(prelim_html.encode("utf-8")).hexdigest()
 
         final_html = template.render(**ctx, sha256_hash=content_hash)
-        return final_html.encode("utf-8"), content_hash
+        final_bytes = final_html.encode("utf-8")
+        file_hash = hashlib.sha256(final_bytes).hexdigest()
+        return final_bytes, file_hash
 
     def generate_pdf_report(
         self,
