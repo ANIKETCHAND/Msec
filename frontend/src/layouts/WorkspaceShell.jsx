@@ -32,7 +32,8 @@ export default function WorkspaceShell({ children }) {
     resetAllSimulations,
     securityEvents,
     logAudit,
-    logout
+    logout,
+    switchUserRole
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,9 +72,13 @@ export default function WorkspaceShell({ children }) {
   const secondaryPages = [
     { id: 'devices', label: 'Device Inventory' },
     { id: 'security-events', label: 'Security Events' },
-    { id: 'audit-logs', label: 'Audit Trail Ledger' },
+    { id: 'incidents', label: 'Incidents' },
+    { id: 'ml-detection', label: 'ML Detection' },
+    { id: 'topology', label: 'Network Topology' },
     { id: 'tools', label: 'Security Tools' },
+    { id: 'response-simulator', label: 'Simulator' },
     { id: 'integrity', label: 'Privacy & Integrity' },
+    { id: 'audit-logs', label: 'Audit Trail Ledger' },
     { id: 'settings', label: 'System Settings' }
   ];
 
@@ -250,7 +255,7 @@ export default function WorkspaceShell({ children }) {
                     <p className="text-[10px] uppercase font-mono text-[#9CA3AF] font-semibold mb-1">Switch RBAC Persona:</p>
                     <div className="space-y-1">
                       <button
-                        onClick={() => { setCurrentUser(DEMO_USERS.admin); setProfileDropdownOpen(false); }}
+                        onClick={() => { switchUserRole('admin'); setProfileDropdownOpen(false); }}
                         className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between cursor-pointer ${
                           currentUser?.role === 'Administrator' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
                         }`}
@@ -259,7 +264,7 @@ export default function WorkspaceShell({ children }) {
                         {currentUser?.role === 'Administrator' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
                       </button>
                       <button
-                        onClick={() => { setCurrentUser(DEMO_USERS.analyst); setProfileDropdownOpen(false); }}
+                        onClick={() => { switchUserRole('analyst'); setProfileDropdownOpen(false); }}
                         className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between cursor-pointer ${
                           currentUser?.role === 'Security Analyst' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
                         }`}
@@ -268,7 +273,7 @@ export default function WorkspaceShell({ children }) {
                         {currentUser?.role === 'Security Analyst' && <CheckCircle2 className="w-3 h-3 text-[#1677FF]" />}
                       </button>
                       <button
-                        onClick={() => { setCurrentUser(DEMO_USERS.doctor); setProfileDropdownOpen(false); }}
+                        onClick={() => { switchUserRole('doctor'); setProfileDropdownOpen(false); }}
                         className={`w-full text-left px-2 py-1.5 rounded transition-swiss flex items-center justify-between cursor-pointer ${
                           currentUser?.role === 'Doctor Demo' ? 'bg-[#E6F4FF] text-[#1677FF] font-semibold' : 'hover:bg-[#F9FAFB] text-[#171717]'
                         }`}

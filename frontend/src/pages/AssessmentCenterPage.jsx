@@ -552,9 +552,9 @@ export default function AssessmentCenterPage() {
                   onChange={(e) => setSelectedProfile(e.target.value)}
                   className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none"
                 >
-                  <option value="DEFENSIVE_AUDIT">DEFENSIVE_AUDIT (Safe TCP Connect, Service Banners)</option>
-                  <option value="VULNERABILITY_DISCOVERY">VULNERABILITY_DISCOVERY (IoMT CVE Template Matching)</option>
-                  <option value="COMPLIANCE_VERIFICATION">COMPLIANCE_VERIFICATION (FDA & HIPAA Controls)</option>
+                  <option value="DEFENSIVE_AUDIT">DEFENSIVE_AUDIT (Safe TCP Connect, Service Banners & CVEs)</option>
+                  <option value="PASSIVE_DISCOVERY">PASSIVE_DISCOVERY (Passive Fingerprinting & Boundary Analysis)</option>
+                  <option value="COMPLIANCE_SCAN">COMPLIANCE_SCAN (Healthcare Baseline & Regulatory Controls)</option>
                 </select>
               </div>
               <div>

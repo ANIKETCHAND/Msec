@@ -115,9 +115,11 @@ def list_assessment_scopes(
         query = query.filter(AssessmentScopeModel.device_id == device_id)
     scopes = query.order_by(AssessmentScopeModel.created_at.desc()).all()
 
-    # Update expired scopes in memory/db
+    # Update expired scopes in memory/db and normalize authorized_scope format
     now = datetime.now(timezone.utc)
     for s in scopes:
+        if isinstance(s.authorized_scope, str):
+            s.authorized_scope = [s.authorized_scope]
         exp = s.expires_at.replace(tzinfo=timezone.utc) if s.expires_at.tzinfo is None else s.expires_at
         if s.authorization_status == "AUTHORIZED" and now > exp:
             s.authorization_status = "EXPIRED"
@@ -139,6 +141,8 @@ def get_scope_details(
     scope = db.query(AssessmentScopeModel).filter(AssessmentScopeModel.id == scope_id).first()
     if not scope:
         raise HTTPException(status_code=404, detail="Scope not found")
+    if isinstance(scope.authorized_scope, str):
+        scope.authorized_scope = [scope.authorized_scope]
     return scope
 
 

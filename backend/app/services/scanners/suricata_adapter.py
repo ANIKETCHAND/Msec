@@ -106,7 +106,7 @@ class SuricataAdapter(BaseScannerAdapter):
                                         affected_port=ev.get("dest_port", 0),
                                         affected_service=ev.get("proto", "TCP"),
                                         remediation_guidance="Investigate alert origin and apply microsegmentation isolation rules.",
-                                        verification_status="Observation",
+                                        verification_status="Confirmed Vulnerability" if alt.get("severity", 3) == 1 else "Observation",
                                         raw_evidence=ev
                                     ))
                             except json.JSONDecodeError:

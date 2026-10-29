@@ -33,13 +33,15 @@ class ZapAdapter(BaseScannerAdapter):
     ]
 
     def __init__(self, zap_url: Optional[str] = None, api_key: Optional[str] = None):
+        self._custom_url = zap_url is not None
         self.zap_url = zap_url or os.getenv("ZAP_URL", "http://127.0.0.1:8090")
         self.api_key = api_key or os.getenv("ZAP_API_KEY", "")
         self._detected_version = None
 
     def _resolve_live_url(self) -> str:
         """Tests 8090 and 8080 to find the active ZAP daemon URL."""
-        for candidate in [self.zap_url, "http://127.0.0.1:8090", "http://127.0.0.1:8080"]:
+        candidates = [self.zap_url] if self._custom_url else [self.zap_url, "http://127.0.0.1:8090", "http://127.0.0.1:8080"]
+        for candidate in candidates:
             try:
                 req_url = f"{candidate}/JSON/core/view/version/"
                 req = urllib.request.Request(req_url)
@@ -87,14 +89,14 @@ class ZapAdapter(BaseScannerAdapter):
             "display_name": self.display_name,
             "category": self.category,
             "version": self.version,
-            "status": ToolStatus.AVAILABLE,
-            "available": True,
-            "is_remote": False,
-            "configuration_status": f"OWASP ZAP Web Security Scanner operational (Integrated Engine & Repository {repo_info.get('commit', 'main')})",
+            "status": ToolStatus.UNREACHABLE if self._custom_url else ToolStatus.NOT_CONFIGURED,
+            "available": False,
+            "is_remote": True,
+            "configuration_status": f"OWASP ZAP API daemon unreachable at {live_url}",
             "supported_capabilities": self.supported_capabilities,
             "last_health_check": datetime.now(timezone.utc).isoformat(),
-            "path": repo_info.get("repo_path") or "backend/tools/zap",
-            "message": "OWASP ZAP Web Security Scanner is operational."
+            "path": live_url,
+            "message": f"OWASP ZAP daemon is unreachable at {live_url}."
         }
 
     def execute(
@@ -103,6 +105,21 @@ class ZapAdapter(BaseScannerAdapter):
         device_context: Dict[str, Any],
         options: Optional[Dict[str, Any]] = None
     ) -> ScannerResult:
+        avail = self.check_availability()
+        if not avail["available"]:
+            return ScannerResult(
+                tool_name=self.tool_name,
+                status="NOT_EVALUATED",
+                target_ip=target_ip,
+                available=False,
+                execution_time_seconds=0.0,
+                findings=[],
+                raw_output=f"OWASP ZAP daemon is unreachable at {self.zap_url}.",
+                coverage_limitations=["ZAP API daemon uncontactable."],
+                is_simulated=False,
+                error_message="ZAP API daemon unreachable"
+            )
+
         start_time = time.time()
         findings: List[ScannerFinding] = []
         target_url = f"http://{target_ip}"

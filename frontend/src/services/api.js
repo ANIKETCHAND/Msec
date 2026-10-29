@@ -268,6 +268,10 @@ class ApiService {
     return await this.request(`/assessments/${assessmentId}`);
   }
 
+  async getAssessmentById(assessmentId) {
+    return await this.getAssessment(assessmentId);
+  }
+
   async getAssessmentFindings(assessmentId) {
     return await this.request(`/assessments/${assessmentId}/findings`);
   }

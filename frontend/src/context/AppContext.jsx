@@ -162,8 +162,11 @@ export function AppProvider({ children }) {
   const syncWithBackend = async () => {
     if (!currentUser) return;
     try {
-      // 1. Authenticate with backend for current demo user
-      await api.login(currentUser.email, currentUser.password || "analystpassword123");
+      // 1. Authenticate with backend for current demo user if token missing
+      if (!api.token) {
+        const demoKey = Object.keys(DEMO_USERS).find(k => DEMO_USERS[k].email === currentUser.email) || 'analyst';
+        await api.login(currentUser.email, DEMO_USERS[demoKey]?.password || "analystpassword123");
+      }
 
       // 2. Fetch live data from backend
       const [backendDevices, backendEvents, backendIncidents, backendAudit, backendIntegrity, detectionStatus] = await Promise.all([
@@ -285,20 +288,14 @@ export function AppProvider({ children }) {
     syncWithBackend();
   }, [currentUser]);
 
-  // Helper to record an audit log entry
+  // Helper to trigger audit sync
   const logAudit = (action, entityType, entityId, details) => {
-    const newLog = {
-      id: `AUD-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      actor: currentUser?.email || "anonymous@medishield.local",
-      role: currentUser?.role || "System",
-      action,
-      entityType,
-      entityId,
-      ipAddress: "192.168.1.104",
-      details
-    };
-    setAuditLogs(prev => [newLog, ...prev]);
+    // Audit records are created server-side by backend endpoints to preserve the SHA-256 chain.
+    if (api.token && currentUser?.role !== 'Doctor Demo') {
+      api.getAuditLogs().then(data => {
+        if (Array.isArray(data)) setAuditLogs(data);
+      }).catch(() => null);
+    }
   };
 
   const logout = async () => {
@@ -636,6 +633,25 @@ export function AppProvider({ children }) {
     setSimulationNotice("All simulated device anomalies reset to clean baseline.");
   };
 
+  const switchUserRole = async (roleKey) => {
+    const demo = DEMO_USERS[roleKey];
+    if (!demo) return;
+    try {
+      await api.login(demo.email, demo.password || "analystpassword123");
+      const safeUser = {
+        name: demo.name,
+        email: demo.email,
+        role: demo.role,
+        title: demo.title,
+        avatar: demo.avatar
+      };
+      localStorage.setItem('medishield_user', JSON.stringify(safeUser));
+      setCurrentUser(safeUser);
+    } catch (err) {
+      console.warn("[AppContext] switchUserRole error:", err.message);
+    }
+  };
+
   const value = {
     currentUser,
     setCurrentUser,
@@ -666,7 +682,8 @@ export function AppProvider({ children }) {
     triggerSimulation,
     resetAllSimulations,
     logAudit,
-    logout
+    logout,
+    switchUserRole
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

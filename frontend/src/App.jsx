@@ -19,6 +19,9 @@ import ScanResultsPage from './pages/ScanResultsPage';
 import ToolsManagementPage from './pages/ToolsManagementPage';
 import NetworkTopologyPage from './pages/NetworkTopologyPage';
 import ResponseSimulatorPage from './pages/ResponseSimulatorPage';
+import IncidentManagementPage from './pages/IncidentManagementPage';
+import MLDetectionPage from './pages/MLDetectionPage';
+import Phase1VerificationPage from './pages/Phase1VerificationPage';
 
 function MainRouter() {
   const { currentPage, currentUser } = useApp();
@@ -35,7 +38,7 @@ function MainRouter() {
   const pageMap = {
     dashboard: <DashboardPage />,
     'devices-scan': <DevicesScanPage />,
-    'assessment-center': <DevicesScanPage />,
+    'assessment-center': <AssessmentCenterPage />,
     'scan-results': <ScanResultsPage />,
     reports: <ReportsPage />,
     devices: <DeviceInventoryPage />,
@@ -44,6 +47,9 @@ function MainRouter() {
     tools: <ToolsManagementPage />,
     'response-simulator': <ResponseSimulatorPage />,
     'security-events': <SecurityEventsPage />,
+    incidents: <IncidentManagementPage />,
+    'ml-detection': <MLDetectionPage />,
+    'phase1-verify': <Phase1VerificationPage />,
     integrity: <PrivacyIntegrityPage />,
     'audit-logs': <AuditLogsPage />,
     settings: <SettingsPage />,

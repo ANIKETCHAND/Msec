@@ -52,13 +52,15 @@ The simplified interface focuses strictly on operational workspaces:
 - **Assessment Center**: Primary operational workspace for defensive scan authorization, tool configuration, execution progress, and normalized CVE findings.
 - **Security Reports**: Archive of generated PDF and HTML reports with SHA-256 seal verification and direct downloads.
 - **Security Events**: Two-column investigation workspace featuring an interactive event queue and a deep-dive event panel with raw packet payloads, clinical impact context, and triage actions.
-- **Device Inventory**: Registry of 64 clinical assets with IP, MAC, VLAN segment, status, and diagnostic drill-downs.
-- **Security Tools**: Operational status of defensive engines (Nmap, Nuclei, OWASP ZAP, Nikto, OpenVAS, Suricata).
+- **Device Inventory**: Registry of clinical assets (6 seeded default demo assets across ICU, OR, and Ward VLANs) with IP, MAC, VLAN segment, status, and diagnostic drill-downs.
+- **Security Tools**: Operational status of defensive engines (Nmap, Nuclei, OWASP ZAP, Nikto, OpenVAS, Suricata, TShark, Syft, Trivy, Lynis, Zeek).
+- **Incident Management**: Investigation tracking for high-severity correlated clinical alerts and containment actions.
+- **ML Detection**: Real-time intrusion detection and Random Forest inference evaluation on UNB CICIoMT2024 dataset.
+- **Network Topology**: Interactive visualization of healthcare gateway and VLAN segments.
+- **Response Simulator**: Safe sandbox for testing telemetry containment and simulated anomalies.
 - **Audit Logs**: Cryptographic SHA-256 hash-chain ledger tracking every operational event and login.
 - **Privacy & Integrity**: Deterministic AES-256-GCM encryption and SHA-256 payload integrity verification.
 - **Settings**: Defense-in-depth detection thresholds, heartbeat timeouts, and platform configuration.
-
-*(Note: Legacy Incident Management and ML Threat Engine overview pages have been removed from user-facing navigation; their backend services, correlation logic, and telemetry pipelines remain active internally for background event detection and audit history).*
 
 ---
 
@@ -175,7 +177,7 @@ cd backend
 .\.venv\Scripts\pytest -v
 ```
 **Results**:
-- **26 passed integration tests** covering authentication, RBAC, scope validation, multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, assessment cancellation, authoritative dashboard summary, standardized error envelopes, and audit chaining.
+- **41 passed integration tests** (100% pass rate) across `test_api_endpoints.py`, `test_dashboard_summary.py`, `test_health.py`, `test_real_tools_integration.py`, `test_reports_pdf_html.py`, and `test_tool_integrations.py`. Covers authentication, RBAC, scope validation, live & containerized multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, assessment cancellation, authoritative dashboard summary, standardized error envelopes, ML inference, and unbroken audit chaining.
 
 Build the frontend production bundle:
 ```bash

@@ -72,7 +72,7 @@ export default function ScanResultsPage() {
     setLoading(true);
     try {
       const [asm, reps] = await Promise.all([
-        api.getAssessmentById(asmId),
+        api.getAssessment(asmId),
         api.getReports({ assessment_id: asmId }).catch(() => [])
       ]);
       setCurrentAssessment(asm);

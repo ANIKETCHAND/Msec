@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
@@ -14,7 +14,10 @@ import {
 } from 'lucide-react';
 
 export default function AuditLogsPage() {
-  const { auditLogs, currentUser } = useApp();
+  const { currentUser } = useApp();
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('ALL');
 
@@ -22,8 +25,33 @@ export default function AuditLogsPage() {
   const [verifying, setVerifying] = useState(false);
   const [chainResult, setChainResult] = useState(null);
 
+  const fetchAuditLogs = async () => {
+    if (currentUser?.role === 'Doctor Demo') {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getAuditLogs();
+      setLogs(Array.isArray(data) ? data : []);
+    } catch (err) {
+      if (err.message && err.message.includes('403')) {
+        setError('FORBIDDEN');
+      } else {
+        setError(err.message || 'Failed to load audit logs.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAuditLogs();
+  }, [currentUser]);
+
   // RBAC check: Doctor Demo cannot view system audit logs
-  if (currentUser.role === 'Doctor Demo') {
+  if (currentUser?.role === 'Doctor Demo' || error === 'FORBIDDEN') {
     return (
       <div className="p-8 text-center bg-white border border-[#E5E7EB] rounded-lg max-w-md mx-auto space-y-4 my-12">
         <div className="w-10 h-10 rounded-full bg-rose-50 border border-rose-200 text-[#EF4444] mx-auto flex items-center justify-center">
@@ -49,12 +77,17 @@ export default function AuditLogsPage() {
     }
   };
 
-  const filteredLogs = auditLogs.filter(log => {
+  const filteredLogs = logs.filter(log => {
+    const logId = String(log.id || '');
+    const logActor = String(log.actor || '');
+    const logAction = String(log.action || '');
+    const logDetails = typeof log.details === 'string' ? log.details : JSON.stringify(log.details || '');
+
     const matchSearch =
-      log.id.toLowerCase().includes(search.toLowerCase()) ||
-      log.actor.toLowerCase().includes(search.toLowerCase()) ||
-      log.action.toLowerCase().includes(search.toLowerCase()) ||
-      (typeof log.details === 'string' && log.details.toLowerCase().includes(search.toLowerCase()));
+      logId.toLowerCase().includes(search.toLowerCase()) ||
+      logActor.toLowerCase().includes(search.toLowerCase()) ||
+      logAction.toLowerCase().includes(search.toLowerCase()) ||
+      logDetails.toLowerCase().includes(search.toLowerCase());
 
     const matchAction = actionFilter === 'ALL' || log.action === actionFilter;
     return matchSearch && matchAction;
@@ -171,10 +204,10 @@ export default function AuditLogsPage() {
                       {log.action}
                     </td>
                     <td className="py-3 px-4 font-mono text-[#171717] text-[11px]">
-                      {log.entityType} ({log.entityId})
+                      {log.entity_type || log.entityType || 'Asset'} ({log.entity_id || log.entityId || 'N/A'})
                     </td>
                     <td className="py-3 px-4 font-mono text-[#6B7280] text-[11px]">
-                      {log.ipAddress || '192.168.1.104'}
+                      {log.ip_address || log.ipAddress || '127.0.0.1'}
                     </td>
                     <td className="py-3 px-4 text-[#6B7280] max-w-xs truncate">
                       {typeof log.details === 'object' ? JSON.stringify(log.details) : log.details}

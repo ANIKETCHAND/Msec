@@ -28,7 +28,7 @@ export const PAGE_REGISTRY = {
   devices: {
     id: 'devices',
     title: 'Device Inventory',
-    subtitle: '64 Monitored Clinical Assets & Segments',
+    subtitle: 'Monitored Clinical Assets & Segments',
     color: '#10B981',
     icon: Server,
     category: 'ASSET SECURITY'
@@ -50,9 +50,9 @@ export const PAGE_REGISTRY = {
     category: 'CORE WORKFLOW'
   },
   'assessment-center': {
-    id: 'devices-scan',
-    title: 'Devices & Scan',
-    subtitle: 'Authorized Asset Selection & Defensive Assessment',
+    id: 'assessment-center',
+    title: 'Assessment Center',
+    subtitle: 'IoMT Security & Compliance Posture Center',
     color: '#1677FF',
     icon: Shield,
     category: 'CORE WORKFLOW'
@@ -96,6 +96,30 @@ export const PAGE_REGISTRY = {
     color: '#EF4444',
     icon: AlertTriangle,
     category: 'MONITORING'
+  },
+  incidents: {
+    id: 'incidents',
+    title: 'Incident Management',
+    subtitle: 'Active Clinical Alerts, Containment & Remediation',
+    color: '#F59E0B',
+    icon: AlertTriangle,
+    category: 'MONITORING'
+  },
+  'ml-detection': {
+    id: 'ml-detection',
+    title: 'ML Attack Detection',
+    subtitle: 'Random Forest IoMT Classifier & Real-Time Inference',
+    color: '#8B5CF6',
+    icon: Brain,
+    category: 'MONITORING'
+  },
+  'phase1-verify': {
+    id: 'phase1-verify',
+    title: 'Phase 1 Verification',
+    subtitle: 'Architecture & System Integrity Benchmark',
+    color: '#06B6D4',
+    icon: ShieldCheck,
+    category: 'GOVERNANCE'
   },
   reports: {
     id: 'reports',

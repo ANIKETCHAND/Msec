@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export default function LandingPage() {
-  const { setCurrentUser, setCurrentPage, logAudit } = useApp();
+  const { setCurrentUser, setCurrentPage, logAudit, devices, mlModel } = useApp();
   const [loggingInRole, setLoggingInRole] = useState(null);
 
   const handleQuickLogin = async (roleKey) => {
@@ -187,14 +187,14 @@ export default function LandingPage() {
           <div className="pt-10 grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
             <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs">
               <p className="text-[11px] font-mono uppercase text-[#6B7280]">Monitored Assets</p>
-              <p className="text-2xl font-bold text-[#171717] mt-1 tabular-nums">64 Devices</p>
+              <p className="text-2xl font-bold text-[#171717] mt-1 tabular-nums">{devices?.length ? `${devices.length} Assets` : '6 Clinical Assets'}</p>
               <p className="text-[11px] text-[#10B981] flex items-center gap-1 mt-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> ICU, OR, Ward VLANs
               </p>
             </div>
             <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs">
               <p className="text-[11px] font-mono uppercase text-[#6B7280]">ML Threat Detection</p>
-              <p className="text-2xl font-bold text-[#171717] mt-1 tabular-nums">99.8% Acc.</p>
+              <p className="text-2xl font-bold text-[#171717] mt-1 tabular-nums">{mlModel?.accuracy || '98.5% Acc.'}</p>
               <p className="text-[11px] text-[#6B7280] mt-1">UNB CICIoMT2024</p>
             </div>
             <div className="p-4 bg-white border border-[#E5E7EB] rounded-lg shadow-2xs">

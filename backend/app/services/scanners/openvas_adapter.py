@@ -37,14 +37,30 @@ class OpenVasAdapter(BaseScannerAdapter):
         password: Optional[str] = None,
         socket_path: Optional[str] = None
     ):
-        self.gmp_host = gmp_host or os.getenv("OPENVAS_HOST")
+        self.gmp_host = gmp_host if gmp_host is not None else os.getenv("OPENVAS_HOST")
         self.gmp_port = gmp_port or int(os.getenv("OPENVAS_PORT", "9390"))
         self.username = username or os.getenv("OPENVAS_USER", "")
         self.password = password or os.getenv("OPENVAS_PASSWORD", "")
-        self.socket_path = socket_path or os.getenv("OPENVAS_SOCKET")
+        self.socket_path = socket_path if socket_path is not None else os.getenv("OPENVAS_SOCKET")
 
     def check_availability(self) -> Dict[str, Any]:
         """Probes the configured Greenbone OpenVAS GMP server or integrated NVT engine."""
+        if self.gmp_host == "" or (not self.gmp_host and not self.socket_path):
+            return {
+                "name": self.tool_name,
+                "display_name": self.display_name,
+                "category": self.category,
+                "version": self.version,
+                "status": ToolStatus.NOT_CONFIGURED,
+                "available": False,
+                "is_remote": True,
+                "configuration_status": "Greenbone OpenVAS GMP service endpoint not configured",
+                "supported_capabilities": self.supported_capabilities,
+                "last_health_check": datetime.now(timezone.utc).isoformat(),
+                "path": None,
+                "message": "OpenVAS requires OPENVAS_HOST and credentials or a valid unix domain socket."
+            }
+
         # 1. Probe live GMP daemon if configured
         if self.gmp_host and self.username and self.password:
             endpoint = f"{self.gmp_host}:{self.gmp_port}"
@@ -94,6 +110,20 @@ class OpenVasAdapter(BaseScannerAdapter):
         device_context: Dict[str, Any],
         options: Optional[Dict[str, Any]] = None
     ) -> ScannerResult:
+        if self.gmp_host == "" or (not self.gmp_host and not self.socket_path):
+            return ScannerResult(
+                tool_name=self.tool_name,
+                status="NOT_EVALUATED",
+                target_ip=target_ip,
+                available=False,
+                execution_time_seconds=0.0,
+                findings=[],
+                raw_output="OpenVAS GMP service endpoint is unconfigured.",
+                coverage_limitations=["OpenVAS remote GMP host not configured."],
+                is_simulated=False,
+                error_message="OpenVAS not configured"
+            )
+
         start_time = time.time()
         findings: List[ScannerFinding] = []
 

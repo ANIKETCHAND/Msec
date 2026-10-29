@@ -106,8 +106,7 @@ export default function ReportsPage() {
       setPreviewHtml(htmlText);
       setPreviewModalOpen(true);
     } catch (err) {
-      // Fallback open direct url
-      window.open(api.getReportDownloadUrl(reportId), '_blank');
+      console.error('[ReportsPage] HTML preview error:', err.message);
     }
   };
 
@@ -127,38 +126,41 @@ export default function ReportsPage() {
 
   const handleExportCSV = () => {
     let filename = '';
-    let csvContent = '';
 
     if (reportType === 'events') {
       filename = `medishield-security-events-${new Date().toISOString().slice(0, 10)}.csv`;
-      csvContent = "EventID,Timestamp,RuleID,RuleName,DeviceID,DeviceName,Severity,Status\n" +
-        securityEvents.map(e =>
-          `"${e.id}","${e.timestamp}","${e.ruleId}","${e.ruleName}","${e.deviceId}","${e.deviceName}","${e.severity}","${e.status}"`
-        ).join("\n");
+      api.downloadCsvFile('/reports/security-events.csv', filename).catch(err => {
+        console.error("CSV download failed:", err.message);
+      });
+      logAudit('REPORT_EXPORT', 'SecurityReport', 'security-events.csv', 'Exported security events CSV.');
+    } else if (reportType === 'incidents') {
+      filename = `medishield-incidents-${new Date().toISOString().slice(0, 10)}.csv`;
+      api.downloadCsvFile('/reports/incidents.csv', filename).catch(err => {
+        console.error("CSV download failed:", err.message);
+      });
+      logAudit('REPORT_EXPORT', 'SecurityReport', 'incidents.csv', 'Exported incident investigations CSV.');
     } else if (reportType === 'devices') {
       filename = `medishield-devices-inventory-${new Date().toISOString().slice(0, 10)}.csv`;
-      csvContent = "DeviceID,Name,Type,IPAddress,MACAddress,Firmware,Segment,Status,RiskLevel,SecurityScore\n" +
+      const csvContent = "DeviceID,Name,Type,IPAddress,MACAddress,Firmware,Segment,Status,RiskLevel,SecurityScore\n" +
         devices.map(d =>
           `"${d.id}","${d.name}","${d.deviceType || d.type}","${d.ipAddress}","${d.macAddress}","${d.firmwareVersion}","${d.networkSegment}","${d.status}","${d.riskLevel}","${d.securityScore}"`
         ).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } else {
       filename = `medishield-findings-${new Date().toISOString().slice(0, 10)}.csv`;
       api.downloadCsvFile('/reports/assessments.csv', filename).catch(err => {
         console.error("CSV download failed:", err.message);
       });
       logAudit('REPORT_EXPORT', 'SecurityReport', 'assessments.csv', 'Exported assessment findings CSV report.');
-      return;
     }
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    logAudit('REPORT_EXPORT', 'SecurityReport', filename, `Exported ${reportType} report.`);
   };
 
   return (

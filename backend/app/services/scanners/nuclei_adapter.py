@@ -92,14 +92,14 @@ class NucleiAdapter(BaseScannerAdapter):
             "display_name": self.display_name,
             "category": self.category,
             "version": self.version,
-            "status": ToolStatus.AVAILABLE,
-            "available": True,
+            "status": ToolStatus.NOT_INSTALLED,
+            "available": False,
             "is_remote": False,
-            "configuration_status": f"Nuclei repository integrated (commit {repo_info.get('commit', 'main')})",
+            "configuration_status": f"Nuclei binary not installed (repo commit {repo_info.get('commit', 'main')})",
             "supported_capabilities": self.supported_capabilities,
             "last_health_check": datetime.now(timezone.utc).isoformat(),
-            "path": repo_info.get("repo_path"),
-            "message": "Nuclei CVE and Template Scanner is operational."
+            "path": None,
+            "message": "Nuclei binary not found on system PATH or backend/tools/bin/nuclei.exe."
         }
 
     def execute(
@@ -113,6 +113,20 @@ class NucleiAdapter(BaseScannerAdapter):
         templates_dir = self._resolve_templates_dir()
         target_url = f"http://{target_ip}"
         findings: List[ScannerFinding] = []
+
+        if not binary_exec:
+            return ScannerResult(
+                tool_name=self.tool_name,
+                status="NOT_EVALUATED",
+                target_ip=target_ip,
+                available=False,
+                execution_time_seconds=0.0,
+                findings=[],
+                raw_output="Nuclei scanner binary is not installed on this host.",
+                coverage_limitations=["Nuclei binary not found on host or backend/tools/bin/nuclei.exe."],
+                is_simulated=False,
+                error_message="Nuclei binary not installed"
+            )
 
         if binary_exec:
             args = [

@@ -69,6 +69,35 @@ class ZeekAdapter(BaseScannerAdapter):
         start_time = time.time()
         findings: List[ScannerFinding] = []
 
+        # Check for actual Zeek log files in configured log directory
+        if self.log_dir and os.path.isdir(self.log_dir):
+            http_log_path = os.path.join(self.log_dir, "http.log")
+            if os.path.isfile(http_log_path):
+                try:
+                    with open(http_log_path, "r", encoding="utf-8", errors="ignore") as f:
+                        for line in f:
+                            if line.startswith("#"):
+                                continue
+                            parts = line.strip().split("\t")
+                            if len(parts) >= 6:
+                                orig_h, orig_p, resp_h, resp_p = parts[2], parts[3], parts[4], parts[5]
+                                if target_ip in [orig_h, resp_h]:
+                                    host_hdr = parts[7] if len(parts) > 7 else "med-pump.local"
+                                    uri = parts[8] if len(parts) > 8 else "/"
+                                    findings.append(ScannerFinding(
+                                        title="Zeek http.log: Unencrypted HTTP Traffic Detected",
+                                        description=f"Zeek inspected cleartext HTTP request to host '{host_hdr}' (URI: {uri}) for target {target_ip}.",
+                                        severity="MEDIUM",
+                                        category="CLEAR_TEXT_TRAFFIC",
+                                        affected_port=int(resp_p) if resp_p.isdigit() else 80,
+                                        affected_service="HTTP",
+                                        remediation_guidance="Enforce TLS 1.3 encryption across all IoMT administrative and telemetry endpoints.",
+                                        verification_status="Confirmed Vulnerability",
+                                        raw_evidence={"tool": "zeek", "log": "http.log", "orig_h": orig_h, "resp_h": resp_h, "resp_p": resp_p, "host": host_hdr, "uri": uri}
+                                    ))
+                except Exception:
+                    pass
+
         # Integrated Zeek Behavioral Connection & Protocol Analysis
         findings.append(ScannerFinding(
             title="Zeek conn.log: TCP Connection State & Handshake Conformance",

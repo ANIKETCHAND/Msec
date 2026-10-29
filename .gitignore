@@ -87,6 +87,8 @@ Desktop.ini
 # Generated Security Reports Storage
 backend/app/reports_storage/*
 !backend/app/reports_storage/.gitkeep
+backend/*pipeline_result.json
+backend/*audit_result.json
 
 # Local Security Tool Binaries & Cloned Scanner Repos
 backend/tools/*

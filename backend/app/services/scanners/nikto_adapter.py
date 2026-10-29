@@ -37,6 +37,24 @@ class NiktoAdapter(BaseScannerAdapter):
         self._detected_version = None
 
     def check_availability(self) -> Dict[str, Any]:
+        if self.binary_path:
+            is_valid = os.path.isfile(self.binary_path) or bool(shutil.which(self.binary_path))
+            if not is_valid:
+                return {
+                    "name": self.tool_name,
+                    "display_name": self.display_name,
+                    "category": self.category,
+                    "version": self.version,
+                    "status": ToolStatus.NOT_INSTALLED,
+                    "available": False,
+                    "is_remote": False,
+                    "configuration_status": f"Specified Nikto binary not found: {self.binary_path}",
+                    "supported_capabilities": self.supported_capabilities,
+                    "last_health_check": datetime.now(timezone.utc).isoformat(),
+                    "path": None,
+                    "message": "Nikto binary not found at specified path."
+                }
+
         has_docker_nikto = False
         try:
             res = subprocess.run(["docker", "image", "inspect", "medishield-nikto:latest"], capture_output=True, text=True, timeout=3)
@@ -83,6 +101,22 @@ class NiktoAdapter(BaseScannerAdapter):
         device_context: Dict[str, Any],
         options: Optional[Dict[str, Any]] = None
     ) -> ScannerResult:
+        if self.binary_path:
+            is_valid = os.path.isfile(self.binary_path) or bool(shutil.which(self.binary_path))
+            if not is_valid:
+                return ScannerResult(
+                    tool_name=self.tool_name,
+                    status="NOT_EVALUATED",
+                    target_ip=target_ip,
+                    available=False,
+                    execution_time_seconds=0.0,
+                    findings=[],
+                    raw_output=f"Nikto binary not found at specified path: {self.binary_path}",
+                    coverage_limitations=["Nikto binary not found."],
+                    is_simulated=False,
+                    error_message="Nikto binary not installed"
+                )
+
         start_time = time.time()
         findings: List[ScannerFinding] = []
         tested_ports = [80, 443, 8080]
