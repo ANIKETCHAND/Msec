@@ -22,6 +22,20 @@ import {
 export default function MLDetectionPage() {
   const { mlMetrics, logAudit } = useApp();
 
+  // Confusion matrix is driven by the backend evaluation report when available so
+  // the displayed sample count and cells match the reported metrics.
+  const confusionLabels = mlMetrics.confusionLabels || ['Normal', 'DoS', 'Recon', 'Auth'];
+  const confusionRows = (mlMetrics.confusionMatrix || []).map((row) => ({
+    actual: row.actual,
+    cells: row.cells || [row.predNormal, row.predDoS, row.predRecon, row.predAuth]
+  }));
+  const testSampleCount =
+    mlMetrics.testSamples ||
+    confusionRows.reduce(
+      (sum, row) => sum + row.cells.reduce((a, b) => a + (Number(b) || 0), 0),
+      0
+    );
+
   // Interactive Live Sample Inference State
   const [packetRate, setPacketRate] = useState(140);
   const [packetSize, setPacketSize] = useState(520);
@@ -176,7 +190,7 @@ export default function MLDetectionPage() {
                 </h2>
                 <p className="text-[11px] text-neutral-500 mt-0.5">Actual ground truth vs predicted classifications.</p>
               </div>
-              <span className="text-[10px] font-mono text-neutral-400">N = 70,000 Flows</span>
+              <span className="text-[10px] font-mono text-neutral-400">N = {testSampleCount.toLocaleString()} Flows</span>
             </div>
 
             <div className="overflow-x-auto border border-neutral-200 rounded">
@@ -184,20 +198,23 @@ export default function MLDetectionPage() {
                 <thead className="bg-neutral-50 text-neutral-500 uppercase text-[10px] border-b border-neutral-200">
                   <tr>
                     <th className="py-2.5 px-3 text-left font-medium">Actual \ Pred</th>
-                    <th className="py-2.5 px-3 font-medium">Normal</th>
-                    <th className="py-2.5 px-3 font-medium">DoS</th>
-                    <th className="py-2.5 px-3 font-medium">Recon</th>
-                    <th className="py-2.5 px-3 font-medium">Auth</th>
+                    {confusionLabels.map((label) => (
+                      <th key={label} className="py-2.5 px-3 font-medium">{label}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200 text-neutral-700 font-mono text-xs">
-                  {mlMetrics.confusionMatrix.map((row, i) => (
-                    <tr key={i} className="hover:bg-neutral-50/50">
+                  {confusionRows.map((row, i) => (
+                    <tr key={`${row.actual}-${i}`} className="hover:bg-neutral-50/50">
                       <td className="py-2.5 px-3 text-left font-sans font-medium text-neutral-900">{row.actual}</td>
-                      <td className={`py-2.5 px-3 ${i === 0 ? 'bg-emerald-50 text-emerald-800 font-semibold' : ''}`}>{row.predNormal}</td>
-                      <td className={`py-2.5 px-3 ${i === 1 ? 'bg-emerald-50 text-emerald-800 font-semibold' : ''}`}>{row.predDoS}</td>
-                      <td className={`py-2.5 px-3 ${i === 2 ? 'bg-emerald-50 text-emerald-800 font-semibold' : ''}`}>{row.predRecon}</td>
-                      <td className={`py-2.5 px-3 ${i === 3 ? 'bg-emerald-50 text-emerald-800 font-semibold' : ''}`}>{row.predAuth}</td>
+                      {row.cells.map((value, j) => (
+                        <td
+                          key={j}
+                          className={`py-2.5 px-3 ${i === j ? 'bg-emerald-50 text-emerald-800 font-semibold' : ''}`}
+                        >
+                          {value}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -211,7 +228,7 @@ export default function MLDetectionPage() {
               Evaluation Methodology
             </div>
             <p className="leading-relaxed">
-              Model evaluated using cross-device group-splits to prevent identity overfitting. Precision is 96.21% and recall is 95.89%.
+              Model evaluated using cross-device group-splits to prevent identity overfitting. Precision is {mlMetrics.precision}% and recall is {mlMetrics.recall}%.
             </p>
           </div>
         </div>

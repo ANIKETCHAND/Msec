@@ -46,7 +46,6 @@ export function AppProvider({ children }) {
       const path = window.location.pathname.replace(/^\//, '');
       if (path === 'landing') return 'landing';
       if (path === 'login') return 'login';
-      if (path === 'assessment-center') return 'devices-scan';
       if (PAGE_REGISTRY[path]) return path;
     } catch (e) {}
     const savedUser = localStorage.getItem('medishield_user');
@@ -68,8 +67,7 @@ export function AppProvider({ children }) {
   });
   const [currentPage, _setCurrentPage] = useState(getInitialPage);
   const setCurrentPage = (page) => {
-    const target = page === 'assessment-center' ? 'devices-scan' : page;
-    _setCurrentPage(target);
+    _setCurrentPage(page);
   };
   const [openTabs, setOpenTabs] = useState(() => {
     const initPage = getInitialPage();
@@ -84,10 +82,10 @@ export function AppProvider({ children }) {
   // Synchronize openTabs and browser URL when currentPage changes
   useEffect(() => {
     if (currentPage && currentPage !== 'login' && currentPage !== 'landing') {
-      const pageId = currentPage === 'assessment-center' ? 'devices-scan' : currentPage;
+      const pageId = currentPage;
       setOpenTabs(prev => {
-        // Sanitize legacy aliases, guarantee dashboard is included, and deduplicate
-        const sanitized = Array.from(new Set(prev.map(p => p === 'assessment-center' ? 'devices-scan' : p)));
+        // Guarantee dashboard is included and deduplicate the tab strip
+        const sanitized = Array.from(new Set(prev));
         if (!sanitized.includes('dashboard')) {
           sanitized.unshift('dashboard');
         }
@@ -254,7 +252,7 @@ export function AppProvider({ children }) {
           recordId: r.record_id,
           entityType: r.entity_type,
           recordType: r.entity_type,
-          deviceId: r.record_id.split('-').slice(0, 3).join('-'),
+          deviceId: r.device_id || r.record_id,
           rawPayload: r.raw_payload,
           payloadJson: r.raw_payload,
           encryptedPayload: r.encrypted_payload,
@@ -267,13 +265,30 @@ export function AppProvider({ children }) {
 
       if (detectionStatus?.ml_engine?.metadata) {
         const meta = detectionStatus.ml_engine.metadata;
+        // Stored as plain numbers: the views append the % sign when rendering.
+        const asPercent = (value) =>
+          typeof value === 'number' ? Number((value * 100).toFixed(1)) : null;
+
+        const rawMatrix = meta.confusion_matrix;
+        const evaluatedMatrix =
+          rawMatrix && Array.isArray(rawMatrix.labels) && Array.isArray(rawMatrix.matrix)
+            ? rawMatrix.labels.map((label, i) => ({ actual: label, cells: rawMatrix.matrix[i] || [] }))
+            : null;
+
         setMlMetrics(prev => ({
           ...prev,
-          accuracy: meta.trained_accuracy ? `${(meta.trained_accuracy * 100).toFixed(1)}%` : prev.accuracy,
-          precision: meta.trained_precision ? `${(meta.trained_precision * 100).toFixed(1)}%` : prev.precision,
-          recall: meta.trained_recall ? `${(meta.trained_recall * 100).toFixed(1)}%` : prev.recall,
-          f1Score: meta.trained_f1 ? `${(meta.trained_f1 * 100).toFixed(1)}%` : prev.f1Score,
-          modelName: meta.model_name || prev.modelName
+          accuracy: asPercent(meta.trained_accuracy) ?? prev.accuracy,
+          precision: asPercent(meta.trained_precision) ?? prev.precision,
+          recall: asPercent(meta.trained_recall) ?? prev.recall,
+          f1Score: asPercent(meta.trained_f1) ?? prev.f1Score,
+          modelName: meta.model_name || prev.modelName,
+          ...(evaluatedMatrix
+            ? {
+                confusionMatrix: evaluatedMatrix,
+                confusionLabels: rawMatrix.labels,
+                testSamples: rawMatrix.matrix.flat().reduce((a, b) => a + (Number(b) || 0), 0)
+              }
+            : {})
         }));
       }
 
@@ -336,13 +351,32 @@ export function AppProvider({ children }) {
     }));
   };
 
+  // Locally administered unicast MAC, used when a registration omits one so that
+  // two assets never collide on the same hardware address.
+  const generateMacAddress = () => {
+    const octet = () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+    return `02:${octet()}:${octet()}:${octet()}:${octet()}:${octet()}`;
+  };
+
   const registerDevice = async (deviceData) => {
+    const name = (deviceData.name || '').trim();
+    const ipAddress = (deviceData.ipAddress || deviceData.ip_address || '').trim();
+
+    if (!name) {
+      throw new Error('Device name is required.');
+    }
+    if (!ipAddress) {
+      throw new Error('IP address is required.');
+    }
+
+    const explicitId = (deviceData.id || '').trim();
+
     const apiPayload = {
-      id: deviceData.id,
-      name: deviceData.name,
-      device_type: deviceData.deviceType || deviceData.device_type,
-      ip_address: deviceData.ipAddress || deviceData.ip_address,
-      mac_address: deviceData.macAddress || deviceData.mac_address || "00:1A:2B:44:55:66",
+      ...(explicitId ? { id: explicitId } : {}),
+      name,
+      device_type: deviceData.deviceType || deviceData.device_type || 'IoMT Device',
+      ip_address: ipAddress,
+      mac_address: deviceData.macAddress || deviceData.mac_address || generateMacAddress(),
       firmware_version: deviceData.firmwareVersion || deviceData.firmware_version || "1.0.0",
       network_segment: deviceData.networkSegment || deviceData.network_segment || "ICU_VLAN_10",
       manufacturer: deviceData.manufacturer || "Generic Medical",
@@ -355,32 +389,35 @@ export function AppProvider({ children }) {
       security_score: deviceData.securityScore ?? 85.0
     };
 
-    try {
-      await api.createDevice(apiPayload);
-    } catch (err) {
-      console.warn("Backend createDevice notice:", err.message);
+    // The server assigns the inventory ID when none is supplied and rejects
+    // duplicate IP/MAC assignments. Errors propagate so the calling form can
+    // show the real reason the registration failed.
+    const created = await api.createDevice(apiPayload);
+    if (!created || !created.id) {
+      throw new Error('Device registration did not return a persisted record.');
     }
+    apiPayload.id = created.id;
 
     const newDev = {
-      id: apiPayload.id,
-      name: apiPayload.name,
-      deviceType: apiPayload.device_type,
-      ipAddress: apiPayload.ip_address,
-      macAddress: apiPayload.mac_address,
-      firmwareVersion: apiPayload.firmware_version,
-      networkSegment: apiPayload.network_segment,
-      status: apiPayload.status,
-      riskLevel: apiPayload.risk_level,
-      manufacturer: apiPayload.manufacturer,
-      model: apiPayload.model,
-      location: apiPayload.location,
-      department: apiPayload.department,
-      owner: apiPayload.owner,
-      assessmentStatus: "NOT_ASSESSED",
-      securityScore: apiPayload.security_score,
+      id: created.id,
+      name: created.name ?? apiPayload.name,
+      deviceType: created.device_type ?? apiPayload.device_type,
+      ipAddress: created.ip_address ?? apiPayload.ip_address,
+      macAddress: created.mac_address ?? apiPayload.mac_address,
+      firmwareVersion: created.firmware_version ?? apiPayload.firmware_version,
+      networkSegment: created.network_segment ?? apiPayload.network_segment,
+      status: created.status ?? apiPayload.status,
+      riskLevel: created.risk_level ?? apiPayload.risk_level,
+      manufacturer: created.manufacturer ?? apiPayload.manufacturer,
+      model: created.model ?? apiPayload.model,
+      location: created.location ?? apiPayload.location,
+      department: created.department ?? apiPayload.department,
+      owner: created.owner ?? apiPayload.owner,
+      assessmentStatus: created.assessment_status || "NOT_ASSESSED",
+      securityScore: created.security_score ?? apiPayload.security_score,
       lastSeen: "Just now",
       lastAssessment: "Never",
-      patientRoom: apiPayload.location,
+      patientRoom: created.location ?? apiPayload.location,
       batteryLevel: 100,
       telemetry: {}
     };
@@ -465,60 +502,54 @@ export function AppProvider({ children }) {
 
   // Data Integrity Actions
   const tamperRecord = async (recordId) => {
+    // The server mutates the stored payload. The displayed digest stays the
+    // original reference digest, so the mismatch that follows is genuine.
+    let tampered = null;
     try {
-      await api.tamperRecord(recordId);
+      tampered = await api.tamperRecord(recordId);
     } catch (e) {
-      // Continue locally
+      return false;
     }
 
     setIntegrityRecords(prev => prev.map(rec => {
-      if (rec.recordId === recordId) {
-        const tamperedHash = "deadbeef" + rec.sha256Hash.substring(8);
-        logAudit('INTEGRITY_TAMPER_SIMULATION', 'IntegrityRecord', recordId, `Simulated 1-byte memory tampering on record ${recordId}.`);
-        return {
-          ...rec,
-          status: "TAMPERED",
-          sha256Hash: tamperedHash,
-          lastVerified: new Date().toISOString().replace('T', ' ').substring(0, 19)
-        };
-      }
-      return rec;
+      if (rec.recordId !== recordId) return rec;
+      logAudit('INTEGRITY_TAMPER_SIMULATION', 'IntegrityRecord', recordId, `Payload mutated on ${recordId}; the stored digest no longer matches the payload.`);
+      return {
+        ...rec,
+        status: "TAMPERED",
+        sha256Hash: tampered?.sha256_hash || rec.sha256Hash,
+        rawPayload: tampered?.raw_payload || rec.rawPayload,
+        payloadJson: tampered?.raw_payload || rec.payloadJson,
+        computedHash: null,
+        isMatch: false,
+        lastVerified: new Date().toISOString().replace('T', ' ').substring(0, 19)
+      };
     }));
+    return true;
   };
 
   const recomputeAndVerify = async (recordId) => {
+    // Report exactly what the server recomputed; never substitute a placeholder digest.
+    let res = null;
     try {
-      const res = await api.verifyIntegrity(recordId);
-      if (res) {
-        setIntegrityRecords(prev => prev.map(rec => {
-          if (rec.recordId === recordId) {
-            return {
-              ...rec,
-              status: res.status,
-              sha256Hash: res.expected_hash,
-              lastVerified: new Date().toLocaleTimeString()
-            };
-          }
-          return rec;
-        }));
-        return;
-      }
+      res = await api.verifyIntegrity(recordId);
     } catch (e) {
-      // Continue locally
+      return false;
     }
+    if (!res) return false;
 
     setIntegrityRecords(prev => prev.map(rec => {
-      if (rec.recordId === recordId) {
-        logAudit('INTEGRITY_VERIFY_SUCCESS', 'IntegrityRecord', recordId, `Cryptographic SHA-256 verification successful. Integrity intact.`);
-        return {
-          ...rec,
-          status: "VERIFIED",
-          sha256Hash: "4f73801f9b31d0442ea5746b149b584988f5043bf7cfab7b19a0a382e753457a",
-          lastVerified: new Date().toISOString().replace('T', ' ').substring(0, 19)
-        };
-      }
-      return rec;
+      if (rec.recordId !== recordId) return rec;
+      return {
+        ...rec,
+        status: res.status,
+        sha256Hash: res.expected_hash ?? rec.sha256Hash,
+        computedHash: res.computed_hash ?? null,
+        isMatch: res.is_match ?? (res.status === "VERIFIED"),
+        lastVerified: new Date().toISOString().replace('T', ' ').substring(0, 19)
+      };
     }));
+    return true;
   };
 
   // Safe Simulation Controls

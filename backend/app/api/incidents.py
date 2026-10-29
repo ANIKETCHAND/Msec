@@ -5,7 +5,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.db_models import IncidentModel, IncidentNoteModel, AuditLogModel, UserModel
+from app.models.db_models import (
+    IncidentModel,
+    IncidentNoteModel,
+    AuditLogModel,
+    DeviceModel,
+    UserModel,
+)
 from app.schemas.incident import IncidentCreate, IncidentUpdate, IncidentResponse, NoteCreate, StatusUpdate
 from app.middleware.rbac import get_current_user, require_analyst
 
@@ -241,19 +247,25 @@ def update_incident_status(
     return inc
 
 
-@router.post("/correlate/{device_id}", response_model=IncidentResponse)
+@router.post("/correlate/{device_id}", response_model=Optional[IncidentResponse])
 def correlate_device_incidents(
     device_id: str,
     db: Session = Depends(get_db),
     analyst_user: UserModel = Depends(require_analyst)
 ):
-    """Correlate disparate telemetry and assessment findings to identify attack chains."""
+    """Correlate disparate telemetry and assessment findings to identify attack chains.
+
+    Returns ``null`` when the device exists but no multi-stage pattern is present,
+    so "nothing correlated" is distinguishable from "device not found" (404).
+    """
     from app.services.correlation_engine import correlation_engine
-    inc = correlation_engine.correlate_device_events(db, device_id)
-    if not inc:
+
+    device = db.query(DeviceModel).filter(DeviceModel.id == device_id).first()
+    if not device:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No multi-stage attack patterns identified for device {device_id}."
+            detail=f"Device {device_id} not found."
         )
-    return inc
+
+    return correlation_engine.correlate_device_events(db, device_id)
 

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function DeviceInventoryPage() {
-  const { devices, setSelectedDeviceId, setCurrentPage, currentUser, toggleDeviceIsolation } = useApp();
+  const { devices, setSelectedDeviceId, setCurrentPage, currentUser, toggleDeviceIsolation, registerDevice } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -35,6 +35,54 @@ export default function DeviceInventoryPage() {
   const [newDeviceModel, setNewDeviceModel] = useState('Spectrum V8');
   const [newDeviceDepartment, setNewDeviceDepartment] = useState('Intensive Care Unit');
   const [newDeviceSegment, setNewDeviceSegment] = useState('ICU_VLAN_10');
+  const [newDeviceIp, setNewDeviceIp] = useState('');
+  const [newDeviceMac, setNewDeviceMac] = useState('');
+  const [newDeviceFirmware, setNewDeviceFirmware] = useState('1.0.0');
+  const [addModalError, setAddModalError] = useState('');
+  const [savingRegistration, setSavingRegistration] = useState(false);
+
+  const handleSaveRegistration = async () => {
+    setAddModalError('');
+
+    if (!newDeviceName.trim()) {
+      setAddModalError('Asset model name is required.');
+      return;
+    }
+    if (!newDeviceIp.trim()) {
+      setAddModalError('IP address is required.');
+      return;
+    }
+
+    setSavingRegistration(true);
+    try {
+      const created = await registerDevice({
+        name: newDeviceName,
+        deviceType: newDeviceType,
+        ipAddress: newDeviceIp,
+        macAddress: newDeviceMac,
+        firmwareVersion: newDeviceFirmware,
+        networkSegment: newDeviceSegment,
+        department: newDeviceDepartment,
+        manufacturer: newDeviceManufacturer,
+        model: newDeviceModel,
+        riskLevel: 'medium',
+        securityScore: 85.0
+      });
+
+      setAddModalOpen(false);
+      setNewDeviceName('');
+      setNewDeviceIp('');
+      setNewDeviceMac('');
+      setNewDeviceFirmware('1.0.0');
+      setAddModalError('');
+      setCurrentPageNum(1);
+      setSelectedDeviceId(created.id);
+    } catch (err) {
+      setAddModalError(err.message || 'Failed to register asset.');
+    } finally {
+      setSavingRegistration(false);
+    }
+  };
 
   // Filtered & sorted device dataset
   const filteredDevices = useMemo(() => {
@@ -350,6 +398,51 @@ export default function DeviceInventoryPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <label className="block text-[#6B7280] font-medium mb-1">IP Address</label>
+                  <input
+                    type="text"
+                    placeholder="192.168.10.0"
+                    value={newDeviceIp}
+                    onChange={(e) => setNewDeviceIp(e.target.value)}
+                    className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] font-mono focus:outline-none focus:border-[#1677FF]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#6B7280] font-medium mb-1">MAC Address</label>
+                  <input
+                    type="text"
+                    placeholder="auto-generated if blank"
+                    value={newDeviceMac}
+                    onChange={(e) => setNewDeviceMac(e.target.value)}
+                    className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] font-mono focus:outline-none focus:border-[#1677FF]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[#6B7280] font-medium mb-1">Firmware Version</label>
+                  <input
+                    type="text"
+                    placeholder="1.0.0"
+                    value={newDeviceFirmware}
+                    onChange={(e) => setNewDeviceFirmware(e.target.value)}
+                    className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] font-mono focus:outline-none focus:border-[#1677FF]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#6B7280] font-medium mb-1">Department</label>
+                  <input
+                    type="text"
+                    value={newDeviceDepartment}
+                    onChange={(e) => setNewDeviceDepartment(e.target.value)}
+                    className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none focus:border-[#1677FF]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <label className="block text-[#6B7280] font-medium mb-1">Device Class</label>
                   <select
                     value={newDeviceType}
@@ -378,16 +471,13 @@ export default function DeviceInventoryPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[#6B7280] font-medium mb-1">Hospital Department</label>
-                <input
-                  type="text"
-                  value={newDeviceDepartment}
-                  onChange={(e) => setNewDeviceDepartment(e.target.value)}
-                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded p-2 text-[#171717] focus:outline-none"
-                />
-              </div>
             </div>
+
+            {addModalError && (
+              <div className="p-2 rounded bg-red-50 border border-red-200 text-[11px] text-red-700">
+                {addModalError}
+              </div>
+            )}
 
             <div className="pt-3 border-t border-[#E5E7EB] flex justify-end gap-2 text-xs">
               <button
@@ -397,12 +487,11 @@ export default function DeviceInventoryPage() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setAddModalOpen(false);
-                }}
-                className="px-3 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white font-medium shadow-xs"
+                onClick={handleSaveRegistration}
+                disabled={savingRegistration}
+                className="px-3 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white font-medium shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Save Registration
+                {savingRegistration ? 'Saving…' : 'Save Registration'}
               </button>
             </div>
           </div>

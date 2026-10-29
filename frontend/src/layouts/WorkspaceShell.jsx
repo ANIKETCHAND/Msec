@@ -71,6 +71,7 @@ export default function WorkspaceShell({ children }) {
   // Secondary Operational & Governance Tools
   const secondaryPages = [
     { id: 'devices', label: 'Device Inventory' },
+    { id: 'assessment-center', label: 'Assessment Center' },
     { id: 'security-events', label: 'Security Events' },
     { id: 'incidents', label: 'Incidents' },
     { id: 'ml-detection', label: 'ML Detection' },
@@ -335,7 +336,7 @@ export default function WorkspaceShell({ children }) {
         <div className="flex items-center gap-1.5 sm:gap-2">
           {primaryTabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = currentPage === tab.id || (tab.id === 'devices-scan' && currentPage === 'assessment-center');
+            const isActive = currentPage === tab.id;
 
             return (
               <button

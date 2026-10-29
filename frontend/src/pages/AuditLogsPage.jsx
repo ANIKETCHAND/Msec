@@ -134,7 +134,18 @@ export default function AuditLogsPage() {
             )}
             <span>
               <strong>{chainResult.chain_valid ? 'HASH CHAIN INTACT:' : 'HASH MISMATCH DETECTED:'}</strong>{' '}
-              {chainResult.verified_count} log entries verified across SHA-256 root block.
+              {chainResult.chain_valid ? (
+                <>
+                  {chainResult.verified_records ?? 0} of {chainResult.total_records ?? 0} log
+                  entries recomputed and linked to a single SHA-256 chain.
+                </>
+              ) : (
+                <>
+                  Chain verification failed
+                  {chainResult.tampered_record_id ? ` at ${chainResult.tampered_record_id}` : ''}
+                  . {chainResult.error || chainResult.message || 'The audit trail has been altered.'}
+                </>
+              )}
             </span>
           </div>
           <button onClick={() => setChainResult(null)} className="text-[#6B7280] hover:text-[#171717]">Dismiss</button>

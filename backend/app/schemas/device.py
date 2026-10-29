@@ -26,7 +26,8 @@ class DeviceBase(BaseModel):
 
 
 class DeviceCreate(DeviceBase):
-    id: str = Field(..., min_length=3, max_length=50)
+    # Optional: the server assigns a unique inventory ID when the client omits one.
+    id: Optional[str] = Field(default=None, min_length=3, max_length=50)
 
 
 class DeviceUpdate(BaseModel):

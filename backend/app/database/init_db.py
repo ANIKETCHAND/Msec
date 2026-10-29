@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime, timezone
 from app.database.session import engine, SessionLocal, Base
+from app.services.audit_chain_service import audit_chain_service
 from app.models.db_models import (
     UserModel,
     DeviceModel,
@@ -327,6 +328,10 @@ def seed_database():
             ]
             db.add_all(logs)
             db.commit()
+
+        # Seal any audit entries that predate hash chaining so the audit trail is
+        # complete and verifiable, whether or not the API startup hook ran.
+        audit_chain_service.ensure_chain(db)
 
     finally:
         db.close()

@@ -5,7 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database.init_db import seed_database
-
+from app.database.session import SessionLocal
+from app.services.audit_chain_service import audit_chain_service
 
 
 @asynccontextmanager
@@ -16,6 +17,19 @@ async def lifespan(app: FastAPI):
         seed_database()
     except Exception as e:
         print(f"Warning: Database auto-seed encountered error: {e}")
+
+    # Seal any audit entries written before hash chaining existed so the trail
+    # is complete and verifiable rather than permanently reporting a short chain.
+    db = SessionLocal()
+    try:
+        sealed = audit_chain_service.ensure_chain(db)
+        if sealed:
+            print(f"[MediShield Audit Chain] Sealed {sealed} pre-existing audit entries.")
+    except Exception as e:
+        print(f"Warning: Audit chain sealing encountered error: {e}")
+    finally:
+        db.close()
+
     yield
 
 

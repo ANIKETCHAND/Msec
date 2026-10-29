@@ -93,13 +93,15 @@ def test_analyst_can_create_device_and_authorize_scope():
     # 1. Analyst registers new device with unique ID
     uid = uuid.uuid4().hex[:6].upper()
     new_device_id = f"DEV-TEST-XRAY-{uid}"
-    new_device_ip = f"192.168.30.{(int(uid, 16) % 150) + 50}"
+    # Device registration enforces unique IP and MAC assignments, so the fixture
+    # must create a genuinely new network identity on the shared test database.
+    new_device_ip = f"192.168.{(int(uid[0:2], 16) % 254) + 1}.{(int(uid[2:4], 16) % 254) + 1}"
+    new_device_mac = f"02:{uid[0:2]}:{uid[2:4]}:{uid[4:6]}:77:99"
     create_resp = client.post("/api/devices", json={
         "id": new_device_id,
         "name": f"Portable Test X-Ray {uid}",
         "device_type": "Radiology Imaging",
-        "ip_address": new_device_ip,
-        "mac_address": "00:1A:2B:77:88:99",
+        "ip_address": new_device_ip,            "mac_address": new_device_mac,
         "firmware_version": "2.0.1",
         "network_segment": "RADIOLOGY_VLAN_30",
         "department": "Radiology",

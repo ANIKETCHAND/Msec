@@ -150,12 +150,33 @@ export default function PrivacyIntegrityPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 text-xs">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-neutral-500">
-                      <span>SHA-256 Digest:</span>
-                      <span className="text-[10px] font-mono text-neutral-400">Verified: {rec.lastVerified}</span>
+                      <span>Stored SHA-256 Digest (reference):</span>
+                      <span className="text-[10px] font-mono text-neutral-400">Checked: {rec.lastVerified}</span>
                     </div>
                     <div className="p-2 bg-neutral-50 border border-neutral-200 rounded font-mono text-[11px] text-neutral-800 truncate" title={rec.sha256Hash}>
                       {rec.sha256Hash}
                     </div>
+
+                    {rec.computedHash && (
+                      <>
+                        <div className="flex items-center justify-between text-neutral-500 pt-1">
+                          <span>Recomputed Digest:</span>
+                          <span className={`text-[10px] font-mono font-semibold ${rec.isMatch ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {rec.isMatch ? 'MATCHES STORED DIGEST' : 'MISMATCH — PAYLOAD ALTERED'}
+                          </span>
+                        </div>
+                        <div
+                          className={`p-2 rounded font-mono text-[11px] truncate border ${
+                            rec.isMatch
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                              : 'bg-red-50 border-red-200 text-red-800'
+                          }`}
+                          title={rec.computedHash}
+                        >
+                          {rec.computedHash}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="space-y-1">

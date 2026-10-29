@@ -1,5 +1,7 @@
 """Device Inventory and Management API Endpoints."""
 
+import random
+import uuid
 from typing import List, Optional
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,8 +11,21 @@ from app.database.session import get_db
 from app.models.db_models import DeviceModel, AuditLogModel, UserModel
 from app.schemas.device import DeviceCreate, DeviceUpdate, DeviceResponse
 from app.middleware.rbac import get_current_user, require_admin, require_analyst
+from app.services.audit_chain_service import audit_chain_service
 
 router = APIRouter(prefix="/devices", tags=["Devices"])
+
+
+def _generate_device_id(db: Session, device_type: str) -> str:
+    """Derive a unique DEV-<TYPE>-<nnn> inventory ID for a newly registered asset."""
+    words = (device_type or "IOT").replace("-", " ").replace("_", " ").split()
+    slug = "".join(ch for ch in words[-1].upper() if ch.isalnum())[:4] if words else ""
+    slug = slug or "IOT"
+    for _ in range(200):
+        candidate = f"DEV-{slug}-{random.randint(100, 999)}"
+        if not db.query(DeviceModel).filter(DeviceModel.id == candidate).first():
+            return candidate
+    return f"DEV-{slug}-{uuid.uuid4().hex[:6].upper()}"
 
 
 @router.get("", response_model=List[DeviceResponse])
@@ -54,29 +69,65 @@ def create_device(
     user: UserModel = Depends(require_analyst)
 ):
     """Register a new simulated IoMT device (Administrator or Security Analyst)."""
-    existing = db.query(DeviceModel).filter(DeviceModel.id == payload.id).first()
-    if existing:
+    data = payload.model_dump()
+    device_id = (data.get("id") or "").strip()
+
+    if device_id:
+        existing = db.query(DeviceModel).filter(DeviceModel.id == device_id).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Device with ID {device_id} already exists."
+            )
+    else:
+        device_id = _generate_device_id(db, data.get("device_type", ""))
+    data["id"] = device_id
+
+    # An IP address identifies exactly one asset on the network: two devices
+    # sharing one address would break scope validation and telemetry mapping.
+    duplicate_ip = (
+        db.query(DeviceModel)
+        .filter(DeviceModel.ip_address == data["ip_address"])
+        .first()
+    )
+    if duplicate_ip:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Device with ID {payload.id} already exists."
+            detail=(
+                f"IP address {data['ip_address']} is already assigned to "
+                f"{duplicate_ip.name} ({duplicate_ip.id})."
+            ),
         )
 
-    device = DeviceModel(**payload.model_dump())
-    db.add(device)
+    duplicate_mac = (
+        db.query(DeviceModel)
+        .filter(DeviceModel.mac_address == data["mac_address"])
+        .first()
+    )
+    if duplicate_mac:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"MAC address {data['mac_address']} is already assigned to "
+                f"{duplicate_mac.name} ({duplicate_mac.id})."
+            ),
+        )
 
-    # Record audit entry
-    audit = AuditLogModel(
+    device = DeviceModel(**data)
+    db.add(device)
+    db.commit()
+    db.refresh(device)
+
+    # Record audit entry (chained automatically by the audit chain service)
+    audit_chain_service.record_chained_log(
+        db=db,
         actor=user.email,
         role=user.role,
         action="DEVICE_REGISTERED",
         entity_type="Device",
         entity_id=device.id,
         details=f"Registered device {device.name} ({device.device_type}) on segment {device.network_segment}.",
-        status="success"
     )
-    db.add(audit)
-    db.commit()
-    db.refresh(device)
     return device
 
 

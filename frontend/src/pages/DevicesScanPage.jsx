@@ -310,7 +310,7 @@ const getStatusBadgeConfig = (status) => {
 export default function DevicesScanPage() {
   const {
     devices,
-    addDevice,
+    registerDevice,
     logAudit,
     currentUser,
     setCurrentPage,
@@ -476,52 +476,30 @@ export default function DevicesScanPage() {
     }
 
     try {
-      let createdDevice = null;
-      if (api.createDevice) {
-        createdDevice = await api.createDevice({
-          name: newDevice.name.trim(),
-          device_type: newDevice.deviceType,
-          ip_address: newDevice.ipAddress.trim(),
-          mac_address: newDevice.macAddress.trim() || '00:1A:2B:00:11:22',
-          firmware_version: newDevice.firmwareVersion.trim() || '1.0.0',
-          network_segment: newDevice.networkSegment,
-          department: newDevice.department,
-          manufacturer: newDevice.manufacturer || 'Generic Medical',
-          model: newDevice.model || 'IoMT Device',
-          location: newDevice.location || 'Hospital Ward',
-          risk_level: 'medium',
-          security_score: 85.0
-        });
-      }
+      // Single registration path: the server assigns the inventory ID and rejects
+      // duplicate IP/MAC assignments, and the context updates the shared device list.
+      const createdDevice = await registerDevice({
+        name: newDevice.name,
+        deviceType: newDevice.deviceType,
+        ipAddress: newDevice.ipAddress,
+        macAddress: newDevice.macAddress,
+        firmwareVersion: newDevice.firmwareVersion,
+        networkSegment: newDevice.networkSegment,
+        department: newDevice.department,
+        manufacturer: newDevice.manufacturer,
+        model: newDevice.model,
+        location: newDevice.location,
+        owner: newDevice.owner,
+        riskLevel: 'medium',
+        securityScore: 85.0
+      });
 
-      if (!createdDevice) {
-        throw new Error('Device registration did not return a valid persistent record from the server.');
-      }
-
-      const localDevice = {
-        id: createdDevice.id,
-        name: createdDevice.name,
-        deviceType: createdDevice.device_type,
-        ipAddress: createdDevice.ip_address,
-        macAddress: createdDevice.mac_address,
-        firmwareVersion: createdDevice.firmware_version,
-        networkSegment: createdDevice.network_segment,
-        department: createdDevice.department,
-        riskLevel: createdDevice.risk_level || 'medium',
-        status: createdDevice.status || 'online',
-        securityScore: createdDevice.security_score || 85.0
-      };
-
-      if (addDevice) {
-        addDevice(localDevice);
-      }
-      setSelectedDevice(localDevice);
+      setSelectedDevice(createdDevice);
       setAddDeviceModalOpen(false);
-      setStatusMsg({ type: 'success', text: `Device "${localDevice.name}" added successfully and selected for scan.` });
-
-      if (logAudit) {
-        logAudit('DEVICE_REGISTERED', 'Device', localDevice.id, `Manual device registration: ${localDevice.name} (${localDevice.ipAddress})`);
-      }
+      setStatusMsg({
+        type: 'success',
+        text: `Device "${createdDevice.name}" registered as ${createdDevice.id} and selected for scan.`
+      });
     } catch (err) {
       setStatusMsg({ type: 'error', text: `Failed to add device: ${err.message}` });
     }
