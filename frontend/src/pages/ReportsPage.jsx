@@ -6,10 +6,7 @@ import {
   FileText,
   ShieldCheck,
   RefreshCw,
-  ExternalLink,
-  CheckCircle2,
   FileCode,
-  FileSpreadsheet,
   Copy,
   Check,
   Eye,
@@ -17,17 +14,11 @@ import {
   Search,
   X
 } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
 
 export default function ReportsPage() {
-  const { securityEvents, incidents, devices, logAudit } = useApp();
-
-  const [dateRange, setDateRange] = useState('24h');
-  const [reportType, setReportType] = useState('events');
+  const { logAudit } = useApp();
 
   // Backend Reports State
   const [reports, setReports] = useState([]);
@@ -146,53 +137,6 @@ export default function ReportsPage() {
   }, [reports, reportSearch, typeFilter, deviceFilter]);
 
   const hasActiveFilters = reportSearch.trim() !== '' || typeFilter !== 'ALL' || deviceFilter !== 'ALL';
-
-  // Severity breakdown
-  const severityBreakdown = [
-    { severity: 'Critical', count: securityEvents.filter(e => e.severity === 'critical').length, fill: '#EF4444' },
-    { severity: 'High', count: securityEvents.filter(e => e.severity === 'high').length, fill: '#F59E0B' },
-    { severity: 'Medium', count: securityEvents.filter(e => e.severity === 'medium').length, fill: '#3B82F6' },
-    { severity: 'Low', count: securityEvents.filter(e => e.severity === 'low').length, fill: '#10B981' }
-  ];
-
-  const handleExportCSV = () => {
-    let filename = '';
-
-    if (reportType === 'events') {
-      filename = `medishield-security-events-${new Date().toISOString().slice(0, 10)}.csv`;
-      api.downloadCsvFile('/reports/security-events.csv', filename).catch(err => {
-        console.error("CSV download failed:", err.message);
-      });
-      logAudit('REPORT_EXPORT', 'SecurityReport', 'security-events.csv', 'Exported security events CSV.');
-    } else if (reportType === 'incidents') {
-      filename = `medishield-incidents-${new Date().toISOString().slice(0, 10)}.csv`;
-      api.downloadCsvFile('/reports/incidents.csv', filename).catch(err => {
-        console.error("CSV download failed:", err.message);
-      });
-      logAudit('REPORT_EXPORT', 'SecurityReport', 'incidents.csv', 'Exported incident investigations CSV.');
-    } else if (reportType === 'devices') {
-      filename = `medishield-devices-inventory-${new Date().toISOString().slice(0, 10)}.csv`;
-      const csvContent = "DeviceID,Name,Type,IPAddress,MACAddress,Firmware,Segment,Status,RiskLevel,SecurityScore\n" +
-        devices.map(d =>
-          `"${d.id}","${d.name}","${d.deviceType || d.type}","${d.ipAddress}","${d.macAddress}","${d.firmwareVersion}","${d.networkSegment}","${d.status}","${d.riskLevel}","${d.securityScore}"`
-        ).join("\n");
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } else {
-      filename = `medishield-findings-${new Date().toISOString().slice(0, 10)}.csv`;
-      api.downloadCsvFile('/reports/assessments.csv', filename).catch(err => {
-        console.error("CSV download failed:", err.message);
-      });
-      logAudit('REPORT_EXPORT', 'SecurityReport', 'assessments.csv', 'Exported assessment findings CSV report.');
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -424,73 +368,6 @@ export default function ReportsPage() {
             </table>
           </div>
         )}
-      </div>
-
-      {/* 3. Distribution Visualizer & Standard CSV Exports */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Severity Visualizer */}
-        <div className="lg:col-span-7 bg-white border border-[#E5E7EB] rounded-lg p-5 space-y-4 shadow-xs">
-          <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
-            <h2 className="text-sm font-semibold text-[#171717]">
-              Security Events Severity Distribution
-            </h2>
-            <span className="text-xs font-mono text-[#6B7280]">
-              {securityEvents.length} Total Events
-            </span>
-          </div>
-
-          <div className="h-52 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={severityBreakdown} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                <XAxis dataKey="severity" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
-                <YAxis stroke="#9CA3AF" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#FFFFFF',
-                    borderColor: '#E5E7EB',
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* CSV Exports Card */}
-        <div className="lg:col-span-5 bg-white border border-[#E5E7EB] rounded-lg p-5 space-y-4 shadow-xs">
-          <h2 className="text-sm font-semibold text-[#171717] pb-3 border-b border-[#F3F4F6]">
-            Direct Raw Telemetry & CSV Exports
-          </h2>
-
-          <div className="space-y-3">
-            <div>
-              <label className="block text-[#6B7280] text-xs font-medium mb-1">Select Dataset</label>
-              <select
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-                className="w-full bg-[#FAFAFA] border border-[#E5E7EB] rounded p-2 text-xs text-[#171717] focus:outline-none font-mono"
-              >
-                <option value="events">Security Ingress & IDS Events</option>
-                <option value="devices">Clinical IoMT Device Inventory</option>
-                <option value="assessments">Multi-Tool Assessment Findings (API Stream)</option>
-              </select>
-            </div>
-
-            <div className="pt-2 flex items-center justify-between">
-              <span className="text-[11px] text-[#6B7280] font-mono">Format: RFC 4180 CSV</span>
-              <button
-                onClick={handleExportCSV}
-                className="px-3.5 py-1.5 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export CSV Stream</span>
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Modal: Generate Report */}
