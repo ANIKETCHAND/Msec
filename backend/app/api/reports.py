@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Response, HTTPException, Query, status
 from fastapi.responses import FileResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -29,16 +30,27 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 @router.get("", response_model=List[ReportResponse])
 @router.get("/list", response_model=List[ReportResponse])
 def list_reports(
+    q: Optional[str] = Query(None, description="Free-text search across report ID, title, assessment and device"),
     assessment_id: Optional[str] = Query(None, description="Filter by assessment ID"),
     device_id: Optional[str] = Query(None, description="Filter by device ID"),
     report_type: Optional[str] = Query(None, description="Filter by PDF or HTML"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
     """List historical PDF and HTML security audit reports."""
     query = db.query(ReportModel)
+    if q and q.strip():
+        term = f"%{q.strip()}%"
+        query = query.filter(
+            or_(
+                ReportModel.id.ilike(term),
+                ReportModel.title.ilike(term),
+                ReportModel.assessment_id.ilike(term),
+                ReportModel.device_id.ilike(term),
+            )
+        )
     if assessment_id:
         query = query.filter(ReportModel.assessment_id == assessment_id)
     if device_id:

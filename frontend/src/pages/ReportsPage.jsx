@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import {
@@ -13,7 +13,9 @@ import {
   Copy,
   Check,
   Eye,
-  Plus
+  Plus,
+  Search,
+  X
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -41,6 +43,11 @@ export default function ReportsPage() {
   const [statusMsg, setStatusMsg] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
 
+  // Report lookup: free-text search plus type/device narrowing.
+  const [reportSearch, setReportSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [deviceFilter, setDeviceFilter] = useState('ALL');
+
   useEffect(() => {
     loadReportsData();
   }, []);
@@ -49,13 +56,16 @@ export default function ReportsPage() {
     setLoadingReports(true);
     try {
       const [fetchedReports, fetchedAsms] = await Promise.all([
-        api.getReports().catch(() => []),
+        api.getReports({ limit: 200 }).catch(() => []),
         api.getAssessments().catch(() => [])
       ]);
       setReports(fetchedReports || []);
       setAssessments(fetchedAsms || []);
       if (fetchedAsms && fetchedAsms.length > 0 && !selectedAsmId) {
-        setSelectedAsmId(fetchedAsms[0].id);
+        const firstCompleted = fetchedAsms.find(
+          a => ['COMPLETED', 'PARTIALLY_COMPLETED'].includes((a.status || '').toUpperCase())
+        );
+        setSelectedAsmId(firstCompleted?.id || '');
       }
     } catch (err) {
       console.warn("Failed to load reports:", err.message);
@@ -115,6 +125,27 @@ export default function ReportsPage() {
     setCopiedHash(id);
     setTimeout(() => setCopiedHash(null), 2000);
   };
+
+  // Only completed scans can produce a certified report, so the generator lists
+  // just those (the backend enforces the same rule).
+  const completedAssessments = useMemo(
+    () => assessments.filter(a => ['COMPLETED', 'PARTIALLY_COMPLETED'].includes((a.status || '').toUpperCase())),
+    [assessments]
+  );
+
+  const visibleReports = useMemo(() => {
+    const term = reportSearch.trim().toLowerCase();
+    return reports.filter(rep => {
+      if (typeFilter !== 'ALL' && rep.report_type !== typeFilter) return false;
+      if (deviceFilter !== 'ALL' && rep.device_id !== deviceFilter) return false;
+      if (!term) return true;
+      return [rep.id, rep.title, rep.assessment_id, rep.device_id]
+        .filter(Boolean)
+        .some(field => String(field).toLowerCase().includes(term));
+    });
+  }, [reports, reportSearch, typeFilter, deviceFilter]);
+
+  const hasActiveFilters = reportSearch.trim() !== '' || typeFilter !== 'ALL' || deviceFilter !== 'ALL';
 
   // Severity breakdown
   const severityBreakdown = [
@@ -220,9 +251,83 @@ export default function ReportsPage() {
           </span>
         </div>
 
+        {/* Lookup toolbar: find a report by id, assessment, device or title */}
+        <div className="px-4 py-3 border-b border-[#E5E7EB] bg-white flex flex-col sm:flex-row sm:items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+            <input
+              type="text"
+              value={reportSearch}
+              onChange={(e) => setReportSearch(e.target.value)}
+              placeholder="Find a report by ID, assessment (ASM-...), device or title..."
+              aria-label="Search reports"
+              className="w-full bg-[#FAFAFA] text-xs text-[#171717] placeholder-[#9CA3AF] pl-8 pr-8 py-2 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none focus:ring-1 focus:ring-[#1677FF]/20 font-mono transition-swiss"
+            />
+            {reportSearch && (
+              <button
+                onClick={() => setReportSearch('')}
+                aria-label="Clear report search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-[#9CA3AF] hover:text-[#171717]"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              aria-label="Filter by report type"
+              className="bg-[#FAFAFA] border border-[#E5E7EB] rounded px-2 py-2 text-xs font-mono text-[#171717] focus:outline-none"
+            >
+              <option value="ALL">All formats</option>
+              <option value="PDF">PDF only</option>
+              <option value="HTML">HTML only</option>
+            </select>
+
+            <select
+              value={deviceFilter}
+              onChange={(e) => setDeviceFilter(e.target.value)}
+              aria-label="Filter by device"
+              className="bg-[#FAFAFA] border border-[#E5E7EB] rounded px-2 py-2 text-xs font-mono text-[#171717] focus:outline-none max-w-[190px]"
+            >
+              <option value="ALL">All devices</option>
+              {[...new Set(reports.map(r => r.device_id).filter(Boolean))].map(id => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+
+            <span className="text-[11px] font-mono text-[#6B7280] whitespace-nowrap">
+              {visibleReports.length} of {reports.length}
+            </span>
+
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setReportSearch(''); setTypeFilter('ALL'); setDeviceFilter('ALL'); }}
+                className="text-[11px] font-medium text-[#1677FF] hover:underline whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+
         {reports.length === 0 ? (
-          <div className="py-12 text-center text-[#9CA3AF] text-xs font-mono">
-            {loadingReports ? 'Loading reports archive...' : 'No security reports generated yet. Click "Generate Security Report" to create your first PDF or HTML report.'}
+          <div className="py-12 px-6 text-center text-[#9CA3AF] text-xs font-mono leading-relaxed">
+            {loadingReports
+              ? 'Loading reports archive...'
+              : 'No security reports yet. Reports are produced from a completed scan: register a device, run an assessment in Devices & Scan, then generate a PDF or HTML report here.'}
+          </div>
+        ) : visibleReports.length === 0 ? (
+          <div className="py-12 px-6 text-center text-[#9CA3AF] text-xs font-mono">
+            No reports match those filters.{' '}
+            <button
+              onClick={() => { setReportSearch(''); setTypeFilter('ALL'); setDeviceFilter('ALL'); }}
+              className="text-[#1677FF] hover:underline"
+            >
+              Clear filters
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -239,7 +344,7 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E5E7EB]">
-                {reports.map((rep) => {
+                {visibleReports.map((rep) => {
                   const isPdf = rep.report_type === 'PDF';
                   const shortHash = rep.sha256_hash ? `${rep.sha256_hash.slice(0, 8)}...${rep.sha256_hash.slice(-8)}` : 'N/A';
                   return (
@@ -421,12 +526,17 @@ export default function ReportsPage() {
               onChange={(e) => setSelectedAsmId(e.target.value)}
               className="w-full bg-white border border-[#E5E7EB] rounded p-2 text-xs font-mono text-[#171717]"
             >
-              {assessments.map(a => (
+              {completedAssessments.map(a => (
                 <option key={a.id} value={a.id}>
                   {a.id} &bull; {a.device_id} &bull; Score: {a.security_score}/100 &bull; ({a.total_findings} findings)
                 </option>
               ))}
             </select>
+            {completedAssessments.length === 0 && (
+              <p className="text-[11px] text-[#9CA3AF] mt-1.5">
+                No completed scans yet. Run an assessment in Devices &amp; Scan first — a report can only certify a scan that finished.
+              </p>
+            )}
           </div>
 
           <div>

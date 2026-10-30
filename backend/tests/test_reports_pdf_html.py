@@ -141,3 +141,62 @@ def test_assessment_cancellation(analyst_token):
         asm_id = list_asm.json()[0]["id"]
         cancel_resp = client.post(f"/api/v1/assessments/{asm_id}/cancel", headers=headers)
         assert cancel_resp.status_code == 200
+
+
+def test_reports_search_filters_archive(analyst_token):
+    """Verify the reports archive is searchable by id, assessment, device and type."""
+    headers = {"Authorization": f"Bearer {analyst_token}"}
+
+    all_reports = client.get("/api/v1/reports", headers=headers)
+    assert all_reports.status_code == 200
+    reports = all_reports.json()
+    assert reports, "expected at least one generated report from the flow test"
+
+    target = reports[0]
+
+    by_id = client.get(f"/api/v1/reports?q={target['id'][:10]}", headers=headers)
+    assert by_id.status_code == 200
+    assert any(r["id"] == target["id"] for r in by_id.json())
+
+    by_type = client.get(f"/api/v1/reports?report_type={target['report_type']}", headers=headers)
+    assert by_type.status_code == 200
+    assert all(r["report_type"] == target["report_type"] for r in by_type.json())
+
+    miss = client.get("/api/v1/reports?q=no-such-report-xyz", headers=headers)
+    assert miss.status_code == 200
+    assert miss.json() == []
+
+
+def test_report_refused_for_unfinished_assessment(analyst_token):
+    """Verify a report cannot be certified for a scan that never completed."""
+    from app.database.session import SessionLocal
+    from app.models.db_models import AssessmentModel, AssessmentScopeModel
+
+    db = SessionLocal()
+    try:
+        scope = (
+            db.query(AssessmentScopeModel)
+            .filter(AssessmentScopeModel.authorization_status == "AUTHORIZED")
+            .first()
+        )
+        assert scope is not None
+        queued = AssessmentModel(
+            scope_id=scope.id,
+            device_id=scope.device_id,
+            target_ip=scope.target_ip,
+            status="RUNNING",
+        )
+        db.add(queued)
+        db.commit()
+        queued_id = queued.id
+    finally:
+        db.close()
+
+    headers = {"Authorization": f"Bearer {analyst_token}"}
+    resp = client.post(
+        f"/api/v1/reports/assessments/{queued_id}",
+        json={"report_type": "PDF"},
+        headers=headers,
+    )
+    assert resp.status_code == 409
+    assert "completed" in resp.json()["detail"].lower()

@@ -52,7 +52,11 @@ from app.models.db_models import (
     AuditLogModel,
     UserModel
 )
-from app.core.exceptions import ResourceNotFoundException, ReportGenerationException
+from app.core.exceptions import (
+    AssessmentConflictException,
+    ResourceNotFoundException,
+    ReportGenerationException,
+)
 
 REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "reports_storage")
 os.makedirs(REPORTS_DIR, exist_ok=True)
@@ -1270,6 +1274,17 @@ class ReportService:
         assessment = db.query(AssessmentModel).filter(AssessmentModel.id == assessment_id).first()
         if not assessment:
             raise ResourceNotFoundException("Assessment", assessment_id)
+
+        # A report must describe a scan that actually ran and finished. Without
+        # this guard an empty or in-flight assessment can be certified, which is
+        # how the archive ended up holding audits with no completed scan behind
+        # them.
+        reportable_states = {"COMPLETED", "PARTIALLY_COMPLETED"}
+        if (assessment.status or "").upper() not in reportable_states:
+            raise AssessmentConflictException(
+                f"Assessment {assessment_id} is {assessment.status}. A security report "
+                "can only be generated once the assessment has completed."
+            )
 
         device = db.query(DeviceModel).filter(DeviceModel.id == assessment.device_id).first()
         findings = db.query(FindingModel).filter(FindingModel.assessment_id == assessment_id).all()
