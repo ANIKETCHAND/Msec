@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useApp, DEMO_USERS } from '../context/AppContext';
 import { api } from '../services/api';
 import { PAGE_REGISTRY } from '../utils/pageRegistry';
+import ExpandingSearchDock from '../components/ui/expanding-search-dock';
 import {
   Shield,
-  Search,
   Bell,
   CheckCircle2,
   RefreshCw,
@@ -34,7 +34,6 @@ export default function WorkspaceShell({ children }) {
     switchUserRole
   } = useApp();
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [secondaryDropdownOpen, setSecondaryDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -81,10 +80,9 @@ export default function WorkspaceShell({ children }) {
   ];
 
   // Search routing handler
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    const q = searchQuery.toLowerCase().trim();
+  const handleSearchSubmit = (rawQuery) => {
+    if (!rawQuery || !rawQuery.trim()) return;
+    const q = rawQuery.toLowerCase().trim();
 
     if (q.includes('dev') || q.includes('pump') || q.includes('vent') || q.includes('ecg')) {
       setCurrentPage('devices');
@@ -142,19 +140,13 @@ export default function WorkspaceShell({ children }) {
           </div>
         </div>
 
-        {/* Center: Search Field */}
-        <form onSubmit={handleSearchSubmit} className="max-w-md w-full mx-4 hidden lg:block">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search assets, CVEs, VLANs, security events..."
-              className="w-full bg-[#F9FAFB] hover:bg-white focus:bg-white text-xs text-[#171717] placeholder-[#9CA3AF] pl-8 pr-3 py-1.5 rounded border border-[#E5E7EB] focus:border-[#1677FF] focus:outline-none focus:ring-1 focus:ring-[#1677FF]/20 transition-swiss font-mono"
-            />
-          </div>
-        </form>
+        {/* Center: Expanding Search Dock */}
+        <div className="hidden lg:flex items-center justify-center mx-4">
+          <ExpandingSearchDock
+            onSearch={handleSearchSubmit}
+            placeholder="Search assets, CVEs, VLANs, security events..."
+          />
+        </div>
 
         {/* Right: Status, Simulation, Notifications & User Persona */}
         <div className="flex items-center gap-3">
