@@ -114,9 +114,6 @@ export default function MLDetectionPage() {
               CICIoMT2024
             </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">
-            Supervised Random Forest classification trained on University of New Brunswick IoMT telemetry dataset.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

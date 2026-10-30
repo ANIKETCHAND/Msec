@@ -329,9 +329,6 @@ export default function AssessmentCenterPage() {
               (Multi-Tool Defensive Scanner)
             </span>
           </h1>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Authorized IoMT posture verification, vulnerability intelligence, and clinical risk calculation.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

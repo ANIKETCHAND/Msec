@@ -104,9 +104,6 @@ export default function AuditLogsPage() {
               (Cryptographic SHA-256 Hash Chain)
             </span>
           </h1>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Cryptographically linked audit records verifying immutable operator actions and containment events.
-          </p>
         </div>
 
         <button

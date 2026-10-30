@@ -156,9 +156,6 @@ export default function DeviceInventoryPage() {
               ({devices.length} registered assets)
             </span>
           </h1>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Registered medical equipment, hardware specifications, clinical VLANs, and risk posture.
-          </p>
         </div>
 
         {currentUser.role === 'Administrator' && (

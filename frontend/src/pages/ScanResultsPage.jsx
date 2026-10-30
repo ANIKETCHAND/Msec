@@ -135,9 +135,6 @@ export default function ScanResultsPage() {
               Audited Findings
             </span>
           </div>
-          <p className="text-xs text-[#6B7280] mt-1">
-            Verified findings, clinical impact, evidence payloads, positive controls, and formal scan limitations.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">

@@ -132,9 +132,6 @@ export default function SecurityEventsPage() {
               IDS Stream Active
             </span>
           </div>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Real-time telemetry triage, passive IDS signatures, and deep packet evidence inspection.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

@@ -70,9 +70,6 @@ export default function NetworkTopologyPage() {
               (Clinical VLAN Microsegmentation)
             </span>
           </h1>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Logical subnets, clinical device boundaries, and microsegmentation firewall ACLs.
-          </p>
         </div>
       </div>
 

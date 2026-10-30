@@ -77,9 +77,6 @@ export default function SettingsPage() {
               Platform Governance
             </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">
-            Configure rule-based intrusion thresholds, review runtime environment variables, and manage demonstration state.
-          </p>
         </div>
       </div>
 

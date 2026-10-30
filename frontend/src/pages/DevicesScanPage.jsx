@@ -644,9 +644,6 @@ export default function DevicesScanPage() {
               Defensive Assessment Engine
             </span>
           </div>
-          <p className="text-xs text-[#6B7280] mt-1">
-            Select a verified IoMT device, authorize defensive scope boundaries, and execute non-destructive security audits.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">

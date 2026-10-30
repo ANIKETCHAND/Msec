@@ -114,9 +114,6 @@ export default function DashboardPage() {
               Live Telemetry
             </span>
           </div>
-          <p className="text-xs text-[#6B7280] mt-1">
-            Real-time medical device telemetry, risk posture, and authorized security assessments.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">

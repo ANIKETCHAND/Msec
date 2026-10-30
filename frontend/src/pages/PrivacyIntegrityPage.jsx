@@ -37,9 +37,6 @@ export default function PrivacyIntegrityPage() {
               AES-256-GCM & SHA-256
             </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">
-            Verification of authenticated symmetric encryption and bit-level cryptographic tamper detection.
-          </p>
         </div>
       </div>
 

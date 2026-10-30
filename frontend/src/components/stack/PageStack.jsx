@@ -20,7 +20,6 @@ export default function PageStack({ children, pageMap }) {
   const activeMeta = PAGE_REGISTRY[currentPage] || {
     id: currentPage,
     title: currentPage,
-    subtitle: 'IoMT Operational Workspace',
     color: '#1677FF',
     category: 'WORKSPACE'
   };
@@ -31,7 +30,6 @@ export default function PageStack({ children, pageMap }) {
       {bgCards.map((pageId, index) => {
         const meta = PAGE_REGISTRY[pageId] || {
           title: pageId,
-          subtitle: '',
           color: '#1677FF',
           category: 'WORKSPACE'
         };
@@ -58,7 +56,7 @@ export default function PageStack({ children, pageMap }) {
             }}
             className="group bg-white hover:bg-[#FAFAFA] border border-[#E5E7EB] hover:border-[#D1D5DB] rounded-t-2xl px-5 py-2.5 flex items-center justify-between cursor-pointer transition-swiss shadow-xs"
           >
-            {/* Header Content: Colored Diamond, Title, Dot, Subtitle */}
+            {/* Header Content: Colored Diamond and Title */}
             <div className="flex items-center gap-2 text-xs truncate min-w-0 pr-3">
               <span
                 style={{ color: meta.color || '#1677FF' }}
@@ -66,12 +64,8 @@ export default function PageStack({ children, pageMap }) {
               >
                 ◆
               </span>
-              <span className="font-semibold text-[#171717] shrink-0">
+              <span className="font-semibold text-[#171717] truncate">
                 {meta.title}
-              </span>
-              <span className="text-[#9CA3AF] text-xs font-normal shrink-0">·</span>
-              <span className="text-[#6B7280] font-normal truncate">
-                {meta.subtitle}
               </span>
             </div>
 
@@ -116,12 +110,8 @@ export default function PageStack({ children, pageMap }) {
             >
               ◆
             </span>
-            <span className="font-semibold text-[#171717] text-sm sm:text-base shrink-0">
+            <span className="font-semibold text-[#171717] text-sm sm:text-base truncate">
               {activeMeta.title}
-            </span>
-            <span className="text-[#9CA3AF] text-xs font-normal shrink-0">·</span>
-            <span className="text-[#6B7280] font-normal text-xs sm:text-sm truncate">
-              {activeMeta.subtitle}
             </span>
           </div>
 

@@ -174,9 +174,6 @@ export default function ReportsPage() {
               ({reports.length} generated audits)
             </span>
           </h1>
-          <p className="text-xs text-[#6B7280] mt-0.5">
-            Downloadable PDF and standalone HTML audit reports with cryptographic SHA-256 integrity verification.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

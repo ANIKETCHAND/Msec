@@ -238,9 +238,6 @@ export default function IncidentManagementPage() {
               ISO/IEC 27035 & NIST SP 800-61
             </span>
           </div>
-          <p className="text-xs text-[#6B7280] mt-1">
-            Clinical security incident lifecycle, containment playbooks, forensic evidence, and analyst notes.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">

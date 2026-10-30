@@ -62,9 +62,6 @@ export default function ToolsManagementPage() {
               Tool Orchestrator
             </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">
-            Status of host assessment binaries and automatic synthetic clinical telemetry fallbacks.
-          </p>
         </div>
 
         <button

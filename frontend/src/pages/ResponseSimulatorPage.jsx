@@ -108,9 +108,6 @@ export default function ResponseSimulatorPage() {
               Simulated Mitigation Sandbox
             </span>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">
-            Simulated network microsegmentation and incident mitigation workflows for medical IoT assets.
-          </p>
         </div>
       </div>
 
