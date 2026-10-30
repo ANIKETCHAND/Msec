@@ -3,9 +3,22 @@
  * Handles authenticated communication with FastAPI backend endpoints.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/v1`
-  : '/api/v1';
+export const getApiBase = () => {
+  try {
+    const custom = typeof localStorage !== 'undefined' ? localStorage.getItem('medishield_api_url') : null;
+    if (custom && custom.trim()) {
+      return `${custom.trim().replace(/\/+$/, '')}/api/v1`;
+    }
+  } catch (e) {}
+
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/v1`;
+  }
+
+  return '/api/v1';
+};
+
+export const API_BASE = getApiBase();
 
 class ApiService {
   constructor() {
@@ -32,7 +45,8 @@ class ApiService {
   }
 
   async request(endpoint, options = {}) {
-    const url = `${API_BASE}${endpoint}`;
+    const apiBase = getApiBase();
+    const url = `${apiBase}${endpoint}`;
     const config = {
       ...options,
       headers: {
@@ -45,9 +59,18 @@ class ApiService {
       const res = await fetch(url, config);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const errMsg = errorData.error?.message || errorData.detail || `Request failed with status ${res.status}`;
+        let errMsg = errorData.error?.message || errorData.detail;
+        if (!errMsg) {
+          if (res.status === 405) {
+            errMsg = `Backend endpoint '${endpoint}' returned 405 Method Not Allowed (Static host rewrite or unconfigured backend).`;
+          } else if (res.status === 404) {
+            errMsg = `Backend endpoint '${endpoint}' was not found (404).`;
+          } else {
+            errMsg = `Request failed with status ${res.status}`;
+          }
+        }
         const errObj = new Error(errMsg);
-        errObj.code = errorData.error?.code || 'API_ERROR';
+        errObj.code = errorData.error?.code || (res.status === 405 ? 'BACKEND_NOT_CONFIGURED' : 'API_ERROR');
         errObj.requestId = errorData.error?.request_id || res.headers.get('X-Request-ID');
         errObj.statusCode = res.status;
         throw errObj;
@@ -55,9 +78,16 @@ class ApiService {
       // 204 No Content (e.g. decommission) carries no body to parse.
       if (res.status === 204) return null;
       const text = await res.text();
-      return text ? JSON.parse(text) : null;
+      // Handle static SPA HTML rewrites where 200 OK returns index.html instead of JSON
+      if (!text || text.trim().startsWith('<!doctype html') || text.trim().startsWith('<html')) {
+        const errObj = new Error(`Static host rewrote '${endpoint}' to index.html. No backend server active at this URL.`);
+        errObj.code = 'STATIC_FALLBACK_HTML';
+        errObj.statusCode = 405;
+        throw errObj;
+      }
+      return JSON.parse(text);
     } catch (err) {
-      console.warn(`[API] ${endpoint} request failed:`, err.message);
+      console.warn(`[API] ${endpoint} request notice:`, err.message);
       throw err;
     }
   }
@@ -326,20 +356,20 @@ class ApiService {
   getReportDownloadUrl(reportId) {
     const token = this.token || localStorage.getItem('medishield_token');
     const q = token ? `?token=${encodeURIComponent(token)}` : '';
-    return `${API_BASE}/reports/${reportId}/download${q}`;
+    return `${getApiBase()}/reports/${reportId}/download${q}`;
   }
 
   getReportPdfUrl(reportId) {
     const token = this.token || localStorage.getItem('medishield_token');
     const q = token ? `?token=${encodeURIComponent(token)}` : '';
-    return `${API_BASE}/reports/${reportId}/pdf${q}`;
+    return `${getApiBase()}/reports/${reportId}/pdf${q}`;
   }
 
   async downloadReportFile(reportId, preferredFilename = null) {
     const rep = await this.getReport(reportId).catch(() => null);
     const ext = (rep?.report_type || 'PDF').toLowerCase();
     const finalFilename = preferredFilename || `medishield-report-${reportId}.${ext}`;
-    const url = `${API_BASE}/reports/${reportId}/download`;
+    const url = `${getApiBase()}/reports/${reportId}/download`;
     const res = await fetch(url, { headers: this.getHeaders() });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -377,7 +407,7 @@ class ApiService {
   }
 
   async getReportHtml(reportId) {
-    const url = `${API_BASE}/reports/${reportId}/html`;
+    const url = `${getApiBase()}/reports/${reportId}/html`;
     const res = await fetch(url, { headers: this.getHeaders() });
     if (!res.ok) throw new Error('Failed to load HTML report');
     return await res.text();
