@@ -23,8 +23,11 @@ export default function ReportDownloadModal({
   onClose,
   assessmentId,
   deviceId = '',
+  deviceName = '',
+  networkSegment = '',
   targetIp = '',
   securityScore = null,
+  findings = [],
   onViewInReports
 }) {
   const [loading, setLoading] = useState(false);

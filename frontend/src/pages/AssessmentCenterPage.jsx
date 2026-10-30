@@ -428,6 +428,11 @@ export default function AssessmentCenterPage() {
     }
   }, [activeScopeId]);
 
+  // Clear stale transient errors when navigating between wizard steps
+  useEffect(() => {
+    setErrorMsg('');
+  }, [currentStep]);
+
   // Add Device Modal State
   const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false);
   const [deviceSubmitting, setDeviceSubmitting] = useState(false);
@@ -1694,8 +1699,11 @@ export default function AssessmentCenterPage() {
         onClose={() => setReportModalOpen(false)}
         assessmentId={selectedAssessment?.id}
         deviceId={selectedAssessment?.device_id || targetDevice?.id}
+        deviceName={targetDevice?.name || selectedAssessment?.device_id}
+        networkSegment={targetDevice?.networkSegment || 'ICU_VLAN_10'}
         targetIp={selectedAssessment?.target_ip || targetDevice?.ipAddress}
         securityScore={selectedAssessment?.security_score}
+        findings={selectedAssessment?.findings || []}
         onViewInReports={() => setCurrentPage('reports')}
       />
     </div>
