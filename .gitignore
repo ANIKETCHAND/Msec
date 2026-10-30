@@ -97,3 +97,7 @@ backend/tools/bin/*
 backend/tools/bin/*
 !backend/tools/bin/.gitkeep
 !backend/tools/setup_tools.py
+
+# Vercel Deployment
+.vercel/
+*.local
