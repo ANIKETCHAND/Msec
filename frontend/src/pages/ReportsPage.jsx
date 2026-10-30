@@ -100,19 +100,7 @@ export default function ReportsPage() {
   const handleDownloadReport = async (rep) => {
     setDownloadingId(rep.id);
     try {
-      if ((rep.report_type || '').toUpperCase() === 'PDF') {
-        const { downloadAssessmentPdf } = await import('../services/pdfGenerator');
-        downloadAssessmentPdf({
-          assessmentId: rep.assessment_id || rep.id,
-          deviceId: 'Clinical IoMT Asset',
-          deviceName: 'Clinical IoMT Asset',
-          targetIp: '192.168.10.15',
-          securityScore: 85,
-          sha256Hash: rep.sha256_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-        }, `medishield-report-${rep.id}.pdf`);
-        logAudit('REPORT_DOWNLOADED', 'Report', rep.id, `Downloaded PDF report ${rep.id}.`);
-        return;
-      }
+      // First attempt authentic backend download
       await api.downloadReportFile(rep.id);
       logAudit('REPORT_DOWNLOADED', 'Report', rep.id, `Downloaded ${rep.report_type} report ${rep.id}.`);
     } catch (err) {
