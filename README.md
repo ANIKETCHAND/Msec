@@ -96,6 +96,8 @@ MediShield adopts the **Swiss International Style** with a document card stackin
   - Recharts for live time-series vitals & vulnerability distributions
   - Lucide React iconography
   - Centralized `api` client with automatic Bearer token management
+  - Route-level code splitting: the shell and entry screens load eagerly, workspace pages are lazy-loaded per route
+
 - **Backend API Gateway (FastAPI)**:
   - Dual Router Mounting: Routes mounted primarily under `/api/v1` and secondarily under `/api` for 100% backward compatibility
   - Standardized JSON Error Envelopes: All errors return `{ error: { code, message, request_id, timestamp }, detail }`
@@ -120,6 +122,7 @@ MediShield adopts the **Swiss International Style** with a document card stackin
 | `/api/v1/auth/login` | `POST` | Authenticate user and issue JWT Bearer token |
 | `/api/v1/dashboard/summary` | `GET` | Authoritative SOC metrics, posture score, completed assessments, reports count |
 | `/api/v1/devices` | `GET`, `POST` | List and register clinical IoMT devices |
+| `/api/v1/devices/{id}` | `GET`, `PATCH`, `DELETE` | Inspect, update/quarantine, or decommission an asset (delete is Administrator-only) |
 | `/api/v1/assessments/authorize-scope` | `POST` | Authorize defensive scan scope certificate |
 | `/api/v1/assessments/execute` | `POST` | Launch defensive multi-tool assessment |
 | `/api/v1/assessments/{id}` | `GET` | Retrieve assessment status and findings |
@@ -171,13 +174,16 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 ## 8. Automated Testing & Verification
 
+> Handoff notes for the next maintainer — verified state, ranked remaining work, and the constraints that must not be broken — live in [`docs/antigravity_handoff.md`](docs/antigravity_handoff.md).
+
+
 Run the complete backend integration test suite:
 ```bash
 cd backend
 .\.venv\Scripts\pytest -v
 ```
 **Results**:
-- **41 passed integration tests** (100% pass rate) across `test_api_endpoints.py`, `test_dashboard_summary.py`, `test_health.py`, `test_real_tools_integration.py`, `test_reports_pdf_html.py`, and `test_tool_integrations.py`. Covers authentication, RBAC, scope validation, live & containerized multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, assessment cancellation, authoritative dashboard summary, standardized error envelopes, ML inference, and unbroken audit chaining.
+- **42 passed integration tests** (100% pass rate) across `test_api_endpoints.py`, `test_dashboard_summary.py`, `test_health.py`, `test_real_tools_integration.py`, `test_reports_pdf_html.py`, and `test_tool_integrations.py`. Covers authentication, RBAC, scope validation, live & containerized multi-tool execution, PDF/HTML report generation, SHA-256 hash verification, assessment cancellation, authoritative dashboard summary, standardized error envelopes, ML inference, and unbroken audit chaining.
 
 Build the frontend production bundle:
 ```bash

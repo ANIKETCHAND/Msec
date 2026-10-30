@@ -432,6 +432,21 @@ export function AppProvider({ children }) {
     return newDev;
   };
 
+  // Decommissioning is destructive, so the backend's refusal (active scan, or
+  // admin-only RBAC) is surfaced to the caller instead of being swallowed.
+  const decommissionDevice = async (deviceId) => {
+    const target = devices.find(d => d.id === deviceId);
+    await api.deleteDevice(deviceId);
+    setDevices(prev => prev.filter(d => d.id !== deviceId));
+    logAudit(
+      'DEVICE_DECOMMISSIONED',
+      'Device',
+      deviceId,
+      `Removed asset ${target?.name || deviceId} from the clinical inventory.`
+    );
+    return true;
+  };
+
   // Incident Actions
   const updateIncidentStatus = async (incidentId, newStatus, noteText) => {
     try {
@@ -706,6 +721,7 @@ export function AppProvider({ children }) {
     backendOnline,
     toggleDeviceIsolation,
     registerDevice,
+    decommissionDevice,
     updateIncidentStatus,
     createIncidentFromEvent,
     tamperRecord,

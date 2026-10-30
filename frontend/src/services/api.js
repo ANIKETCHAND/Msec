@@ -50,7 +50,10 @@ class ApiService {
         errObj.statusCode = res.status;
         throw errObj;
       }
-      return await res.json();
+      // 204 No Content (e.g. decommission) carries no body to parse.
+      if (res.status === 204) return null;
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
     } catch (err) {
       console.warn(`[API] ${endpoint} request failed:`, err.message);
       throw err;
@@ -108,6 +111,10 @@ class ApiService {
       method: 'PATCH',
       body: JSON.stringify(updateData)
     });
+  }
+
+  async deleteDevice(id) {
+    return await this.request(`/devices/${id}`, { method: 'DELETE' });
   }
 
   // Telemetry

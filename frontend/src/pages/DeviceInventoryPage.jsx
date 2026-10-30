@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function DeviceInventoryPage() {
-  const { devices, setSelectedDeviceId, setCurrentPage, currentUser, toggleDeviceIsolation, registerDevice } = useApp();
+  const { devices, setSelectedDeviceId, setCurrentPage, currentUser, toggleDeviceIsolation, registerDevice, decommissionDevice } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -40,6 +40,21 @@ export default function DeviceInventoryPage() {
   const [newDeviceFirmware, setNewDeviceFirmware] = useState('1.0.0');
   const [addModalError, setAddModalError] = useState('');
   const [savingRegistration, setSavingRegistration] = useState(false);
+  const [decommissionError, setDecommissionError] = useState('');
+
+  const handleDecommission = async (dev) => {
+    setDecommissionError('');
+    const confirmed = window.confirm(
+      `Decommission ${dev.name} (${dev.id})?\n\nThis permanently removes the asset and its completed assessment history from the inventory.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await decommissionDevice(dev.id);
+    } catch (err) {
+      setDecommissionError(err.message || 'Failed to decommission asset.');
+    }
+  };
 
   const handleSaveRegistration = async () => {
     setAddModalError('');
@@ -156,6 +171,19 @@ export default function DeviceInventoryPage() {
           </button>
         )}
       </div>
+
+      {decommissionError && (
+        <div className="p-2.5 rounded bg-red-50 border border-red-200 text-[11px] text-red-700 flex items-start justify-between gap-3">
+          <span>{decommissionError}</span>
+          <button
+            onClick={() => setDecommissionError('')}
+            className="text-red-700 hover:text-red-900 shrink-0"
+            aria-label="Dismiss decommission error"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* 2. Controls & Filter Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
@@ -330,6 +358,16 @@ export default function DeviceInventoryPage() {
                             }`}
                           >
                             {dev.status === 'isolated' ? 'Restore' : 'Quarantine'}
+                          </button>
+                        )}
+
+                        {currentUser.role === 'Administrator' && (
+                          <button
+                            onClick={() => handleDecommission(dev)}
+                            title="Remove this asset from the inventory (Administrator only)"
+                            className="px-2 py-1 rounded text-[11px] font-medium text-[#B91C1C] bg-[#FEF2F2] hover:bg-[#FEE2E2] transition-swiss"
+                          >
+                            Decommission
                           </button>
                         )}
                       </div>

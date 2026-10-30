@@ -8,7 +8,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.database.session import get_db
-from app.models.db_models import DeviceModel, AuditLogModel, UserModel
+from app.models.db_models import (
+    DeviceModel,
+    AuditLogModel,
+    UserModel,
+    AssessmentModel,
+    AssessmentScopeModel,
+    FindingModel,
+    ReportModel,
+)
 from app.schemas.device import DeviceCreate, DeviceUpdate, DeviceResponse
 from app.middleware.rbac import get_current_user, require_admin, require_analyst
 from app.services.audit_chain_service import audit_chain_service
@@ -181,3 +189,102 @@ def update_device(
     db.commit()
     db.refresh(device)
     return device
+
+
+@router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
+def decommission_device(
+    device_id: str,
+    db: Session = Depends(get_db),
+    user: UserModel = Depends(require_admin)
+):
+    """Decommission (delete) an IoMT asset from the inventory (Administrator only).
+
+    An asset cannot be removed while an assessment against it is still QUEUED or
+    RUNNING, because a live scan needs its inventoried target. Completed
+    assessment history for the asset is removed with it, so the dashboard totals
+    never count findings for a device that is no longer registered.
+    """
+    device = db.query(DeviceModel).filter(DeviceModel.id == device_id).first()
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Device {device_id} not found."
+        )
+
+    active_assessments = (
+        db.query(AssessmentModel)
+        .filter(
+            AssessmentModel.device_id == device_id,
+            AssessmentModel.status.in_(["QUEUED", "RUNNING"])
+        )
+        .count()
+    )
+    if active_assessments:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Device {device_id} has {active_assessments} assessment(s) still "
+                "queued or running. Cancel them before decommissioning the asset."
+            )
+        )
+
+    assessment_ids = [
+        row[0]
+        for row in db.query(AssessmentModel.id)
+        .filter(AssessmentModel.device_id == device_id)
+        .all()
+    ]
+    removed_summary = {
+        "findings": 0,
+        "reports": 0,
+        "assessments": len(assessment_ids),
+        "scopes": 0,
+    }
+
+    if assessment_ids:
+        removed_summary["findings"] = (
+            db.query(FindingModel)
+            .filter(FindingModel.assessment_id.in_(assessment_ids))
+            .delete(synchronize_session=False)
+        )
+        removed_summary["reports"] = (
+            db.query(ReportModel)
+            .filter(ReportModel.assessment_id.in_(assessment_ids))
+            .delete(synchronize_session=False)
+        )
+        db.query(AssessmentModel).filter(
+            AssessmentModel.id.in_(assessment_ids)
+        ).delete(synchronize_session=False)
+
+    # Findings recorded directly against the device (outside an assessment)
+    removed_summary["findings"] += (
+        db.query(FindingModel)
+        .filter(FindingModel.device_id == device_id)
+        .delete(synchronize_session=False)
+    )
+    removed_summary["scopes"] = (
+        db.query(AssessmentScopeModel)
+        .filter(AssessmentScopeModel.device_id == device_id)
+        .delete(synchronize_session=False)
+    )
+
+    device_name = device.name
+    db.delete(device)
+    db.commit()
+
+    audit_chain_service.record_chained_log(
+        db=db,
+        actor=user.email,
+        role=user.role,
+        action="DEVICE_DECOMMISSIONED",
+        entity_type="Device",
+        entity_id=device_id,
+        details=(
+            f"Removed device {device_name} ({device_id}) from inventory. "
+            f"Deleted {removed_summary['assessments']} assessment(s), "
+            f"{removed_summary['findings']} finding(s), "
+            f"{removed_summary['reports']} report(s) and "
+            f"{removed_summary['scopes']} scope certificate(s)."
+        ),
+    )
+    return None

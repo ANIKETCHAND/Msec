@@ -131,6 +131,16 @@ def test_analyst_can_create_device_and_authorize_scope():
     assert scope_data["target_ip"] == new_device_ip
     assert scope_data["authorization_status"] == "AUTHORIZED"
 
+    # Remove the fixture asset so repeated runs do not accumulate duplicate
+    # inventory rows (decommissioning is Administrator-only).
+    admin_login = client.post("/api/auth/login", json={
+        "email": "admin@medishield.local",
+        "password": "adminpassword123"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    cleanup = client.delete(f"/api/devices/{new_device_id}", headers=admin_headers)
+    assert cleanup.status_code == 204
+
 
 def test_telemetry_ingestion_and_automated_detection():
     """Verify telemetry ingestion triggers rule engine and generates security event on threshold violation."""
@@ -546,6 +556,58 @@ def test_audit_hash_chain_verification():
     assert "chain_valid" in data
     assert data["chain_valid"] is True
     assert data["total_records"] > 0
+
+
+def test_admin_can_decommission_device():
+    """Verify a device can be removed by an Administrator only, and that the removal is chained."""
+    import uuid
+
+    admin_login = client.post("/api/auth/login", json={
+        "email": "admin@medishield.local",
+        "password": "adminpassword123"
+    })
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
+    analyst_login = client.post("/api/auth/login", json={
+        "email": "analyst@medishield.local",
+        "password": "analystpassword123"
+    })
+    analyst_headers = {"Authorization": f"Bearer {analyst_login.json()['access_token']}"}
+
+    uid = uuid.uuid4().hex[:6].upper()
+    device_id = f"DEV-DECOMM-{uid}"
+    create_resp = client.post("/api/devices", json={
+        "id": device_id,
+        "name": f"Decommission Fixture {uid}",
+        "device_type": "Infusion Pump",
+        "ip_address": f"10.44.{(int(uid[0:2], 16) % 254) + 1}.{(int(uid[2:4], 16) % 254) + 1}",
+        "mac_address": f"02:DC:{uid[0:2]}:{uid[2:4]}:{uid[4:6]}:01",
+        "firmware_version": "1.0.0",
+        "network_segment": "ICU_VLAN_10"
+    }, headers=admin_headers)
+    assert create_resp.status_code == 201
+
+    # Analysts may scan and quarantine, but decommissioning inventory is Administrator-only.
+    denied = client.delete(f"/api/devices/{device_id}", headers=analyst_headers)
+    assert denied.status_code == 403
+
+    still_there = client.get(f"/api/devices/{device_id}", headers=admin_headers)
+    assert still_there.status_code == 200
+
+    delete_resp = client.delete(f"/api/devices/{device_id}", headers=admin_headers)
+    assert delete_resp.status_code == 204
+    assert delete_resp.content == b""
+
+    gone = client.get(f"/api/devices/{device_id}", headers=admin_headers)
+    assert gone.status_code == 404
+
+    missing = client.delete(f"/api/devices/{device_id}", headers=admin_headers)
+    assert missing.status_code == 404
+
+    # The decommission itself must be part of the verifiable audit chain.
+    verify_resp = client.get("/api/audit-logs/verify-chain", headers=analyst_headers)
+    assert verify_resp.status_code == 200
+    assert verify_resp.json()["chain_valid"] is True
 
 
 
