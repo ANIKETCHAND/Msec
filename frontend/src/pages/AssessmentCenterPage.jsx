@@ -98,6 +98,265 @@ const PRESET_DEVICES = [
   }
 ];
 
+// Comprehensive Suite of all 14 Defensive Security Tools across MediShield
+export const ALL_DEFENSIVE_TOOLS = [
+  {
+    id: 'nmap',
+    name: 'Nmap Adapter',
+    category: 'Port & Discovery',
+    badge: 'PORT AUDIT',
+    badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
+    desc: 'Safe TCP Connect (-sT) port discovery, service version banner probing, and HL7/DICOM medical protocol port mapping.',
+    mode: 'Safe TCP Connect (-sT)'
+  },
+  {
+    id: 'native_probe',
+    name: 'Native Socket & Banner Probe',
+    category: 'Port & Discovery',
+    badge: 'SOCKET PROBE',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    desc: 'Non-intrusive TCP socket auditor and clinical protocol banner probe for live medical service identification.',
+    mode: 'Native Subprocess'
+  },
+  {
+    id: 'nuclei',
+    name: 'Nuclei Adapter',
+    category: 'Vulnerability Scanning',
+    badge: 'CVE SCANNER',
+    badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+    desc: 'Fast, template-based vulnerability scanner for known CVE signatures, default clinical web interfaces, and misconfigurations.',
+    mode: 'Template Engine'
+  },
+  {
+    id: 'zap',
+    name: 'OWASP ZAP Adapter',
+    category: 'Web & API Security',
+    badge: 'API AUDIT',
+    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    desc: 'OWASP Zed Attack Proxy API integration for passive web security auditing and clinical REST/HL7 portal header evaluation.',
+    mode: 'Passive API Audit'
+  },
+  {
+    id: 'nikto',
+    name: 'Nikto Adapter',
+    category: 'Web & API Security',
+    badge: 'HTTP AUDITOR',
+    badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
+    desc: 'Lightweight web server security scanner for HTTP misconfigurations, insecure verbs, and missing transport security headers.',
+    mode: 'HTTP Header Scan'
+  },
+  {
+    id: 'openvas',
+    name: 'OpenVAS / GVM Adapter',
+    category: 'Vulnerability Scanning',
+    badge: 'BASELINE REVIEW',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    desc: 'Greenbone Vulnerability Management engine integration for institutional clinical vulnerability baseline reviews.',
+    mode: 'Authenticated Review'
+  },
+  {
+    id: 'trivy',
+    name: 'Trivy Firmware & Container Scanner',
+    category: 'Firmware & SBOM',
+    badge: 'FIRMWARE SCAN',
+    badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    desc: 'Vulnerability and misconfiguration scanner for IoMT container images, embedded OS packages, and clinical firmware binaries.',
+    mode: 'Binary & Package Check'
+  },
+  {
+    id: 'syft',
+    name: 'Syft SBOM Cataloger',
+    category: 'Firmware & SBOM',
+    badge: 'SBOM ENGINE',
+    badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
+    desc: 'Software Bill of Materials (SBOM) generator cataloging software dependencies and licenses across clinical assets.',
+    mode: 'Dependency Catalog'
+  },
+  {
+    id: 'lynis',
+    name: 'Lynis Medical OS Hardening',
+    category: 'OS & Compliance',
+    badge: 'OS HARDENING',
+    badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
+    desc: 'Security auditing and compliance posture scanner for embedded medical Linux and hospital host operating systems.',
+    mode: 'Host Posture Audit'
+  },
+  {
+    id: 'openscap',
+    name: 'OpenSCAP Compliance Checker',
+    category: 'OS & Compliance',
+    badge: 'HIPAA & NIST',
+    badgeColor: 'bg-violet-50 text-violet-700 border-violet-200',
+    desc: 'Open Security Content Automation Protocol (SCAP) compliance checker against NIST SP 800-53 and HIPAA profiles.',
+    mode: 'Regulatory Baseline'
+  },
+  {
+    id: 'nvd_intel',
+    name: 'NVD Automated CVE Intelligence',
+    category: 'Vulnerability Scanning',
+    badge: 'VULN INTEL',
+    badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+    desc: 'National Vulnerability Database (NVD) automated CVE feed for IoMT asset vulnerability enrichment and CVSS v3.1 scoring.',
+    mode: 'Automated Feed'
+  },
+  {
+    id: 'suricata',
+    name: 'Suricata Passive IDS Sensor',
+    category: 'Passive Threat Detection',
+    badge: 'NETWORK IDS',
+    badgeColor: 'bg-red-50 text-red-700 border-red-200',
+    desc: 'High-performance passive Network Threat Detection and EVE JSON alert engine for real-time intrusion monitoring.',
+    mode: 'Passive EVE Stream'
+  },
+  {
+    id: 'zeek',
+    name: 'Zeek Protocol & Flow Analyzer',
+    category: 'Passive Threat Detection',
+    badge: 'FLOW ANALYZER',
+    badgeColor: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
+    desc: 'Powerful network flow analysis framework for connection duration, medical protocol anomalies, and TLS fingerprinting.',
+    mode: 'Flow Telemetry'
+  },
+  {
+    id: 'tshark',
+    name: 'TShark Deep Packet Telemetry',
+    category: 'Passive Threat Detection',
+    badge: 'PACKET TELEMETRY',
+    badgeColor: 'bg-slate-100 text-slate-700 border-slate-300',
+    desc: 'Deep packet inspection (DPI) and protocol frame frequency telemetry analysis for clinical medical networks.',
+    mode: 'Packet Inspection'
+  }
+];
+
+const MOCK_TOOL_FINDINGS = {
+  nmap: {
+    id: 'FND-NMAP-01',
+    title: 'Open Clinical Service Identified: 8000/TCP (HTTP Alternate / DICOM Web)',
+    severity: 'LOW',
+    source_tool: 'nmap',
+    cve_id: 'N/A',
+    cvss_score: 2.1,
+    remediation_guidance: 'Verify whether clinical portal is required on alternate port; restrict perimeter access to authorized VLANs.'
+  },
+  native_probe: {
+    id: 'FND-PROBE-01',
+    title: 'Native Socket Banner Disclosed: Medical Protocol Service Responding',
+    severity: 'LOW',
+    source_tool: 'native_probe',
+    cve_id: 'N/A',
+    cvss_score: 2.0,
+    remediation_guidance: 'Audit socket listening addresses to bind strictly to authorized hospital network interface.'
+  },
+  nuclei: {
+    id: 'FND-NUCLEI-01',
+    title: 'HTTP Platform Banner Disclosure (Uvicorn / Embedded Server)',
+    severity: 'LOW',
+    source_tool: 'nuclei',
+    cve_id: 'CVE-2023-38709',
+    cvss_score: 3.4,
+    remediation_guidance: 'Configure reverse proxy to strip Server identification headers in medical network boundary.'
+  },
+  zap: {
+    id: 'FND-ZAP-01',
+    title: 'Missing Content-Security-Policy & Strict-Transport-Security on HL7 API',
+    severity: 'MEDIUM',
+    source_tool: 'zap',
+    cve_id: 'CWE-693',
+    cvss_score: 5.4,
+    remediation_guidance: 'Enforce modern HTTP security headers (HSTS, CSP, X-Content-Type-Options) on all medical REST/HL7 APIs.'
+  },
+  nikto: {
+    id: 'FND-NIKTO-01',
+    title: 'Web Server Options Method Enabled & Directory Indexing Permissive',
+    severity: 'LOW',
+    source_tool: 'nikto',
+    cve_id: 'CWE-16',
+    cvss_score: 3.1,
+    remediation_guidance: 'Disable HTTP TRACE and OPTIONS verbs in the embedded web server configuration.'
+  },
+  openvas: {
+    id: 'FND-OPENVAS-01',
+    title: 'Legacy SSL/TLS Cipher Suites Supported on Management Interface',
+    severity: 'MEDIUM',
+    source_tool: 'openvas',
+    cve_id: 'CVE-2021-34527',
+    cvss_score: 5.8,
+    remediation_guidance: 'Decommission TLS 1.0/1.1; enforce TLS 1.3 with forward secrecy ciphers across clinical assets.'
+  },
+  trivy: {
+    id: 'FND-TRIVY-01',
+    title: 'Vulnerable Embedded Library Detected in Device Firmware: BusyBox v1.33',
+    severity: 'HIGH',
+    source_tool: 'trivy',
+    cve_id: 'CVE-2022-30065',
+    cvss_score: 7.2,
+    remediation_guidance: 'Apply manufacturer firmware security patch updating core operating utilities to patched baseline.'
+  },
+  syft: {
+    id: 'FND-SYFT-01',
+    title: 'SBOM Inventory Completed: 48 Software Components Cataloged',
+    severity: 'LOW',
+    source_tool: 'syft',
+    cve_id: 'N/A',
+    cvss_score: 1.5,
+    remediation_guidance: 'Maintain continuous SBOM tracking in hospital CMMS to monitor emerging upstream vulnerabilities.'
+  },
+  lynis: {
+    id: 'FND-LYNIS-01',
+    title: 'Host Hardening Posture: Kernel Core Dumps Enabled on Clinical Host',
+    severity: 'MEDIUM',
+    source_tool: 'lynis',
+    cve_id: 'CIS-1.5.1',
+    cvss_score: 4.8,
+    remediation_guidance: 'Disable core dumps in /etc/security/limits.conf and sysctl.conf to prevent memory artifact leaks.'
+  },
+  openscap: {
+    id: 'FND-SCAP-01',
+    title: 'HIPAA Security Rule § 164.312(a)(2)(iv) Encryption Review Passed',
+    severity: 'LOW',
+    source_tool: 'openscap',
+    cve_id: 'NIST-SP-800-53',
+    cvss_score: 2.2,
+    remediation_guidance: 'Maintain automated quarterly SCAP configuration audit schedules for clinical workstations.'
+  },
+  nvd_intel: {
+    id: 'FND-NVD-01',
+    title: 'NVD Feed Correlation: Known Vulnerability in Medical Gateway Daemon',
+    severity: 'MEDIUM',
+    source_tool: 'nvd_intel',
+    cve_id: 'CVE-2024-3819',
+    cvss_score: 5.3,
+    remediation_guidance: 'Isolate vulnerable telemetry gateway into dedicated microsegment VLAN and restrict routing.'
+  },
+  suricata: {
+    id: 'FND-SURI-01',
+    title: 'Passive IDS Alert: Unencrypted DICOM C-STORE Payload In Transit',
+    severity: 'HIGH',
+    source_tool: 'suricata',
+    cve_id: 'ET-INFO-20189',
+    cvss_score: 7.5,
+    remediation_guidance: 'Configure DICOM TLS encapsulation on PACS storage servers to prevent in-flight patient data capture.'
+  },
+  zeek: {
+    id: 'FND-ZEEK-01',
+    title: 'Zeek Flow Anomaly: Prolonged High-Volume Outbound Connection on Port 443',
+    severity: 'MEDIUM',
+    source_tool: 'zeek',
+    cve_id: 'ZEEK-FLOW-902',
+    cvss_score: 4.9,
+    remediation_guidance: 'Verify destination IP address against authorized vendor remote telemetry maintenance endpoints.'
+  },
+  tshark: {
+    id: 'FND-TSHARK-01',
+    title: 'Packet Telemetry Inspection: Abnormal Broadcast Traffic Spikes on Medical VLAN',
+    severity: 'LOW',
+    source_tool: 'tshark',
+    cve_id: 'N/A',
+    cvss_score: 3.0,
+    remediation_guidance: 'Enable broadcast storm control and IGMP snooping on the clinical access switch layer.'
+  }
+};
+
 export default function AssessmentCenterPage() {
   const { devices, currentUser, setCurrentPage, registerDevice } = useApp();
 
@@ -130,7 +389,8 @@ export default function AssessmentCenterPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedDeviceId, setSelectedDeviceId] = useState(devices[0]?.id || 'DEV-VENT-502');
   const [selectedProfile, setSelectedProfile] = useState('DEFENSIVE_AUDIT');
-  const [selectedTools, setSelectedTools] = useState(['nmap', 'nuclei']);
+  const [selectedTools, setSelectedTools] = useState(['nmap', 'native_probe', 'nuclei', 'zap', 'trivy']);
+  const [toolFilterCategory, setToolFilterCategory] = useState('ALL');
   const [durationHours, setDurationHours] = useState(4);
   const [justification, setJustification] = useState('Hospital clinical IoMT compliance audit');
   const [activeScopeId, setActiveScopeId] = useState(() => {
@@ -380,8 +640,37 @@ export default function AssessmentCenterPage() {
         // Realistic multi-tool execution delay in demo mode (1.6s)
         await new Promise(r => setTimeout(r, 1600));
 
-        // Authentic clinical-grade defensive scan findings
+        // Authentic clinical-grade defensive scan findings matching all selected tools
         const targetName = targetDevice?.name || 'Medical IoMT Asset';
+        const activeToolsList = currentScope.selected_tools && currentScope.selected_tools.length > 0
+          ? currentScope.selected_tools
+          : ['nmap', 'native_probe', 'nuclei'];
+
+        const dynamicFindings = activeToolsList.map(toolId => {
+          const template = MOCK_TOOL_FINDINGS[toolId];
+          if (template) {
+            return {
+              ...template,
+              title: template.title.replace('{targetName}', targetName)
+            };
+          }
+          return {
+            id: `FND-${toolId.toUpperCase()}-01`,
+            title: `Defensive Inspection Complete: ${toolId} scan verified on ${targetName}`,
+            severity: 'LOW',
+            source_tool: toolId,
+            cve_id: 'N/A',
+            cvss_score: 2.0,
+            remediation_guidance: 'No critical vulnerabilities observed during safe non-destructive scan.'
+          };
+        });
+
+        const critCount = dynamicFindings.filter(f => f.severity === 'CRITICAL').length;
+        const highCount = dynamicFindings.filter(f => f.severity === 'HIGH').length;
+        const medCount = dynamicFindings.filter(f => f.severity === 'MEDIUM').length;
+        const lowCount = dynamicFindings.filter(f => f.severity === 'LOW').length;
+        const postureScore = Math.max(65, Math.round((100 - (critCount * 25 + highCount * 12 + medCount * 5 + lowCount * 2)) * 10) / 10);
+
         result = {
           id: `ASM-${Math.floor(10000000 + Math.random() * 90000000).toString(16).toUpperCase()}`,
           scope_id: currentScope.id,
@@ -389,43 +678,15 @@ export default function AssessmentCenterPage() {
           target_ip: currentScope.target_ip || '192.168.10.45',
           status: 'COMPLETED',
           profile: currentScope.assessment_profile,
-          tools_executed: currentScope.selected_tools,
-          security_score: 91.5,
-          total_findings: 3,
-          critical_findings: 0,
-          high_findings: 0,
-          medium_findings: 1,
-          low_findings: 2,
+          tools_executed: activeToolsList,
+          security_score: postureScore,
+          total_findings: dynamicFindings.length,
+          critical_findings: critCount,
+          high_findings: highCount,
+          medium_findings: medCount,
+          low_findings: lowCount,
           created_at: new Date().toISOString(),
-          findings: [
-            {
-              id: 'FND-DEMO-01',
-              title: `Open Service Identified: 8000/TCP on ${targetName}`,
-              severity: 'LOW',
-              source_tool: 'nmap',
-              cve_id: 'N/A',
-              cvss_score: 2.1,
-              remediation_guidance: 'Verify whether clinical portal is required on alternate port; restrict perimeter access to authorized VLANs.'
-            },
-            {
-              id: 'FND-DEMO-02',
-              title: 'HTTP Platform Banner Disclosure (Uvicorn / Embedded Server)',
-              severity: 'LOW',
-              source_tool: 'nuclei',
-              cve_id: 'CVE-2023-38709',
-              cvss_score: 3.4,
-              remediation_guidance: 'Configure reverse proxy to strip Server identification headers in medical network boundary.'
-            },
-            {
-              id: 'FND-DEMO-03',
-              title: 'Unencrypted Medical Telemetry Channel (Port 104 DICOM/HL7)',
-              severity: 'MEDIUM',
-              source_tool: 'nmap',
-              cve_id: 'CVE-2024-3819',
-              cvss_score: 5.3,
-              remediation_guidance: 'Enforce TLS 1.3 encryption on medical communication channels per DICOM PS 3.15 standard.'
-            }
-          ]
+          findings: dynamicFindings
         };
       }
       setAssessments(prev => [result, ...prev.filter(a => a.id !== result.id)]);
@@ -759,49 +1020,152 @@ export default function AssessmentCenterPage() {
           </div>
         )}
 
-        {/* Step 4: Select Tools */}
+        {/* Step 4: Select Tools - Complete 14 Defensive Tools */}
         {currentStep === 4 && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-[#171717]">Step 4: Select Available Tool Adapters</h3>
-            <p className="text-xs text-[#6B7280]">
-              Adapters employ non-destructive flags (`-sT`, templates only). Synthetic fallback activates if binaries are not in system PATH.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#F3F4F6]">
+              <div>
+                <h3 className="text-sm font-semibold text-[#171717] flex items-center gap-2">
+                  <span>Step 4: Select Available Tool Adapters</span>
+                  <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-blue-50 text-[#1677FF] border border-blue-200">
+                    {selectedTools.length} of {ALL_DEFENSIVE_TOOLS.length} Selected
+                  </span>
+                </h3>
+                <p className="text-xs text-[#6B7280] mt-0.5">
+                  Complete MediShield defensive security tooling suite. Select active scanners, firmware analyzers, compliance auditors, and passive network IDS sensors.
+                </p>
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTools(ALL_DEFENSIVE_TOOLS.map(t => t.id))}
+                  className="px-2.5 py-1 text-[11px] font-medium rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#171717] transition-swiss cursor-pointer shadow-2xs"
+                >
+                  Select All (14)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTools(['nmap', 'native_probe', 'nuclei', 'zap', 'trivy'])}
+                  className="px-2.5 py-1 text-[11px] font-medium rounded bg-[#E6F4FF] hover:bg-[#BAE0FF] text-[#1677FF] border border-[#1677FF]/30 transition-swiss cursor-pointer shadow-2xs"
+                >
+                  Recommended (5)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTools(['suricata', 'zeek', 'tshark'])}
+                  className="px-2.5 py-1 text-[11px] font-medium rounded border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#6B7280] transition-swiss cursor-pointer"
+                >
+                  Passive IDS (3)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTools([])}
+                  className="px-2.5 py-1 text-[11px] font-medium rounded border border-[#E5E7EB] hover:bg-rose-50 hover:text-rose-600 text-[#6B7280] transition-swiss cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
               {[
-                { id: 'nmap', name: 'Nmap Adapter', desc: 'Safe TCP Connect (-sT), service version banner probe' },
-                { id: 'nuclei', name: 'Nuclei Adapter', desc: 'IoMT medical template CVE vulnerability detection' },
-                { id: 'zap', name: 'OWASP ZAP Adapter', desc: 'Passive REST/HL7 clinical API web service audit' },
-                { id: 'nikto', name: 'Nikto Adapter', desc: 'Embedded medical web server header inspection' },
-                { id: 'openvas', name: 'OpenVAS Adapter', desc: 'Authenticated clinical vulnerability baseline review' }
-              ].map((tool) => (
-                <label
-                  key={tool.id}
-                  className={`p-3 rounded border flex items-start gap-3 cursor-pointer transition-swiss ${
-                    selectedTools.includes(tool.id) ? 'border-[#1677FF] bg-[#E6F4FF]/20' : 'border-[#E5E7EB]'
+                { id: 'ALL', label: `All Tools (${ALL_DEFENSIVE_TOOLS.length})` },
+                { id: 'Port & Discovery', label: 'Port & Discovery (2)' },
+                { id: 'Vulnerability Scanning', label: 'Vulnerability & CVE (3)' },
+                { id: 'Web & API Security', label: 'Web & API (2)' },
+                { id: 'Firmware & SBOM', label: 'Firmware & SBOM (2)' },
+                { id: 'OS & Compliance', label: 'OS & Compliance (2)' },
+                { id: 'Passive Threat Detection', label: 'Passive IDS (3)' }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setToolFilterCategory(cat.id)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-swiss cursor-pointer ${
+                    toolFilterCategory === cat.id
+                      ? 'bg-[#171717] text-white shadow-2xs font-semibold'
+                      : 'bg-[#F3F4F6] text-[#4B5563] hover:bg-[#E5E7EB]'
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedTools.includes(tool.id)}
-                    onChange={() => toggleTool(tool.id)}
-                    className="mt-0.5 rounded text-[#1677FF] focus:ring-0"
-                  />
-                  <div>
-                    <span className="font-semibold text-[#171717] block">{tool.name}</span>
-                    <span className="text-[11px] text-[#6B7280] block mt-0.5">{tool.desc}</span>
-                  </div>
-                </label>
+                  {cat.label}
+                </button>
               ))}
             </div>
-            <div className="flex justify-between pt-2">
-              <button onClick={() => setCurrentStep(3)} className="px-3 py-1.5 rounded border border-[#E5E7EB] text-xs">Back</button>
+
+            {/* Tool Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+              {ALL_DEFENSIVE_TOOLS
+                .filter(tool => toolFilterCategory === 'ALL' || tool.category === toolFilterCategory)
+                .map((tool) => {
+                  const isSelected = selectedTools.includes(tool.id);
+                  return (
+                    <label
+                      key={tool.id}
+                      className={`p-3.5 rounded-lg border flex flex-col justify-between gap-3 cursor-pointer transition-swiss ${
+                        isSelected
+                          ? 'border-[#1677FF] bg-[#E6F4FF]/25 shadow-xs ring-1 ring-[#1677FF]'
+                          : 'border-[#E5E7EB] hover:border-[#D1D5DB] hover:bg-[#FAFAFA]'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleTool(tool.id)}
+                              className="rounded text-[#1677FF] focus:ring-0 cursor-pointer"
+                            />
+                            <span className="font-semibold text-[#171717] text-sm">{tool.name}</span>
+                          </div>
+                          <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border shrink-0 ${tool.badgeColor}`}>
+                            {tool.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#6B7280] leading-relaxed pl-5">
+                          {tool.desc}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#E5E7EB]/70 flex items-center justify-between text-[10px] font-mono text-[#6B7280] pl-5">
+                        <span className="text-[#9CA3AF]">{tool.category}</span>
+                        <span className="text-[#1677FF] font-medium">{tool.mode}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+            </div>
+
+            {/* Step Navigation Bar */}
+            <div className="flex items-center justify-between pt-3 border-t border-[#F3F4F6]">
               <button
-                onClick={() => setCurrentStep(5)}
-                className="px-4 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs"
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                className="px-3.5 py-1.5 rounded border border-[#E5E7EB] text-xs font-medium text-[#171717] hover:bg-[#F9FAFB] transition-swiss cursor-pointer"
               >
-                <span>Next: Review Configuration</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                Back
               </button>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#6B7280]">
+                  {selectedTools.length === 0 ? (
+                    <span className="text-rose-600 font-medium">Please select at least 1 tool</span>
+                  ) : (
+                    <span><strong>{selectedTools.length}</strong> of {ALL_DEFENSIVE_TOOLS.length} tools configured</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(5)}
+                  disabled={selectedTools.length === 0}
+                  className="px-4 py-2 rounded bg-[#1677FF] hover:bg-[#0958D9] disabled:opacity-40 text-white text-xs font-medium flex items-center gap-1.5 transition-swiss shadow-xs cursor-pointer"
+                >
+                  <span>Next: Review Configuration</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -830,8 +1194,27 @@ export default function AssessmentCenterPage() {
                 </div>
               </div>
               <div className="pt-2 border-t border-[#E5E7EB]">
-                <span className="text-[#6B7280] block">Active Tools</span>
-                <span className="font-mono text-[#1677FF] font-semibold">{selectedTools.join(', ').toUpperCase()}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[#6B7280] block">Active Tools ({selectedTools.length} configured)</span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(4)}
+                    className="text-[11px] text-[#1677FF] hover:underline font-medium"
+                  >
+                    Modify Tools &rarr;
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedTools.map(tId => {
+                    const toolObj = ALL_DEFENSIVE_TOOLS.find(t => t.id === tId) || { name: tId, badge: 'TOOL', badgeColor: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
+                    return (
+                      <span key={tId} className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-mono border ${toolObj.badgeColor}`}>
+                        <span className="font-semibold">{toolObj.name}</span>
+                        <span className="text-[9px] opacity-75 uppercase">[{toolObj.badge}]</span>
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <div className="flex justify-between pt-2">
@@ -882,7 +1265,9 @@ export default function AssessmentCenterPage() {
                 <div className="py-6 space-y-3">
                   <RefreshCw className="w-8 h-8 text-[#1677FF] animate-spin mx-auto" />
                   <p className="text-xs font-semibold text-[#171717]">Executing Security Tool Adapters...</p>
-                  <p className="text-[11px] text-[#6B7280] font-mono">Running Nmap (-sT) &bull; Nuclei Templates &bull; Normalizing Findings</p>
+                  <p className="text-[11px] text-[#6B7280] font-mono">
+                    Orchestrating {selectedTools.length} Tools: {selectedTools.map(tId => ALL_DEFENSIVE_TOOLS.find(t => t.id === tId)?.name || tId).join(' • ')}
+                  </p>
                   <button
                     onClick={handleCancelScan}
                     className="mt-2 px-3.5 py-1.5 rounded border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium transition-swiss"
