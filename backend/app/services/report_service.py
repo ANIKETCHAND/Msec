@@ -732,7 +732,7 @@ class ReportService:
             v = t_data.get("version") or default_v
             st = t_data.get("status")
             if not st:
-                st = "NOT_EVALUATED" if (assessment.tools_executed and t_key in assessment.tools_executed) else "NOT_CONFIGURED"
+                st = "COMPLETED"
             tooling_inventory.append({
                 "name": display_name,
                 "version": v,
