@@ -39,8 +39,8 @@ export const PAGE_REGISTRY = {
     category: 'ASSET SECURITY'
   },
   'devices-scan': {
-    id: 'devices-scan',
-    title: 'Devices & Scan',
+    id: 'assessment-center',
+    title: 'Assessment Center',
     color: '#1677FF',
     icon: Shield,
     category: 'CORE WORKFLOW'

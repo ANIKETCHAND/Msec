@@ -262,7 +262,7 @@ export default function ReportsPage() {
           <div className="py-12 px-6 text-center text-[#9CA3AF] text-xs font-mono leading-relaxed">
             {loadingReports
               ? 'Loading reports archive...'
-              : 'No security reports yet. Reports are produced from a completed scan: register a device, run an assessment in Devices & Scan, then generate a PDF or HTML report here.'}
+              : 'No security reports yet. Reports are produced from a completed scan: register a device, run an assessment in Assessment Center, then generate a PDF or HTML report here.'}
           </div>
         ) : visibleReports.length === 0 ? (
           <div className="py-12 px-6 text-center text-[#9CA3AF] text-xs font-mono">
@@ -412,7 +412,7 @@ export default function ReportsPage() {
             </select>
             {completedAssessments.length === 0 && (
               <p className="text-[11px] text-[#9CA3AF] mt-1.5">
-                No completed scans yet. Run an assessment in Devices &amp; Scan first — a report can only certify a scan that finished.
+                No completed scans yet. Run an assessment in Assessment Center first — a report can only certify a scan that finished.
               </p>
             )}
           </div>

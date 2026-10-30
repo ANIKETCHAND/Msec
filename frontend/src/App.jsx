@@ -17,7 +17,6 @@ const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const AssessmentCenterPage = lazy(() => import('./pages/AssessmentCenterPage'));
-const DevicesScanPage = lazy(() => import('./pages/DevicesScanPage'));
 const ScanResultsPage = lazy(() => import('./pages/ScanResultsPage'));
 const ToolsManagementPage = lazy(() => import('./pages/ToolsManagementPage'));
 const NetworkTopologyPage = lazy(() => import('./pages/NetworkTopologyPage'));
@@ -48,7 +47,7 @@ function MainRouter() {
   // Registry map of all functional pages for stacked workspace
   const pageMap = {
     dashboard: <DashboardPage />,
-    'devices-scan': <DevicesScanPage />,
+    'devices-scan': <AssessmentCenterPage />,
     'assessment-center': <AssessmentCenterPage />,
     'scan-results': <ScanResultsPage />,
     reports: <ReportsPage />,

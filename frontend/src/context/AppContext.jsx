@@ -71,7 +71,7 @@ export function AppProvider({ children }) {
   };
   const [openTabs, setOpenTabs] = useState(() => {
     const initPage = getInitialPage();
-    const defaults = ['dashboard', 'devices-scan', 'scan-results', 'reports'];
+    const defaults = ['dashboard', 'assessment-center', 'scan-results', 'reports'];
     if (initPage !== 'login' && initPage !== 'landing' && !defaults.includes(initPage)) {
       defaults.push(initPage);
     }

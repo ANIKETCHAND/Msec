@@ -59,7 +59,7 @@ export default function WorkspaceShell({ children }) {
   // Priority 1: The 4 Core Application Workspaces
   const primaryTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'devices-scan', label: 'Devices & Scan', icon: Shield },
+    { id: 'assessment-center', label: 'Assessment Center', icon: Shield },
     { id: 'scan-results', label: 'Scan Results', icon: ShieldCheck },
     { id: 'reports', label: 'Reports', icon: FileText }
   ];
@@ -67,7 +67,6 @@ export default function WorkspaceShell({ children }) {
   // Secondary Operational & Governance Tools
   const secondaryPages = [
     { id: 'devices', label: 'Device Inventory' },
-    { id: 'assessment-center', label: 'Assessment Center' },
     { id: 'security-events', label: 'Security Events' },
     { id: 'incidents', label: 'Incidents' },
     { id: 'ml-detection', label: 'ML Detection' },
@@ -87,7 +86,7 @@ export default function WorkspaceShell({ children }) {
     if (q.includes('dev') || q.includes('pump') || q.includes('vent') || q.includes('ecg')) {
       setCurrentPage('devices');
     } else if (q.includes('cve') || q.includes('scan') || q.includes('assess') || q.includes('nmap')) {
-      setCurrentPage('devices-scan');
+      setCurrentPage('assessment-center');
     } else if (q.includes('topol') || q.includes('vlan') || q.includes('network')) {
       setCurrentPage('topology');
     } else if (q.includes('event') || q.includes('alert') || q.includes('traffic') || q.includes('incident') || q.includes('ticket')) {

@@ -400,7 +400,7 @@ export default function SecurityEventsPage() {
               {/* Navigation Quick Links */}
               <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between text-xs">
                 <button
-                  onClick={() => setCurrentPage('devices-scan')}
+                  onClick={() => setCurrentPage('assessment-center')}
                   className="text-[#1677FF] hover:underline flex items-center gap-1 font-medium cursor-pointer"
                 >
                   <Shield className="w-3.5 h-3.5" />
