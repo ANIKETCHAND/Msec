@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
+import { formatDateTime } from '../utils/dateUtils';
 import ReportDownloadModal from '../components/common/ReportDownloadModal';
 import {
   Shield,
@@ -189,7 +190,7 @@ export default function ScanResultsPage() {
                 </span>
               </div>
               <p className="text-xs text-[#6B7280] mt-1">
-                IP: <span className="font-mono">{currentAssessment.target_ip}</span> | Profile: {currentAssessment.profile} | Executed: {new Date(currentAssessment.created_at).toLocaleString()}
+                IP: <span className="font-mono">{currentAssessment.target_ip}</span> | Profile: {currentAssessment.profile} | Executed: {formatDateTime(currentAssessment.created_at)}
               </p>
               {currentAssessment.status === 'PARTIALLY_COMPLETED' && (
                 <div className="mt-2.5 p-2 bg-amber-50/70 border border-amber-200/80 rounded flex items-start gap-2 text-[11px] text-amber-900">
@@ -283,7 +284,7 @@ export default function ScanResultsPage() {
                     </span>
                   </div>
                   <p className="text-[11px] text-[#6B7280]">
-                    Generated {new Date(rep.created_at).toLocaleString()}
+                    Generated {formatDateTime(rep.created_at)}
                   </p>
                   <p className="font-mono text-[10px] text-gray-500 truncate" title={rep.sha256_hash}>
                     SHA-256: {rep.sha256_hash ? `${rep.sha256_hash.slice(0, 16)}...` : 'N/A'}

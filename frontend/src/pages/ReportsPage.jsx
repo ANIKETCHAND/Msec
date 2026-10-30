@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
+import { formatDateTime } from '../utils/dateUtils';
 
 export default function ReportsPage() {
   const { logAudit } = useApp();
@@ -326,7 +327,7 @@ export default function ReportsPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-[#6B7280] font-mono text-[11px]">
-                        {new Date(rep.created_at).toLocaleString()}
+                        {formatDateTime(rep.created_at)}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">

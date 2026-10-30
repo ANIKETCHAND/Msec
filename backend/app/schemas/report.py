@@ -1,8 +1,8 @@
 """Pydantic Schemas for Security Assessment Reports."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class ReportGenerateRequest(BaseModel):
@@ -23,6 +23,14 @@ class ReportResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class ReportListResponse(BaseModel):

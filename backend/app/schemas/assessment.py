@@ -1,8 +1,8 @@
 """Pydantic Schemas for Scope Authorization and Defensive Assessments."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 
 class ScopeCreateRequest(BaseModel):
@@ -41,6 +41,14 @@ class ScopeResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @field_serializer("created_at", "expires_at", "revoked_at", check_fields=False)
+    def serialize_scope_dts(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+
 
 class FindingResponse(BaseModel):
     id: str
@@ -64,6 +72,14 @@ class FindingResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("created_at", check_fields=False)
+    def serialize_created_at(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class AssessmentLaunchRequest(BaseModel):
@@ -96,3 +112,10 @@ class AssessmentResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @field_serializer("started_at", "completed_at", "created_at", check_fields=False)
+    def serialize_assessment_dts(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()

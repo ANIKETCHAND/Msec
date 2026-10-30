@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
+import { formatDateTime } from '../utils/dateUtils';
 import {
   ClipboardList,
   Search,
@@ -202,7 +203,7 @@ export default function AuditLogsPage() {
                 filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-[#F9FAFB] transition-swiss">
                     <td className="py-3 px-4 font-mono text-[#6B7280] text-[11px] whitespace-nowrap">
-                      {log.timestamp}
+                      {formatDateTime(log.timestamp)}
                     </td>
                     <td className="py-3 px-4 font-medium text-[#171717]">
                       <div>{log.actor}</div>

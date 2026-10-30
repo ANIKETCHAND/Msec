@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
+import { formatDateTime, formatTimeOnly } from '../utils/dateUtils';
 import Modal from '../components/common/Modal';
 import ReportDownloadModal from '../components/common/ReportDownloadModal';
 import {
@@ -887,7 +888,7 @@ export default function DevicesScanPage() {
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs">
                   <div>
                     <span className="font-semibold text-emerald-900">Certificate {authorizedScope.id}</span>
-                    <p className="text-[11px] text-emerald-700">Expires: {new Date(authorizedScope.expires_at).toLocaleTimeString()}</p>
+                    <p className="text-[11px] text-emerald-700">Expires: {formatTimeOnly(authorizedScope.expires_at)}</p>
                   </div>
                   <button
                     onClick={() => setAuthorizedScope(null)}
@@ -1182,7 +1183,7 @@ export default function DevicesScanPage() {
                         </span>
                       </div>
                       <p className="text-[11px] text-[#6B7280] mt-0.5">
-                        Target: <span className="font-mono">{latestAssessment.target_ip}</span> ({latestAssessment.profile}) • Recorded: {new Date(latestAssessment.created_at || Date.now()).toLocaleTimeString()}
+                        Target: <span className="font-mono">{latestAssessment.target_ip}</span> ({latestAssessment.profile}) • Recorded: {formatTimeOnly(latestAssessment.created_at || Date.now())}
                       </p>
                     </div>
                     <div className="text-right">
