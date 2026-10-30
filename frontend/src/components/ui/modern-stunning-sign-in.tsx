@@ -5,6 +5,7 @@ import { ShieldCheck, Loader2 } from "lucide-react";
 
 export interface SignIn1Props {
   onSignIn?: (credentials: { email: string; password: string }) => void | Promise<void>;
+  onGoogleSignIn?: () => void;
   title?: string;
   subtitle?: string;
   communityText?: string;
@@ -42,6 +43,7 @@ const SignIn1: React.FC<SignIn1Props> = ({
   rolePresets,
   onRoleSelect,
   selectedRole,
+  onGoogleSignIn,
 }) => {
   const [email, setEmail] = React.useState(defaultEmail);
   const [password, setPassword] = React.useState(defaultPassword);
@@ -196,8 +198,8 @@ const SignIn1: React.FC<SignIn1Props> = ({
             {/* Google Sign In */}
             <button
               type="button"
-              onClick={() => alert("SSO integration available via hospital SAML / OAuth")}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#232526] to-[#2d2e30] border border-white/10 rounded-full px-5 py-3 font-medium text-white shadow hover:brightness-110 transition mb-2 text-sm"
+              onClick={onGoogleSignIn || (() => alert("SSO integration available via hospital SAML / OAuth"))}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#232526] to-[#2d2e30] border border-white/10 rounded-full px-5 py-3 font-medium text-white shadow hover:brightness-110 transition mb-2 text-sm cursor-pointer"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path

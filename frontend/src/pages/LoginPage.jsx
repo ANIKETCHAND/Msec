@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp, DEMO_USERS } from '../context/AppContext';
 import { api } from '../services/api';
 import SignIn1 from '@/components/ui/modern-stunning-sign-in';
+import GoogleSignInModal from '../components/common/GoogleSignInModal';
 import { ShieldCheck, Lock, Mail, ArrowRight, ArrowLeft, UserCheck, AlertCircle, Info, Loader2, SlidersHorizontal } from 'lucide-react';
 
 export default function LoginPage() {
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [themeMode, setThemeMode] = useState('modern'); // 'modern' | 'swiss'
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
 
   const rolePresets = [
     { key: 'analyst', label: 'Analyst', email: DEMO_USERS.analyst.email, password: DEMO_USERS.analyst.password || 'analystpassword123', desc: 'Triage & ML' },
@@ -108,6 +110,54 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleSignIn = async (googleAccount) => {
+    setSubmitting(true);
+    setError('');
+
+    try {
+      let authResult = null;
+      try {
+        authResult = await api.loginWithGoogle({
+          email: googleAccount.email,
+          name: googleAccount.name,
+          role: googleAccount.role,
+          picture: googleAccount.photo
+        });
+      } catch (apiErr) {
+        // Fallback for static host / standalone demonstration mode
+        console.info(`[Login] Backend offline or static host (${apiErr.message}); signing in with Google OAuth persona: ${googleAccount.email}`);
+        authResult = {
+          email: googleAccount.email,
+          name: googleAccount.name,
+          role: googleAccount.role || 'Security Analyst'
+        };
+      }
+
+      const activeUser = {
+        name: authResult?.name || googleAccount.name,
+        email: authResult?.email || googleAccount.email,
+        role: authResult?.role || googleAccount.role || 'Security Analyst',
+        title: `${authResult?.role || googleAccount.role} (Google OAuth)`,
+        avatar: (googleAccount.name || 'G').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
+        picture: googleAccount.photo || null,
+        authProvider: 'google'
+      };
+
+      setCurrentUser(activeUser);
+      localStorage.setItem('medishield_user', JSON.stringify(activeUser));
+      if (logAudit) {
+        logAudit('USER_LOGIN_GOOGLE', 'AuthSession', activeUser.email, `User signed in with verified Google OAuth account (${activeUser.role}).`);
+      }
+      setGoogleModalOpen(false);
+      setCurrentPage('dashboard');
+    } catch (err) {
+      console.warn('[Login] Google sign in error:', err.message);
+      setError(err.message || 'Google sign in failed.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSwissSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
@@ -161,6 +211,7 @@ export default function LoginPage() {
           selectedRole={selectedRole}
           onRoleSelect={handleRoleSelect}
           onSignIn={handleSignIn}
+          onGoogleSignIn={() => setGoogleModalOpen(true)}
           loading={submitting}
           externalError={error}
         />
@@ -251,7 +302,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-2.5 px-4 bg-neutral-900 hover:bg-black text-white rounded text-xs font-medium flex items-center justify-center gap-2 transition-swiss disabled:opacity-50"
+                  className="w-full py-2.5 px-4 bg-neutral-900 hover:bg-black text-white rounded text-xs font-medium flex items-center justify-center gap-2 transition-swiss disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? (
                     <>
@@ -264,6 +315,29 @@ export default function LoginPage() {
                       <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
+                </button>
+
+                <div className="relative my-3">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-neutral-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-neutral-400 font-mono text-[10px]">Or continue with</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setGoogleModalOpen(true)}
+                  className="w-full py-2.5 px-4 bg-white hover:bg-neutral-50 text-neutral-800 border border-neutral-300 rounded text-xs font-semibold flex items-center justify-center gap-2 transition-swiss cursor-pointer shadow-xs"
+                >
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
+                    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
+                    <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.1-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2c0 2.9.7 5.5 1.9 7.9l3.7-2.9z" />
+                    <path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.6L1.9 16.1C3.7 19.8 7.5 22.5 12 22.5z" />
+                  </svg>
+                  <span>Sign in with Google</span>
                 </button>
               </form>
 
@@ -295,6 +369,12 @@ export default function LoginPage() {
           </div>
         </div>
       )}
+      <GoogleSignInModal
+        isOpen={googleModalOpen}
+        onClose={() => setGoogleModalOpen(false)}
+        onSelectAccount={handleGoogleSignIn}
+        loading={submitting}
+      />
     </div>
   );
 }

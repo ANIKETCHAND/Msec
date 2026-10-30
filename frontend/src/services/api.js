@@ -109,6 +109,17 @@ class ApiService {
     return data;
   }
 
+  async loginWithGoogle(payload) {
+    const data = await this.request('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (data?.access_token) {
+      this.setToken(data.access_token);
+    }
+    return data;
+  }
+
   async getMe() {
     return await this.request('/auth/me');
   }

@@ -10,6 +10,14 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=4)
 
 
+class GoogleLoginRequest(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    picture: Optional[str] = None
+    role: Optional[str] = "Security Analyst"
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

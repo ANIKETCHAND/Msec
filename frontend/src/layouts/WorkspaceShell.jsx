@@ -209,8 +209,12 @@ export default function WorkspaceShell({ children }) {
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                 className="flex items-center gap-2 p-1 rounded hover:bg-[#F3F4F6] transition-swiss cursor-pointer"
               >
-                <div className="w-6 h-6 rounded bg-[#E6F4FF] text-[#1677FF] border border-[#1677FF]/20 flex items-center justify-center font-semibold text-xs">
-                  {currentUser?.avatar || 'OP'}
+                <div className="w-6 h-6 rounded bg-[#E6F4FF] text-[#1677FF] border border-[#1677FF]/20 flex items-center justify-center font-semibold text-xs overflow-hidden">
+                  {currentUser?.picture ? (
+                    <img src={currentUser.picture} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    currentUser?.avatar || 'OP'
+                  )}
                 </div>
                 <div className="text-left hidden md:block">
                   <p className="text-xs font-medium text-[#171717] leading-tight truncate max-w-[120px]">{currentUser?.name || 'Operator'}</p>
@@ -225,9 +229,22 @@ export default function WorkspaceShell({ children }) {
                   <div className="pb-2 border-b border-[#E5E7EB]">
                     <p className="font-semibold text-[#171717]">{currentUser?.name || 'MediShield Operator'}</p>
                     <p className="text-[11px] text-[#6B7280] font-mono">{currentUser?.email || 'operator@medishield.local'}</p>
-                    <span className="mt-1 inline-block px-1.5 py-0.5 rounded bg-[#E6F4FF] text-[#1677FF] font-medium text-[10px]">
-                      {currentUser?.role || 'Authenticated'}
-                    </span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="inline-block px-1.5 py-0.5 rounded bg-[#E6F4FF] text-[#1677FF] font-medium text-[10px]">
+                        {currentUser?.role || 'Authenticated'}
+                      </span>
+                      {currentUser?.authProvider === 'google' && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium text-[10px]">
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24">
+                            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
+                            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
+                            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.8.1-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15.2c0 2.9.7 5.5 1.9 7.9l3.7-2.9z" />
+                            <path fill="#34A853" d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.6L1.9 16.1C3.7 19.8 7.5 22.5 12 22.5z" />
+                          </svg>
+                          <span>Google</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="py-2">
