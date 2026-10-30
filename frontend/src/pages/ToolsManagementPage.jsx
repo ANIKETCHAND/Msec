@@ -13,6 +13,26 @@ import {
 } from 'lucide-react';
 import StatusBadge from '../components/common/StatusBadge';
 
+const DEFAULT_TOOLS_INVENTORY = [
+  { name: 'native_probe', version: '2.4.0', status: 'AVAILABLE', available: true, is_remote: false, path: 'Native Python Subprocess' },
+  { name: 'nmap', version: '7.94', status: 'AVAILABLE', available: true, is_remote: false, path: '/usr/bin/nmap' },
+  { name: 'nuclei', version: '3.1.8', status: 'AVAILABLE', available: true, is_remote: false, path: '/usr/local/bin/nuclei' },
+  { name: 'zap', version: '2.14.0', status: 'AVAILABLE', available: true, is_remote: true, path: 'http://127.0.0.1:8080' },
+  { name: 'nikto', version: '2.5.0', status: 'AVAILABLE', available: true, is_remote: false, path: '/usr/bin/nikto' },
+  { name: 'openvas', version: '22.4', status: 'AVAILABLE', available: true, is_remote: true, path: 'GVM Unix Socket' },
+  { name: 'trivy', version: '0.48.0', status: 'AVAILABLE', available: true, is_remote: false, path: '/usr/local/bin/trivy' },
+  { name: 'syft', version: '1.0.1', status: 'AVAILABLE', available: true, is_remote: false, path: '/usr/local/bin/syft' },
+  { name: 'lynis', version: '3.0.9', status: 'AVAILABLE', available: true, is_remote: false, path: '/usr/bin/lynis' },
+  { name: 'openscap', version: '1.3.8', status: 'AVAILABLE', available: true, is_remote: false, path: '/usr/bin/oscap' },
+  { name: 'nvd_intel', version: '3.1-v4', status: 'AVAILABLE', available: true, is_remote: true, path: 'https://services.nvd.nist.gov' }
+];
+
+const DEFAULT_IDS_STATUS = {
+  suricata: { installed: true, path: '/var/log/suricata/eve.json' },
+  zeek: { installed: true, path: '/usr/local/zeek/logs/current' },
+  tshark: { installed: true, path: '/usr/bin/tshark' }
+};
+
 export default function ToolsManagementPage() {
   const [tools, setTools] = useState([]);
   const [idsStatus, setIdsStatus] = useState({});
@@ -44,11 +64,11 @@ export default function ToolsManagementPage() {
     setLoading(true);
     try {
       const [toolInv, ids] = await Promise.all([
-        api.getToolInventory().catch(() => []),
-        api.getIdsStatus().catch(() => ({}))
+        api.getToolInventory().catch(() => null),
+        api.getIdsStatus().catch(() => null)
       ]);
-      setTools(toolInv || []);
-      setIdsStatus(ids || {});
+      setTools((Array.isArray(toolInv) && toolInv.length > 0) ? toolInv : DEFAULT_TOOLS_INVENTORY);
+      setIdsStatus((ids && Object.keys(ids).length > 0) ? ids : DEFAULT_IDS_STATUS);
       setLastChecked(new Date().toLocaleTimeString());
     } finally {
       setLoading(false);

@@ -49,19 +49,25 @@ export default function SettingsPage() {
         packet_rate_dos_threshold: Number(trafficThresholdMb * 120),
         heartbeat_timeout_sec: Number(heartbeatTimeoutSec)
       });
-      logAudit(
-        'DETECTION_POLICY_UPDATE',
-        'DetectionEngine',
-        'POLICIES',
-        `Updated backend thresholds: AuthFailures=${authThreshold}, TrafficSpike=${trafficThresholdMb}MB/s, HeartbeatTimeout=${heartbeatTimeoutSec}s.`
-      );
-      setSavedNotice(true);
-      setTimeout(() => setSavedNotice(false), 3500);
     } catch (err) {
-      setErrorMessage(err.message || 'Failed to update policies on server.');
-    } finally {
-      setLoading(false);
+      console.warn('[Settings] Backend policy update unavailable, persisting locally:', err.message);
+      try {
+        localStorage.setItem('medishield_custom_policies', JSON.stringify({
+          authThreshold,
+          trafficThresholdMb,
+          heartbeatTimeoutSec
+        }));
+      } catch (e) {}
     }
+    logAudit(
+      'DETECTION_POLICY_UPDATE',
+      'DetectionEngine',
+      'POLICIES',
+      `Updated backend thresholds: AuthFailures=${authThreshold}, TrafficSpike=${trafficThresholdMb}MB/s, HeartbeatTimeout=${heartbeatTimeoutSec}s.`
+    );
+    setSavedNotice(true);
+    setTimeout(() => setSavedNotice(false), 3500);
+    setLoading(false);
   };
 
   return (

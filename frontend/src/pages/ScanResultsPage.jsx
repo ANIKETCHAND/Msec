@@ -53,14 +53,19 @@ export default function ScanResultsPage() {
   const loadAssessmentsList = async () => {
     setLoading(true);
     try {
-      const data = await api.getAssessments();
-      if (data && Array.isArray(data)) {
-        setAssessments(data);
-        if (data.length > 0) {
-          const firstId = data[0].id;
-          setSelectedAsmId(firstId);
-          await loadAssessmentDetails(firstId);
-        }
+      const data = await api.getAssessments().catch(() => null);
+      let list = Array.isArray(data) ? data : [];
+      if (list.length === 0) {
+        try {
+          const cached = JSON.parse(localStorage.getItem('medishield_assessments') || '[]');
+          if (Array.isArray(cached) && cached.length > 0) list = cached;
+        } catch (e) {}
+      }
+      setAssessments(list);
+      if (list.length > 0) {
+        const firstId = list[0].id;
+        setSelectedAsmId(firstId);
+        await loadAssessmentDetails(firstId, list[0]);
       }
     } catch (err) {
       console.warn('[ScanResults] Assessment list fetch failed:', err.message);
