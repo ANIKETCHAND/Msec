@@ -10,7 +10,6 @@ import {
   RefreshCw,
   LogOut,
   ChevronDown,
-  Sparkles,
   X,
   Menu,
   Layers,
@@ -28,7 +27,6 @@ export default function WorkspaceShell({ children }) {
     setCurrentPage,
     simulationNotice,
     setSimulationNotice,
-    triggerSimulation,
     resetAllSimulations,
     securityEvents,
     logAudit,
@@ -39,7 +37,6 @@ export default function WorkspaceShell({ children }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [secondaryDropdownOpen, setSecondaryDropdownOpen] = useState(false);
-  const [simulationModalOpen, setSimulationModalOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -166,16 +163,6 @@ export default function WorkspaceShell({ children }) {
             <span className="w-2 h-2 rounded-full bg-[#10B981]" />
             <span>Operational</span>
           </div>
-
-          {/* Quick Simulation Trigger */}
-          <button
-            onClick={() => setSimulationModalOpen(true)}
-            title="Safe IoMT Simulation Scenarios"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#F9FAFB] hover:bg-[#F3F4F6] text-[#171717] border border-[#E5E7EB] text-xs font-medium transition-swiss"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
-            <span className="hidden sm:inline">Simulation</span>
-          </button>
 
           {/* Notifications Button */}
           <div className="relative">
@@ -417,69 +404,6 @@ export default function WorkspaceShell({ children }) {
         {children}
       </main>
 
-      {/* Safe Simulation Trigger Modal */}
-      {simulationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-[#E5E7EB] rounded-lg max-w-md w-full p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
-              <div className="flex items-center gap-2 text-[#171717] font-semibold text-sm">
-                <Sparkles className="w-4 h-4 text-[#F59E0B]" />
-                <span>IoMT Safe Simulation Lab</span>
-              </div>
-              <button
-                onClick={() => setSimulationModalOpen(false)}
-                className="text-[#9CA3AF] hover:text-[#171717]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-[#6B7280] leading-relaxed">
-              Trigger authorized synthetic attack telemetry to test passive IDS heuristics, alert correlation, and incident generation.
-            </p>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
-              <button
-                onClick={() => { triggerSimulation('auth_spike'); setSimulationModalOpen(false); }}
-                className="p-3 bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] rounded-md text-left transition-swiss"
-              >
-                <p className="text-xs font-semibold text-[#EF4444]">Brute Force Auth</p>
-                <p className="text-[11px] text-[#6B7280] mt-0.5">Credential spray alert</p>
-              </button>
-              <button
-                onClick={() => { triggerSimulation('traffic_spike'); setSimulationModalOpen(false); }}
-                className="p-3 bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] rounded-md text-left transition-swiss"
-              >
-                <p className="text-xs font-semibold text-[#F59E0B]">Traffic Ingress</p>
-                <p className="text-[11px] text-[#6B7280] mt-0.5">Surge telemetry burst</p>
-              </button>
-              <button
-                onClick={() => { triggerSimulation('telemetry_drop'); setSimulationModalOpen(false); }}
-                className="p-3 bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] rounded-md text-left transition-swiss"
-              >
-                <p className="text-xs font-semibold text-[#1677FF]">Telemetry Drop</p>
-                <p className="text-[11px] text-[#6B7280] mt-0.5">Device heartbeat loss</p>
-              </button>
-              <button
-                onClick={() => { triggerSimulation('firmware_tamper'); setSimulationModalOpen(false); }}
-                className="p-3 bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] rounded-md text-left transition-swiss"
-              >
-                <p className="text-xs font-semibold text-purple-600">Firmware Tamper</p>
-                <p className="text-[11px] text-[#6B7280] mt-0.5">SHA-256 hash drift</p>
-              </button>
-            </div>
-
-            <div className="pt-3 border-t border-[#E5E7EB] flex justify-end">
-              <button
-                onClick={() => setSimulationModalOpen(false)}
-                className="px-4 py-1.5 bg-[#F9FAFB] hover:bg-[#F3F4F6] text-xs font-medium rounded border border-[#E5E7EB] text-[#171717]"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
