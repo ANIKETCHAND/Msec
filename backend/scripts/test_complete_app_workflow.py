@@ -11,7 +11,9 @@ import hashlib
 from datetime import datetime
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, backend_dir)
+os.chdir(backend_dir)
 
 from fastapi.testclient import TestClient
 from app.main import app
@@ -76,6 +78,11 @@ def run_e2e_workflow():
     # 4. REGISTER NEW CLINICAL ASSET
     print("\n[Step 4] Device Inventory Registration")
     test_device_id = f"DEV-PUMP-{datetime.now().strftime('%H%M%S')}"
+    # Clean up any lingering test devices on 127.0.0.1 to avoid IP address collision
+    existing_devs = client.get("/api/v1/devices", headers=admin_headers).json()
+    for ed in existing_devs:
+        if ed.get("ip_address") == "127.0.0.1":
+            client.delete(f"/api/v1/devices/{ed['id']}", headers=admin_headers)
     new_device_resp = client.post("/api/v1/devices", json={
         "id": test_device_id,
         "name": "Alaris Infusion SmartPump ICU-4",
