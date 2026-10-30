@@ -140,20 +140,20 @@ export default function WorkspaceShell({ children }) {
           </div>
         </div>
 
-        {/* Center: Expanding Search Dock */}
-        <div className="hidden lg:flex items-center justify-center mx-4">
-          <ExpandingSearchDock
-            onSearch={handleSearchSubmit}
-            placeholder="Search assets, CVEs, VLANs, security events..."
-          />
-        </div>
-
-        {/* Right: Status, Simulation, Notifications & User Persona */}
+        {/* Right: Status, Search, Notifications & User Persona */}
         <div className="flex items-center gap-3">
           {/* Operational Status */}
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#6B7280] font-mono">
             <span className="w-2 h-2 rounded-full bg-[#10B981]" />
             <span>Operational</span>
+          </div>
+
+          {/* Expanding Search Dock */}
+          <div className="hidden lg:flex items-center shrink-0">
+            <ExpandingSearchDock
+              onSearch={handleSearchSubmit}
+              placeholder="Search assets, CVEs, VLANs, security events..."
+            />
           </div>
 
           {/* Notifications Button */}
