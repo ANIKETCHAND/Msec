@@ -268,7 +268,11 @@ def verify_all():
     assert rec2_ver.get("is_match") is True
     print(" Authentic Cryptographic SHA-256 Record Verification Confirmed!")
 
-    # 2. Test tampered record detection (REC-ICU-001)
+    # 2. Test tampered record detection (tamper REC-ICU-001 via tamper-demo first)
+    tamper_resp = client.post(f"{BASE_URL}/integrity/tamper-demo", json={"record_id": "REC-ICU-001"})
+    assert tamper_resp.status_code == 200, f"Tamper demo failed: {tamper_resp.text}"
+    print(" Injected controlled telemetry payload tamper for REC-ICU-001.")
+
     rec1_resp = client.post(f"{BASE_URL}/integrity/verify", json={"record_id": "REC-ICU-001"})
     assert rec1_resp.status_code == 200
     rec1_ver = rec1_resp.json()
