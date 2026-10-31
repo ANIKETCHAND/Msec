@@ -1,7 +1,8 @@
 import React, { Suspense, lazy } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider, useApp } from './context';
 import WorkspaceShell from './layouts/WorkspaceShell';
 import PageStack from './components/stack/PageStack';
+import { ErrorBoundary } from './components/common';
 
 // Entry screens ship in the core bundle; workspace pages load on demand so the
 // first paint is not blocked by charts, tables and topology rendering code.
@@ -65,17 +66,21 @@ function MainRouter() {
 
   return (
     <WorkspaceShell>
-      <Suspense fallback={<WorkspaceLoading />}>
-        <PageStack pageMap={pageMap} />
-      </Suspense>
+      <ErrorBoundary title="Workspace Component Failure">
+        <Suspense fallback={<WorkspaceLoading />}>
+          <PageStack pageMap={pageMap} />
+        </Suspense>
+      </ErrorBoundary>
     </WorkspaceShell>
   );
 }
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainRouter />
-    </AppProvider>
+    <ErrorBoundary title="Critical Application Failure">
+      <AppProvider>
+        <MainRouter />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
