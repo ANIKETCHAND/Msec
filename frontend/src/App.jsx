@@ -20,7 +20,6 @@ const AssessmentCenterPage = lazy(() => import('./pages/AssessmentCenterPage'));
 const ScanResultsPage = lazy(() => import('./pages/ScanResultsPage'));
 const ToolsManagementPage = lazy(() => import('./pages/ToolsManagementPage'));
 const NetworkTopologyPage = lazy(() => import('./pages/NetworkTopologyPage'));
-const ResponseSimulatorPage = lazy(() => import('./pages/ResponseSimulatorPage'));
 const IncidentManagementPage = lazy(() => import('./pages/IncidentManagementPage'));
 const MLDetectionPage = lazy(() => import('./pages/MLDetectionPage'));
 const Phase1VerificationPage = lazy(() => import('./pages/Phase1VerificationPage'));
@@ -55,7 +54,6 @@ function MainRouter() {
     'device-detail': <DeviceDetailPage />,
     topology: <NetworkTopologyPage />,
     tools: <ToolsManagementPage />,
-    'response-simulator': <ResponseSimulatorPage />,
     'security-events': <SecurityEventsPage />,
     incidents: <IncidentManagementPage />,
     'ml-detection': <MLDetectionPage />,

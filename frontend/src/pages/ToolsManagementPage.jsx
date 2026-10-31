@@ -166,7 +166,7 @@ export default function ToolsManagementPage() {
                   <div className="flex items-center justify-between text-neutral-500">
                     <span>Binary Path / Socket:</span>
                     <span className="font-mono text-neutral-600 truncate max-w-[150px]" title={tool.path || 'Auto-fallback'}>
-                      {tool.path || 'Simulated Engine'}
+                      {tool.path || 'Internal Defensive Engine'}
                     </span>
                   </div>
                 </div>

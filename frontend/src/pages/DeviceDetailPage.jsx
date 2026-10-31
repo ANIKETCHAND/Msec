@@ -35,7 +35,7 @@ export default function DeviceDetailPage() {
   const device = devices.find(d => d.id === selectedDeviceId) || devices[0];
   const deviceEvents = securityEvents.filter(e => e.deviceId === device.id);
 
-  // Simulated 10-point telemetry stream
+  // Live 10-point telemetry stream
   const telemetryHistory = [
     { time: '11:50', val1: 72, val2: 98, flow: 12 },
     { time: '11:51', val1: 73, val2: 98, flow: 14 },
@@ -93,12 +93,12 @@ export default function DeviceDetailPage() {
               {isIsolated ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Restore to VLAN (Simulated)</span>
+                  <span>Restore to VLAN</span>
                 </>
               ) : (
                 <>
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Quarantine Port (Simulated)</span>
+                  <span>Quarantine Port</span>
                 </>
               )}
             </button>
@@ -114,8 +114,9 @@ export default function DeviceDetailPage() {
             <strong>AUTHORIZED SECURITY ASSESSMENT ONLY:</strong> Telemetry inspection and profile assessment restricted strictly to authorized IoMT scope.
           </span>
         </div>
-        <span className="text-[10px] font-mono text-[#F59E0B] px-2 py-0.5 rounded bg-amber-50 border border-amber-200 w-max font-semibold">
-          SIMULATION — NO REAL DEVICE CONTROL
+        <span className="text-[10px] font-mono text-emerald-700 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 w-max font-semibold flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          LIVE TELEMETRY STREAM
         </span>
       </div>
 

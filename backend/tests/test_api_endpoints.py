@@ -210,7 +210,7 @@ def test_cryptographic_integrity_verification_and_tamper_detection():
     assert v_resp.json()["status"] == "VERIFIED"
     assert v_resp.json()["is_match"] is True
 
-    # 2. Simulate 1-byte unauthorized mutation
+    # 2. Controlled 1-byte unauthorized mutation
     t_resp = client.post("/api/integrity/tamper-demo", json={"record_id": rec_id}, headers=headers)
     assert t_resp.status_code == 200
     assert t_resp.json()["status"] == "TAMPERED"
@@ -280,8 +280,8 @@ def test_ml_detection_status_and_evaluation():
     assert dos_resp.json()["confidence"] > 0.8
 
 
-def test_simulation_scenarios_and_reset():
-    """Verify safe simulation controls generate alerts and can be reset."""
+def test_simulation_endpoints_removed():
+    """Verify simulation endpoints have been decommissioned and return 404."""
     admin_login = client.post("/api/auth/login", json={
         "email": "admin@medishield.local",
         "password": "adminpassword123"
@@ -289,16 +289,11 @@ def test_simulation_scenarios_and_reset():
     token = admin_login.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Trigger traffic spike scenario
     sim_resp = client.post("/api/simulation/scenarios/traffic_spike", headers=headers)
-    assert sim_resp.status_code == 200
-    assert sim_resp.json()["status"] == "success"
-    assert "EVT-SIM-NET-" in sim_resp.json()["event_generated"]
+    assert sim_resp.status_code == 404
 
-    # Reset simulation
     reset_resp = client.post("/api/simulation/reset", headers=headers)
-    assert reset_resp.status_code == 200
-    assert "reset successfully" in reset_resp.json()["message"]
+    assert reset_resp.status_code == 404
 
 
 def test_settings_policies_get_and_update():
@@ -497,7 +492,7 @@ def test_ids_ingest_and_status():
     assert "suricata" in status_resp.json()
     assert "zeek" in status_resp.json()
 
-    # 2. Ingest simulated Suricata EVE JSON alert for registered device DEV-ECG-001 (192.168.10.45)
+    # 2. Ingest Suricata EVE JSON alert for registered device DEV-ECG-001 (192.168.10.45)
     eve_alert = {
         "timestamp": "2026-10-07T12:00:00.000Z",
         "src_ip": "10.0.0.99",
@@ -538,7 +533,7 @@ def test_event_correlation_and_incident_generation():
     if corr_resp.status_code == 200:
         inc_data = corr_resp.json()
         assert inc_data["device_id"] == "DEV-VENT-502"
-        assert any("SIMULATION" in n.get("text", "") for n in inc_data["notes"])
+        assert any("OPERATIONAL CONTAINMENT" in n.get("text", "") for n in inc_data["notes"])
 
 
 def test_audit_hash_chain_verification():

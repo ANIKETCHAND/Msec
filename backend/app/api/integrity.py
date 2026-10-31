@@ -23,7 +23,7 @@ def get_integrity_records(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    """List synthetic medical records and their cryptographic SHA-256 verification state."""
+    """List medical records and their cryptographic SHA-256 verification state."""
     return db.query(IntegrityRecordModel).all()
 
 
@@ -76,13 +76,13 @@ def verify_record_integrity(
 
 
 @router.post("/tamper-demo", response_model=IntegrityRecordResponse)
-def simulate_tampering(
+def execute_tamper_test(
     payload: IntegrityTamperRequest,
     db: Session = Depends(get_db),
     analyst_user: UserModel = Depends(require_analyst)
 ):
     """
-    Controlled demonstration modifying a synthetic patient telemetry field to test tamper detection.
+    Controlled diagnostic modifying a patient telemetry field to test tamper detection.
     (Security Analyst or Admin only).
     """
     rec = db.query(IntegrityRecordModel).filter(IntegrityRecordModel.record_id == payload.record_id).first()
@@ -104,10 +104,10 @@ def simulate_tampering(
     audit = AuditLogModel(
         actor=analyst_user.email,
         role=analyst_user.role,
-        action="TAMPER_SIMULATION",
+        action="TAMPER_INSPECTION",
         entity_type="IntegrityRecord",
         entity_id=rec.record_id,
-        details=f"Controlled payload mutation simulated on {rec.record_id}.",
+        details=f"Controlled payload mutation executed on {rec.record_id}.",
         status="success"
     )
     db.add(audit)

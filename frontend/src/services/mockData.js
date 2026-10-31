@@ -1,5 +1,5 @@
 /**
- * MediShield High-Fidelity Synthetic Dataset & Simulation Store.
+ * MediShield High-Fidelity Baseline Dataset & Offline Fixture Store.
  * Isolated demo data for Phase 2 frontend and safe academic demonstrations.
  * All records, vitals, and device streams are 100% synthetic.
  */
@@ -190,7 +190,7 @@ export const INITIAL_SECURITY_EVENTS = [
     timestamp: "2026-10-01 11:52:14",
     eventType: "UNUSUAL_TRAFFIC_VOLUME",
     ruleId: "RULE-NET-003",
-    ruleName: "Unusual Simulated Traffic Volume Spike",
+    ruleName: "Unusual Ingress Traffic Volume Spike",
     deviceId: "DEV-PUMP-204",
     deviceName: "Smart Infusion Pump B-4",
     severity: "medium",

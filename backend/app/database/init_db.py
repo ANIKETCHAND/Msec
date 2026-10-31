@@ -85,7 +85,7 @@ def seed_database():
             db.add_all(users)
             db.commit()
 
-        # 2. Seed Simulated Devices
+        # 2. Seed Connected IoMT Devices
         if db.query(DeviceModel).count() == 0:
             devices = [
                 DeviceModel(
@@ -226,7 +226,7 @@ def seed_database():
                     event_type="UNUSUAL_TRAFFIC_VOLUME",
                     severity="medium",
                     rule_id="RULE-NET-003",
-                    rule_name="Unusual Simulated Traffic Volume Spike (Potential DoS)",
+                    rule_name="Unusual Ingress Traffic Volume Spike (Potential DoS)",
                     evidence={"observed_rate_pps": 840, "syn_ratio": 0.45, "threshold": 600},
                     suggested_action="Throttle switch port on ICU VLAN 10.",
                     status="investigating"

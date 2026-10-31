@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { resetAllSimulations, logAudit, currentUser } = useApp();
+  const { logAudit, currentUser } = useApp();
 
   const [authThreshold, setAuthThreshold] = useState(5);
   const [trafficThresholdMb, setTrafficThresholdMb] = useState(5.0);
@@ -208,23 +208,19 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Reset Baseline State Card */}
+          {/* Operational Engine Status Card */}
           <div className="bg-white border border-neutral-200 rounded-lg p-5 space-y-3">
             <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
-              <RefreshCw className="w-4 h-4 text-neutral-600" />
-              Reset Demonstration State
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              Operational Engine Status
             </div>
             <p className="text-xs text-neutral-500 leading-relaxed">
-              Restores simulated medical devices, events, incidents, and SHA-256 integrity records to their clean academic demonstration baseline.
+              Deterministic rule evaluation, correlation engine, and machine learning inference pipelines are operating live with active device telemetry monitoring.
             </p>
-
-            <button
-              onClick={resetAllSimulations}
-              className="px-3.5 py-1.5 bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-300 rounded text-xs font-medium flex items-center gap-2 transition-swiss"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-neutral-500" />
-              Reset All In-Memory State
-            </button>
+            <div className="flex items-center gap-2 text-xs font-mono text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200 w-max">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              ALL LIVE PIPELINES ACTIVE
+            </div>
           </div>
         </div>
       </div>

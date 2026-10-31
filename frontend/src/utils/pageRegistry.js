@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   Wrench,
   Network,
-  SlidersHorizontal,
   AlertTriangle,
   FileText,
   Brain,
@@ -71,13 +70,6 @@ export const PAGE_REGISTRY = {
     title: 'Security Tools',
     color: '#64748B',
     icon: Wrench,
-    category: 'ASSET SECURITY'
-  },
-  'response-simulator': {
-    id: 'response-simulator',
-    title: 'Response Simulator',
-    color: '#F97316',
-    icon: SlidersHorizontal,
     category: 'ASSET SECURITY'
   },
   'security-events': {

@@ -246,19 +246,6 @@ class ApiService {
     return await this.request('/reports/summary');
   }
 
-  // Simulation
-  async triggerScenario(name) {
-    return await this.request(`/simulation/scenarios/${name}`, {
-      method: 'POST'
-    });
-  }
-
-  async resetSimulation() {
-    return await this.request('/simulation/reset', {
-      method: 'POST'
-    });
-  }
-
   // Settings & Policies
   async getPolicies() {
     return await this.request('/settings/policies');

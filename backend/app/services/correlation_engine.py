@@ -54,7 +54,7 @@ class CorrelationEngine:
         incident_title = None
         severity = "medium"
         description = ""
-        suggested_containment = "SIMULATION: Quarantine device to isolated investigation VLAN."
+        suggested_containment = "OPERATIONAL CONTAINMENT: Quarantine device to isolated investigation VLAN."
 
         # Pattern 1: Reconnaissance followed by Traffic Flood (Multi-Stage IoMT Penetration)
         if has_recon and has_dos:
@@ -64,7 +64,7 @@ class CorrelationEngine:
                 f"Correlation Engine identified coordinated attack stages: Initial network reconnaissance/port enumeration "
                 f"followed by high-volume traffic flooding directed at {device.ip_address} on {device.network_segment}."
             )
-            suggested_containment = "SIMULATION ONLY: Activate VLAN 99 Quarantine Isolation on switch port; restrict ingress packet rate."
+            suggested_containment = "OPERATIONAL CONTAINMENT: Activate VLAN 99 Quarantine Isolation on switch port; restrict ingress packet rate."
 
         # Pattern 2: Protocol Vulnerability + Traffic Anomaly
         elif has_proto_vuln and (has_dos or has_auth_fail):
@@ -74,14 +74,14 @@ class CorrelationEngine:
                 f"Device has known protocol exposure ({', '.join(set(f.title for f in findings[:2]))}) and experienced "
                 f"subsequent active traffic violations or authentication anomalies."
             )
-            suggested_containment = "SIMULATION ONLY: Temporarily isolate management web interface; enforce medical firewall ACL."
+            suggested_containment = "OPERATIONAL CONTAINMENT: Temporarily isolate management web interface; enforce medical firewall ACL."
 
         # Pattern 3: Repeated Brute Force & State Instability
         elif has_auth_fail and len(events) >= 3:
             incident_title = f"Brute Force Credential Attack & Lockout on {device.name}"
             severity = "high"
             description = f"Repeated unauthorized access attempts exceeding safety threshold detected on {device.name} ({device.ip_address})."
-            suggested_containment = "SIMULATION ONLY: Invalidate active device API sessions; rotate cryptographic device keys."
+            suggested_containment = "OPERATIONAL CONTAINMENT: Invalidate active device API sessions; rotate cryptographic device keys."
 
         if not incident_title:
             return None

@@ -85,7 +85,7 @@ export default function PrivacyIntegrityPage() {
               Protected Patient Telemetry Records
             </h2>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Simulate in-memory record tampering to verify real-time cryptographic digest mismatch detection.
+              Execute tamper inspection to verify real-time cryptographic digest mismatch detection.
             </p>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function PrivacyIntegrityPage() {
                         onClick={() => tamperRecord(rec.recordId)}
                         className="px-2.5 py-1 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded text-xs font-medium flex items-center gap-1 transition-swiss"
                       >
-                        <AlertTriangle className="w-3 h-3" /> Simulate Tampering
+                        <AlertTriangle className="w-3 h-3" /> Inject Tamper Test
                       </button>
                     )}
                   </div>

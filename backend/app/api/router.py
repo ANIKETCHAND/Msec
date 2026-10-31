@@ -18,7 +18,6 @@ from app.api.telemetry import router as telemetry_router
 from app.api.detection import router as detection_router
 from app.api.integrity import router as integrity_router
 from app.api.audit_logs import router as audit_logs_router
-from app.api.simulation import router as simulation_router
 from app.api.settings import router as settings_router
 
 api_v1_router = APIRouter()
@@ -37,5 +36,4 @@ api_v1_router.include_router(telemetry_router)
 api_v1_router.include_router(detection_router)
 api_v1_router.include_router(integrity_router)
 api_v1_router.include_router(audit_logs_router)
-api_v1_router.include_router(simulation_router)
 api_v1_router.include_router(settings_router)

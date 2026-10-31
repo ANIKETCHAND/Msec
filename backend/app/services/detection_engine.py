@@ -58,7 +58,7 @@ class RuleBasedDetectionEngine:
         if pkt_rate > self.packet_rate_dos_threshold or syn_ratio > self.syn_ratio_threshold:
             return (
                 "RULE-NET-003",
-                "Unusual Simulated Traffic Volume Spike (Potential DoS)",
+                "Unusual Ingress Traffic Volume Spike (Potential DoS)",
                 "high" if pkt_rate > 1000 else "medium",
                 {"observed_rate": pkt_rate, "syn_ratio": syn_ratio, "threshold": self.packet_rate_dos_threshold},
                 "Throttle switch port on medical VLAN; rate-limit packet flows to target medical device."

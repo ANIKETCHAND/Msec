@@ -22,7 +22,7 @@ def list_telemetry(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user)
 ):
-    """Retrieve recent simulated telemetry streams."""
+    """Retrieve recent live telemetry streams."""
     query = db.query(TelemetryModel)
     if device_id:
         query = query.filter(TelemetryModel.device_id == device_id)

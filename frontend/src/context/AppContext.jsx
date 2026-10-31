@@ -168,7 +168,6 @@ export function AppProvider({ children }) {
   const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
   const [mlMetrics, setMlMetrics] = useState(ML_METRICS_DATA);
   const [eventTrends, setEventTrends] = useState(HOURLY_EVENT_TRENDS);
-  const [simulationNotice, setSimulationNotice] = useState(null);
   const [backendOnline, setBackendOnline] = useState(false);
 
   // Sync data with backend API
@@ -550,7 +549,6 @@ export function AppProvider({ children }) {
     setIncidents(prev => [localInc, ...prev]);
     logAudit('INCIDENT_CREATED', 'Incident', localInc.id, `Ticket created from security event ${event.id}.`);
     setCurrentPage('incidents');
-    setSimulationNotice(`Created Incident ${localInc.id} from Event ${event.id}!`);
   };
 
   // Data Integrity Actions
@@ -559,7 +557,7 @@ export function AppProvider({ children }) {
     try {
       tampered = await api.tamperRecord(recordId);
     } catch (e) {
-      console.warn('[AppContext] Backend tamper API unavailable, simulating locally:', e.message);
+      console.warn('[AppContext] Backend tamper API unavailable, testing locally:', e.message);
       tampered = {
         sha256_hash: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
         raw_payload: '{"device_id":"DEV-VENT-502","flow_rate_lpm":42.5,"tampered":true,"alert":"UNAUTHORIZED_VALUE_OVERRIDE"}'
@@ -568,7 +566,7 @@ export function AppProvider({ children }) {
 
     setIntegrityRecords(prev => prev.map(rec => {
       if (rec.recordId !== recordId) return rec;
-      logAudit('INTEGRITY_TAMPER_SIMULATION', 'IntegrityRecord', recordId, `Payload mutated on ${recordId}; the stored digest no longer matches the payload.`);
+      logAudit('INTEGRITY_TAMPER_TEST', 'IntegrityRecord', recordId, `Payload mutated on ${recordId}; the stored digest no longer matches the payload.`);
       return {
         ...rec,
         status: "TAMPERED",
@@ -614,118 +612,6 @@ export function AppProvider({ children }) {
     return true;
   };
 
-  // Safe Simulation Controls
-  const triggerSimulation = async (type) => {
-    try {
-      await api.triggerScenario(type);
-    } catch (e) {
-      // Continue locally
-    }
-
-    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-
-    if (type === 'auth_spike') {
-      const newEvt = {
-        id: `EVT-2026-${Math.floor(9100 + Math.random() * 800)}`,
-        timestamp,
-        eventType: "AUTH_FAILURE_SPIKE",
-        ruleId: "RULE-AUTH-002",
-        ruleName: "Repeated Failed Authentication Attempts",
-        deviceId: "DEV-VENT-502",
-        deviceName: "Smart Critical Care Ventilator V-2",
-        severity: "high",
-        status: "open",
-        evidence: { failedAttempts: 8, windowSeconds: 20, sourceIp: "192.168.10.198" },
-        suggestedAction: "Enforce gateway quarantine on attacking host."
-      };
-      setSecurityEvents(prev => [newEvt, ...prev]);
-      logAudit('SIMULATION_TRIGGERED', 'SecuritySimulation', 'RULE-AUTH-002', 'Simulated SSH brute force spike against DEV-VENT-502.');
-      setSimulationNotice("Simulated Brute-Force Authentication Spike on Ventilator V-2!");
-    } else if (type === 'traffic_spike') {
-      const newEvt = {
-        id: `EVT-2026-${Math.floor(9100 + Math.random() * 800)}`,
-        timestamp,
-        eventType: "UNUSUAL_TRAFFIC_VOLUME",
-        ruleId: "RULE-NET-003",
-        ruleName: "Unusual Simulated Traffic Volume Spike",
-        deviceId: "DEV-PUMP-204",
-        deviceName: "Smart Infusion Pump B-4",
-        severity: "medium",
-        status: "open",
-        evidence: { baselineByteRate: "1.2 KB/s", observedByteRate: "14.2 MB/s", flowDuration: "60s" },
-        suggestedAction: "Throttle switch port on ICU VLAN 10."
-      };
-      setSecurityEvents(prev => [newEvt, ...prev]);
-      logAudit('SIMULATION_TRIGGERED', 'SecuritySimulation', 'RULE-NET-003', 'Simulated DoS bandwidth flood on DEV-PUMP-204.');
-      setSimulationNotice("Simulated Network Bandwidth Surge on Infusion Pump B-4!");
-    } else if (type === 'device_offline') {
-      setDevices(prev => prev.map(d => d.id === 'DEV-GLU-309' ? { ...d, status: 'offline', riskLevel: 'medium' } : d));
-      const newEvt = {
-        id: `EVT-2026-${Math.floor(9100 + Math.random() * 800)}`,
-        timestamp,
-        eventType: "DEVICE_OFFLINE_UNEXPECTED",
-        ruleId: "RULE-STAT-004",
-        ruleName: "Clinical Device Unexpectedly Offline",
-        deviceId: "DEV-GLU-309",
-        deviceName: "Wireless Continuous Glucose Monitor",
-        severity: "medium",
-        status: "open",
-        evidence: { missedHeartbeats: 3, lastSeen: "Just now" },
-        suggestedAction: "Check battery or Bluetooth gateway coverage in Ward Bed 214."
-      };
-      setSecurityEvents(prev => [newEvt, ...prev]);
-      logAudit('SIMULATION_TRIGGERED', 'SecuritySimulation', 'RULE-STAT-004', 'Simulated offline drop for DEV-GLU-309.');
-      setSimulationNotice("Simulated Device Offline event for Continuous Glucose Monitor!");
-    } else if (type === 'unknown_device') {
-      const newDev = {
-        id: `DEV-ROGUE-${Math.floor(10 + Math.random() * 90)}`,
-        name: "Unregistered Wi-Fi Bridge (MAC: 00:09:B0:88:AA:11)",
-        deviceType: "Unknown Hardware",
-        ipAddress: "192.168.10.220",
-        macAddress: "00:09:B0:88:AA:11",
-        firmwareVersion: "Unknown",
-        networkSegment: "ICU_VLAN_10",
-        status: "suspicious",
-        riskLevel: "high",
-        lastSeen: "Just now",
-        patientRoom: "ICU Hallway",
-        batteryLevel: 100,
-        telemetry: { status: "Unauthorized Bridge Detected" }
-      };
-      setDevices(prev => [newDev, ...prev]);
-      const newEvt = {
-        id: `EVT-2026-${Math.floor(9100 + Math.random() * 800)}`,
-        timestamp,
-        eventType: "UNKNOWN_DEVICE_DISCOVERY",
-        ruleId: "RULE-DEV-001",
-        ruleName: "Rogue IoMT Device Detected",
-        deviceId: newDev.id,
-        deviceName: newDev.name,
-        severity: "high",
-        status: "open",
-        evidence: { mac: newDev.macAddress, vlan: newDev.networkSegment },
-        suggestedAction: "Physically locate device and revoke switch port."
-      };
-      setSecurityEvents(prev => [newEvt, ...prev]);
-      logAudit('SIMULATION_TRIGGERED', 'SecuritySimulation', 'RULE-DEV-001', 'Simulated rogue device injection on ICU VLAN 10.');
-      setSimulationNotice("Simulated Rogue Device injected into ICU VLAN 10!");
-    }
-  };
-
-  const resetAllSimulations = async () => {
-    try {
-      await api.resetSimulation();
-    } catch (e) {
-      // Continue locally
-    }
-    setDevices(INITIAL_DEVICES);
-    setSecurityEvents(INITIAL_SECURITY_EVENTS);
-    setIncidents(INITIAL_INCIDENTS);
-    setIntegrityRecords(INTEGRITY_SAMPLE_RECORDS);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
-    setSimulationNotice("All simulated device anomalies reset to clean baseline.");
-  };
-
   const switchUserRole = async (roleKey) => {
     const demo = DEMO_USERS[roleKey];
     if (!demo) return;
@@ -763,8 +649,6 @@ export function AppProvider({ children }) {
     auditLogs,
     mlMetrics,
     eventTrends,
-    simulationNotice,
-    setSimulationNotice,
     backendOnline,
     toggleDeviceIsolation,
     registerDevice,
@@ -773,8 +657,6 @@ export function AppProvider({ children }) {
     createIncidentFromEvent,
     tamperRecord,
     recomputeAndVerify,
-    triggerSimulation,
-    resetAllSimulations,
     logAudit,
     logout,
     switchUserRole

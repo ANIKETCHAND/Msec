@@ -76,7 +76,7 @@ def create_device(
     db: Session = Depends(get_db),
     user: UserModel = Depends(require_analyst)
 ):
-    """Register a new simulated IoMT device (Administrator or Security Analyst)."""
+    """Register a new IoMT device (Administrator or Security Analyst)."""
     data = payload.model_dump()
     device_id = (data.get("id") or "").strip()
 

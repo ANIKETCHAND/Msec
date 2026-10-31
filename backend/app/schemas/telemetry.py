@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class TelemetryCreate(BaseModel):
     device_id: str = Field(..., min_length=3, max_length=50)
-    metrics: Dict[str, Any] = Field(..., description="Simulated clinical metrics like HR, SPO2, glucose, flow")
+    metrics: Dict[str, Any] = Field(..., description="Clinical metrics like HR, SPO2, glucose, flow")
     network_stats: Dict[str, Any] = Field(..., description="Network flow features like packet_count, byte_rate, syn_ratio")
     is_anomaly: Optional[bool] = False
 

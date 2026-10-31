@@ -25,9 +25,6 @@ export default function WorkspaceShell({ children }) {
     setCurrentUser,
     currentPage,
     setCurrentPage,
-    simulationNotice,
-    setSimulationNotice,
-    resetAllSimulations,
     securityEvents,
     logAudit,
     logout,
@@ -72,7 +69,6 @@ export default function WorkspaceShell({ children }) {
     { id: 'ml-detection', label: 'ML Detection' },
     { id: 'topology', label: 'Network Topology' },
     { id: 'tools', label: 'Security Tools' },
-    { id: 'response-simulator', label: 'Simulator' },
     { id: 'integrity', label: 'Privacy & Integrity' },
     { id: 'audit-logs', label: 'Audit Trail Ledger' },
     { id: 'settings', label: 'System Settings' }
@@ -291,14 +287,7 @@ export default function WorkspaceShell({ children }) {
                       <span>Sign Out</span>
                     </button>
 
-                    <div className="flex items-center justify-between pt-1 text-[11px] text-[#6B7280] font-mono">
-                      <button
-                        type="button"
-                        onClick={() => { resetAllSimulations(); setProfileDropdownOpen(false); }}
-                        className="hover:text-[#171717] flex items-center gap-1 transition-swiss cursor-pointer"
-                      >
-                        <RefreshCw className="w-3 h-3" /> Reset Demo
-                      </button>
+                    <div className="flex items-center justify-end pt-1 text-[11px] text-[#6B7280] font-mono">
                       <button
                         type="button"
                         onClick={() => { setCurrentPage('landing'); setProfileDropdownOpen(false); }}
@@ -391,21 +380,7 @@ export default function WorkspaceShell({ children }) {
         </div>
       </nav>
 
-      {/* Simulation Feedback Notice */}
-      {simulationNotice && (
-        <div className="bg-[#E6F4FF] border-b border-[#B5D8FE] px-6 py-2 flex items-center justify-between text-xs text-[#0958D9] shrink-0 font-medium">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#1677FF]" />
-            <span>{simulationNotice}</span>
-          </div>
-          <button
-            onClick={() => setSimulationNotice(null)}
-            className="text-[#6B7280] hover:text-[#171717]"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+
 
       {/* 4. MAIN WORKSPACE AREA WITH ACTIVE PAGE CONTENT */}
       <main className="flex-1 p-3 sm:p-5 overflow-hidden flex flex-col min-h-0 bg-[#F5F6F8]">

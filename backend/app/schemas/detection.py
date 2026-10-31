@@ -1,4 +1,4 @@
-"""Pydantic schemas for Intrusion Detection & Simulation."""
+"""Pydantic schemas for Intrusion Detection & Telemetry Evaluation."""
 
 from datetime import datetime
 from typing import Optional, Dict, Any, List
@@ -24,11 +24,3 @@ class DetectionEvaluateResponse(BaseModel):
     severity: str
     suggested_action: str
     evaluated_at: datetime
-
-
-class SimulationScenarioResponse(BaseModel):
-    scenario: str
-    status: str
-    affected_device: str
-    event_generated: Optional[str] = None
-    message: str

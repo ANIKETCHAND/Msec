@@ -231,15 +231,15 @@ export default function MLDetectionPage() {
         </div>
       </div>
 
-      {/* Interactive Single-Flow Classifier Simulator */}
+      {/* Real-Time Flow Classifier & Inference Inspector */}
       <div className="bg-white border border-neutral-200 p-5 rounded-lg space-y-5">
         <div>
           <h2 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-neutral-600" />
-            Interactive Flow Inference Simulator
+            Real-Time Flow Classifier & Inference Inspector
           </h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            Adjust synthetic telemetry attributes below to test model response in real time.
+            Inspect and test live telemetry flow features against the operational ML classifier in real time.
           </p>
         </div>
 
